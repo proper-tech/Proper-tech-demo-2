@@ -1,41 +1,73 @@
-import type { LayoutId, TowerId, Unit } from './types';
 import site from './site.json';
+import type { Facing, LayoutId, PlanId, TowerId, Unit } from './types';
 
-// The complex, in the architect's block key: A the podium (shops and services on floors 1-3, a
-// playground on its roof), B and C the apartment towers (floors 4-16; B on the main road, to the
-// north), D the annex. Footprints come from the site plan (site.json, scripts/extract-site.py);
-// storeys and heights from the architect's sections; the apartments from the typical floor plan
-// (layouts.ts). That plan covers floors 5-16; floor 4 has no drawing yet and uses it too.
+// The complex, from the architect's schematic design ("СЭВОЦЗ" ХХК-ийн үйлчилгээ, орон сууцны
+// цогцолбор, Уран проект ХХК, 2026):
+//  - Block A: three-storey podium (shops and services), playground on its roof at floor 4.
+//  - Blocks B and C: the two 16-storey residential towers. Floors 1-3 are part of the podium,
+//    floors 4-16 have apartments, with a technical floor on top. 155 apartments in all.
+//  - Block D: three-storey service building with heated parking on floors 2 and 3.
+//  - One basement level under A, B, C and D with heated parking.
 //
-// STILL A PLACEHOLDER: availability. Every apartment is for sale until a sales list is connected.
+// STILL A PLACEHOLDER, because the drawings do not contain it: which apartments are sold. For now
+// every apartment is for sale; connect your sales system where `status` is set below.
 
+/** In the order the floor picker shows them. */
 export const towers: TowerId[] = ['B', 'C'];
-/** A tower's rectangle on the site plan: the grid plus 0.5 m, the podium floors under the tower.
- *  site.json lists the towers south to north, so C comes first and B second. */
-export const siteTower = (tower: TowerId) => site.towers[tower === 'B' ? 1 : 0];
-/** The apartment floors (4-16), which overhang the podium: on the typical floor plan and section
- *  1-1 their outer walls stand about 1.9 m beyond the end grid lines east and west, and 0.3 m
- *  north and south. Keep in step with plate() in scripts/build-model.py. */
-export function towerPlate(tower: TowerId) {
-  const t = siteTower(tower);
-  return { u0: t.u0 - 1.4, u1: t.u1 + 1.4, v0: t.v0 + 0.2, v1: t.v1 - 0.2 };
-}
-const plateC = towerPlate('C');
-export const towerFootprint = { w: +(plateC.u1 - plateC.u0).toFixed(1), d: +(plateC.v1 - plateC.v0).toFixed(1) };
 
+/** Which footprint in site.json is which tower. Block B is the northern tower. */
+export const towerSiteIndex: Record<TowerId, number> = { B: 1, C: 0 };
+/** A tower's rectangle on the site plan: its column grid plus 0.5 m, which is the podium under
+ *  the tower (the apartment floors overhang it, see towerPlate). */
+export const siteTower = (tower: TowerId) => site.towers[towerSiteIndex[tower]];
+
+// Levels from sections 1-1 and 2-2 (m above floor 1).
 export const PODIUM_FLOORS = 3;
 export const FLOOR_MIN = PODIUM_FLOORS + 1;
 export const FLOOR_MAX = 16;
-/** Apartment floor to floor, from the sections. Keep in step with scripts/build-model.py. */
 export const FLOOR_HEIGHT = 3.0;
-/** Top of the podium (block A): 1st floor 4.5 m, 2nd and 3rd 3.6 m. */
+/** Level of floor 4, the first apartment floor and the podium roof. */
 export const PODIUM_HEIGHT = 11.7;
+/** Level of the roof over the technical floor. */
+export const ROOF_LEVEL = 54.7;
+export const floorLevel = (floor: number) => PODIUM_HEIGHT + (floor - FLOOR_MIN) * FLOOR_HEIGHT;
 
-/** The tower floor plate in metres, as traced from the typical floor plan: x east from grid X2,
- *  z south from grid Y4, outer walls on their centrelines (the corners are rounded on the
- *  drawing). The plan is symmetrical about x = axis, half way between grids X4 and X5. */
-export const PLATE = { x0: -1.8, x1: 23.4, z0: 0, z1: 21, axis: 10.8 };
+/** Figures from the capacity table on the general plan (sheet 7). */
+export const capacity = {
+  blocks: 4,
+  apartments: 155,
+  footprint: 1983.9,
+  publicArea: 4872,
+  heatedParking: 94,
+  outdoorParking: 27,
+  accessibleParking: 5,
+};
 
+/**
+ * The tower floor plate, in the coordinates of layouts.ts: X east from grid line X2, Y north
+ * from grid line Y1, in metres. The column grid is 21.6 × 21.0 m; the corner rooms and the
+ * balconies reach about 2 m past the outer columns on the east and west sides.
+ */
+export const PLATE = {
+  x0: -2.05,
+  x1: 23.65,
+  y0: -0.15,
+  y1: 21.2,
+  /** Rounded corners of the slab. */
+  corner: 2.2,
+  grid: { x: [0, 7.2, 14.4, 21.6], y: [0, 7.2, 13.8, 21.0] },
+};
+
+/** The apartment floors (4-16) on the site plan: PLATE, placed at the tower's grid lines (its
+ *  south-west column is 0.5 m inside the site plan's rectangle). They overhang the podium east
+ *  and west. Keep in step with plate() in scripts/build-model.py. */
+export function towerPlate(tower: TowerId) {
+  const t = siteTower(tower);
+  const [gx, gy] = [t.u0 + 0.5, t.v0 + 0.5];
+  return { u0: gx + PLATE.x0, u1: gx + PLATE.x1, v0: gy + PLATE.y0, v1: gy + PLATE.y1 };
+}
+
+/** A rectangle in plan: x east, z south, from its north-west corner. */
 export interface Rect {
   x: number;
   z: number;
@@ -43,24 +75,47 @@ export interface Rect {
   d: number;
 }
 
-/** Stair 602 (west), two lifts, and corridor 601 that every front door opens onto. */
-const CORE = {
-  stairs: { x: 7.2, z: 0, w: 2.7, d: 7.2 },
-  lifts: { x: 9.9, z: 0, w: 2.4, d: 4.5 },
-  corridor: [
-    { x: 12.3, z: 0, w: 2.1, d: 4.5 },
-    { x: 9.9, z: 4.5, w: 4.5, d: 2.7 },
-    { x: 8.5, z: 7.2, w: 4.6, d: 4.3 },
-  ],
-};
-const flip = (r: Rect): Rect => ({ ...r, x: +(2 * PLATE.axis - r.x - r.w).toFixed(2) });
+export interface CoreSpace {
+  id: 'corridor' | 'stair' | 'lifts' | 'shafts' | 'hoa' | 'trash';
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
 
-/** The plan is drawn for tower C. On the roof plan tower B's stair and lifts are the mirror
- *  image (stair to the east), so B gets the mirrored core; the apartments are symmetrical anyway. */
-export const coreOf = (tower: TowerId) =>
-  tower === 'C' ? CORE : { stairs: flip(CORE.stairs), lifts: flip(CORE.lifts), corridor: CORE.corridor.map(flip) };
+/** Lift and stair core, the same on every floor. */
+export const core: CoreSpace[] = [
+  { id: 'corridor', x0: 9.0, x1: 12.6, y0: 7.15, y1: 17.55 },
+  { id: 'stair', x0: 7.1, x1: 9.0, y0: 14.05, y1: 20.9 },
+  { id: 'lifts', x0: 9.3, x1: 12.3, y0: 17.75, y1: 20.9 },
+  { id: 'shafts', x0: 12.6, x1: 14.5, y0: 14.05, y1: 17.55 },
+];
 
-const FLATS: LayoutId[] = ['A', 'B', 'C', 'D', 'E', 'F'];
+/** Floor 4 of Block B: the homeowners' association room (403-406) replaces apartment B. */
+const hoa: CoreSpace = { id: 'hoa', x0: -1.75, x1: 7.33, y0: 7.15, y1: 13.55 };
+
+export const coreFor = (tower: TowerId, floor: number): CoreSpace[] =>
+  tower === 'B' && floor === FLOOR_MIN ? [...core, hoa] : core;
+
+const POSITIONS: { pos: Unit['pos']; plan: PlanId; facing: Facing }[] = [
+  { pos: 1, plan: 'A', facing: 'NW' },
+  { pos: 2, plan: 'B', facing: 'W' },
+  { pos: 3, plan: 'C', facing: 'SW' },
+  { pos: 4, plan: 'D', facing: 'SE' },
+  { pos: 5, plan: 'E', facing: 'E' },
+  { pos: 6, plan: 'F', facing: 'NE' },
+];
+
+/** Which apartments a floor has, per the floor 4 and floors 5-16 plans (sheets 17-20). */
+function plansOn(tower: TowerId, floor: number): { plan: PlanId; layout: LayoutId }[] {
+  return POSITIONS.flatMap(({ plan }) => {
+    if (tower === 'B' && floor === FLOOR_MIN) {
+      if (plan === 'B') return [];
+      if (plan === 'A') return [{ plan, layout: 'A4' as LayoutId }];
+    }
+    return [{ plan, layout: plan as LayoutId }];
+  });
+}
 
 export interface FloorSummary {
   tower: TowerId;
@@ -73,8 +128,19 @@ export const units: Unit[] = [];
 export const floors: FloorSummary[] = [];
 for (const tower of towers) {
   for (let floor = FLOOR_MIN; floor <= FLOOR_MAX; floor++) {
-    // apartment ids: tower, floor, letter on the plan ("C12D")
-    const list: Unit[] = FLATS.map((layout) => ({ id: `${tower}${floor}${layout}`, tower, floor, layout, status: 'available' }));
+    const list: Unit[] = plansOn(tower, floor).map(({ plan, layout }) => {
+      const slot = POSITIONS.find((p) => p.plan === plan)!;
+      return {
+        id: `${tower}${floor}${String(slot.pos).padStart(2, '0')}`,
+        tower,
+        floor,
+        pos: slot.pos,
+        plan,
+        layout,
+        facing: slot.facing,
+        status: 'available',
+      };
+    });
     units.push(...list);
     floors.push({ tower, floor, units: list, available: list.filter((u) => u.status === 'available').length });
   }

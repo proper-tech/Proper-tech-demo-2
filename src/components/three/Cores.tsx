@@ -169,35 +169,44 @@ export function Stairs({ wallH, cap, ...spec }: StairSpec & { wallH: number; cap
 
 // ---------------------------------------------------------------- lifts
 
-/** Lift shafts in a row along the long (north-south) side of `r`, a car in each. Where the lifts
- *  stop on this floor, `doors` puts steel doors with a frame and a call button in that wall. */
-export function Lifts({ r, doors, wallH, cap }: { r: Rect; doors?: 'E' | 'W'; wallH: number; cap?: boolean }) {
-  const n = Math.max(1, Math.round(r.d / 2.2));
-  const len = r.d / n;
-  const wallX = doors === 'E' ? r.x + r.w : r.x;
-  const out = doors === 'E' ? 1 : -1; // towards the lobby
+/** Lift shafts in a row, a car in each. Where the lifts stop on this floor, `doors` names the
+ *  wall their steel doors are in (with a frame and a call button), and the cars line up along
+ *  it; elsewhere they line up along the long side. */
+export function Lifts({ r, doors, wallH, cap }: { r: Rect; doors?: Side; wallH: number; cap?: boolean }) {
+  const alongX = doors ? doors === 'N' || doors === 'S' : r.w > r.d;
+  const len = alongX ? r.w : r.d;
+  const n = Math.max(1, Math.round(len / 1.9));
+  const step = len / n;
+  // the door wall's line, and which way is out of the shaft (towards the lobby)
+  const wall = doors === 'E' ? r.x + r.w : doors === 'W' ? r.x : doors === 'S' ? r.z + r.d : r.z;
+  const out = doors === 'E' || doors === 'S' ? 1 : -1;
+  /** A piece along the door wall: a0..a1 along it, o0..o1 out from it. */
+  const piece = (a0: number, a1: number, o0: number, o1: number): Rect => {
+    const [c0, c1] = [wall + out * o0, wall + out * o1].sort((p, q) => p - q);
+    return alongX ? { x: a0, w: a1 - a0, z: c0, d: c1 - c0 } : { x: c0, w: c1 - c0, z: a0, d: a1 - a0 };
+  };
   return (
     <>
       {Array.from({ length: n }, (_, i) => {
-        const shaft: Rect = { x: r.x, z: r.z + i * len, w: r.w, d: len };
-        const car: Rect = { x: r.x + 0.2, z: shaft.z + 0.2, w: r.w - 0.4, d: len - 0.4 };
-        const zc = shaft.z + len / 2;
+        const a = (alongX ? r.x : r.z) + i * step;
+        const shaft: Rect = alongX ? { x: a, z: r.z, w: step, d: r.d } : { x: r.x, z: a, w: r.w, d: step };
+        const car: Rect = { x: shaft.x + 0.2, z: shaft.z + 0.2, w: shaft.w - 0.4, d: shaft.d - 0.4 };
+        const c = a + step / 2;
+        const g = Math.min(1.1, step - 0.4); // door opening
         return (
           <group key={i}>
-            <Walls r={shaft} h={wallH} t={0.2} color={SHAFT} cap={cap} door={doors && { side: doors, at: zc, w: 1.1 }} />
+            <Walls r={shaft} h={wallH} t={0.2} color={SHAFT} cap={cap} door={doors && { side: doors, at: c, w: g }} />
             <Box r={car} h={0.04} color="#C9CED3" />
-            <Walls r={car} h={2.2} t={0.05} color="#DDE2E7" door={doors && { side: doors, at: zc, w: car.d - 0.02 }} />
+            <Walls r={car} h={2.2} t={0.05} color="#DDE2E7" door={doors && { side: doors, at: c, w: step - 0.42 }} />
             {doors && (
               <>
                 {/* closed doors, two leaves, in a dark frame */}
-                {[zc - 0.46, zc + 0.01].map((z) => (
-                  <Box key={z} r={{ x: wallX - 0.04, z, w: 0.08, d: 0.45 }} h={2.1} color={STEEL} />
-                ))}
-                {[zc - 0.55, zc + 0.46].map((z) => (
-                  <Box key={z} r={{ x: wallX - 0.08, z, w: 0.16, d: 0.09 }} h={2.25} color={DARK} />
-                ))}
-                <Box r={{ x: wallX - 0.08, z: zc - 0.55, w: 0.16, d: 1.1 }} y={2.15} h={0.1} color={DARK} />
-                <Box r={{ x: wallX + out * 0.12 - 0.02, z: zc + 0.7, w: 0.04, d: 0.1 }} y={1.0} h={0.18} color={DARK} />
+                <Box r={piece(c - g / 2 + 0.05, c - 0.01, -0.04, 0.04)} h={2.1} color={STEEL} />
+                <Box r={piece(c + 0.01, c + g / 2 - 0.05, -0.04, 0.04)} h={2.1} color={STEEL} />
+                <Box r={piece(c - g / 2 - 0.09, c - g / 2, -0.08, 0.08)} h={2.25} color={DARK} />
+                <Box r={piece(c + g / 2, c + g / 2 + 0.09, -0.08, 0.08)} h={2.25} color={DARK} />
+                <Box r={piece(c - g / 2 - 0.09, c + g / 2 + 0.09, -0.08, 0.08)} y={2.15} h={0.1} color={DARK} />
+                <Box r={piece(c + g / 2 + 0.12, c + g / 2 + 0.22, 0.1, 0.14)} y={1.0} h={0.18} color={DARK} />
               </>
             )}
           </group>

@@ -1,4 +1,4 @@
-# Merges the per-block models (public/models/blocks/*.glb, from build-model.py or edited by hand)
+# Merges the per-block models (public/models/blocks/{A,B,C,D,site}.glb, from build-model.py or edited by hand)
 # into public/models/complex.glb, the single file the 3D viewer loads.
 #
 #   blender --background --python scripts/merge-blocks.py -- public/models/blocks public/models/complex.glb
@@ -6,16 +6,21 @@
 # Blocks must share the site-plan coordinate frame (no re-centring when exporting a block) and be
 # exported with the same glTF settings used below. A block edited by hand in Blender: import its
 # GLB, edit, export it back to the same file with "Selected objects" and Y-up, then run this script.
-import bpy, glob, os, re, sys
+import bpy, os, re, sys
 
 ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
 SRC_DIR = ARGS[0] if len(ARGS) > 0 else "public/models/blocks"
 OUT_GLB = ARGS[1] if len(ARGS) > 1 else "public/models/complex.glb"
 
+# Only the blocks build-model.py writes; other models kept in the folder (environment.glb) are not
+# part of the complex.
+BLOCKS = ("A", "B", "C", "D", "site")
+
 bpy.ops.wm.read_factory_settings(use_empty=True)
-files = sorted(glob.glob(os.path.join(SRC_DIR, "*.glb")))
-if not files:
-    sys.exit(f"No .glb files in {SRC_DIR}")
+files = [os.path.join(SRC_DIR, k + ".glb") for k in BLOCKS]
+missing = [f for f in files if not os.path.exists(f)]
+if missing:
+    sys.exit(f"Missing block files: {', '.join(missing)}")
 for f in files:
     bpy.ops.import_scene.gltf(filepath=f)
     print("Imported", os.path.basename(f))

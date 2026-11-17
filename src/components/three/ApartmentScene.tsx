@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import { BackSide, Euler, MathUtils, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
 import type { Finish, Layout } from '@/data/types';
-import { doorLinks, roomEye } from '@/lib/geometry';
+import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 
@@ -70,10 +70,11 @@ function OrbitRig({ layout }: { layout: Layout }) {
 const EYE_HEIGHT = 1.6;
 
 /** Inside view: the camera stands in a room and only turns. Drag to look, wheel to zoom. */
-function TourRig({ eye }: { eye: [number, number] }) {
+function TourRig({ eye, look }: { eye: [number, number]; look: [number, number] | null }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const dom = useThree((s) => s.gl.domElement);
-  const yaw = useRef(Math.PI); // start facing the windows
+  // Start facing the room's window.
+  const yaw = useRef(look ? Math.atan2(-(look[0] - eye[0]), -(look[1] - eye[1])) : Math.PI);
   const pitch = useRef(0);
   const fov = useRef(75);
   const prev = useRef<[number, number] | null>(null);
@@ -168,11 +169,23 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
   const room = layout.rooms.find((r) => r.id === roomId) ?? layout.rooms[0];
   const eye = useMemo(() => roomEye(room), [room]);
   const links = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
+  // The middle of the room's widest window, for the first view of the tour.
+  const look = useMemo<[number, number] | null>(() => {
+    let best: [number, number] | null = null;
+    let widest = 0;
+    for (const edge of roomEdges(room, layout.openings))
+      for (const seg of edge.segments)
+        if (seg.kind === 'window' && seg.to - seg.from > widest) {
+          widest = seg.to - seg.from;
+          best = edge.at((seg.from + seg.to) / 2);
+        }
+    return best;
+  }, [layout, room]);
   const photo = mode === 'tour' ? room.panorama : undefined;
   const anchors = useMemo<Anchor[]>(
     () =>
       mode === 'model'
-        ? layout.rooms.map((r) => ({ id: `room:${r.id}`, position: [r.x + r.w / 2, 1.2, r.z + r.d / 2] }))
+        ? layout.rooms.filter((r) => !r.partOf).map((r) => ({ id: `room:${r.id}`, position: [r.x + r.w / 2, 1.2, r.z + r.d / 2] }))
         : links.map((l) => ({ id: `door:${l.to.id}`, position: [l.opening.x, 1.15, l.opening.z] })),
     [mode, layout, links],
   );
@@ -205,7 +218,7 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
           </mesh>
         </>
       ) : (
-        <TourRig eye={eye} />
+        <TourRig eye={eye} look={look} />
       )}
       <Projector anchors={anchors} layer={layer} />
     </Canvas>

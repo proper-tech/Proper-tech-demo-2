@@ -1,30 +1,33 @@
 import type { Pt } from '@/lib/geometry';
-import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PLATE, PODIUM_HEIGHT, coreOf, siteTower, towerPlate, type Rect } from './building';
+import { FLOOR_HEIGHT, FLOOR_MAX, floorLevel, siteTower, towerPlate, type Rect } from './building';
 import { towerOutline, type PodiumFloor, type PodiumSpace } from './podium';
 import type { TowerId } from './types';
 
 // The technical floor on each tower's roof, from the architect's roof plan ("Техникийн давхрын
 // байгуулалт"): a block on grid lines X4-X5 and Y4-Y2 of tower C (X5-X6, Y12-Y10 on tower B)
 // holding stair 117 (113 on B) and two technical rooms round the lift shafts; the rest of the roof
-// is open. The plan is traced for tower C in floor-plate metres (see PLATE); tower B's is the
-// mirror image, like the rest of its core. Areas are the room schedule's.
+// is open. Traced for tower C in metres x east from grid X2, z south from grid Y4; tower B's is
+// the mirror image on the roof plan (its stair on the east). Areas are the room schedule's.
 // The page and the building treat it as floor 17 of each tower.
 
 export const ROOF_FLOOR = FLOOR_MAX + 1;
 /** Roof of the 16th floor, and the technical floor's height (sections). */
-const TOP = PODIUM_HEIGHT + (FLOOR_MAX - FLOOR_MIN + 1) * FLOOR_HEIGHT;
+const TOP = floorLevel(ROOF_FLOOR);
 export const TECH_HEIGHT = 4.0;
+/** The plan is symmetrical about the middle of the grid, half way between X4 and X5. */
+const AXIS = 10.8;
 
-const C = coreOf('C');
 /** Outside of the block's walls, which stand on the grid lines. Keep in step with build_tower()
  *  in scripts/build-model.py. */
 const BLOCK: Rect = { x: 6.95, z: -0.25, w: 7.7, d: 14.3 };
+const STAIR: Rect = { x: 7.2, z: 0, w: 2.7, d: 7.2 };
+const LIFTS: Rect = { x: 9.9, z: 0, w: 2.4, d: 4.5 };
 
 /** Floor-plate point of tower C's plan -> site plan, mirrored for tower B. */
 function toSite(tower: TowerId) {
   const t = siteTower(tower);
   const [gx, gy] = [t.u0 + 0.5, t.v1 - 0.5]; // grid crossing at the plate's north-west corner
-  const pt = ([x, z]: Pt): Pt => [gx + (tower === 'B' ? 2 * PLATE.axis - x : x), gy - z];
+  const pt = ([x, z]: Pt): Pt => [gx + (tower === 'B' ? 2 * AXIS - x : x), gy - z];
   const rect = (r: Rect): Pt[] => ([[r.x, r.z], [r.x + r.w, r.z], [r.x + r.w, r.z + r.d], [r.x, r.z + r.d]] as Pt[]).map(pt);
   return { pt, rect };
 }
@@ -35,13 +38,13 @@ export const techBlock = (tower: TowerId) => toSite(tower).rect(BLOCK);
 function roofFloor(tower: TowerId): PodiumFloor {
   const { pt, rect } = toSite(tower);
   const [stairs, small, big] = tower === 'B' ? ['113', '114', '115'] : ['117', '116', '118'];
-  const { x: lx, w: lw, d: ld } = C.lifts;
+  const { x: lx, w: lw, d: ld } = LIFTS;
   const roof = towerOutline(towerPlate(tower));
   const spaces: PodiumSpace[] = [
     { id: 'roof', type: 'roof', outline: roof },
     // the stair comes up from floor 16 and goes on up, with a door out onto the roof
-    { id: stairs, no: stairs, type: 'stairs', area: 18.1, door: tower === 'B' ? 'E' : 'W', flip: tower === 'B', outline: rect(C.stairs) },
-    { id: 'lifts', type: 'lifts', outline: rect(C.lifts) },
+    { id: stairs, no: stairs, type: 'stairs', area: 18.1, door: tower === 'B' ? 'E' : 'W', flip: tower === 'B', outline: rect(STAIR) },
+    { id: 'lifts', type: 'lifts', outline: rect(LIFTS) },
     {
       id: small, no: small, type: 'technical', area: 20.5,
       outline: ([[lx, ld], [lx + lw, ld], [lx + lw, 0], [14.4, 0], [14.4, 7.2], [lx, 7.2]] as Pt[]).map(pt),

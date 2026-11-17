@@ -307,6 +307,32 @@ button {
   align-items: start;
 }
 
+/* Key figures from the architect's capacity table */
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+  margin: 1.5rem 0 0;
+}
+
+.facts div {
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+.facts dt {
+  color: var(--stone);
+  font-size: 0.8125rem;
+}
+
+.facts dd {
+  margin: 0.1rem 0 0;
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .site-svg {
   width: 100%;
   max-width: 44rem;
@@ -1156,8 +1182,37 @@ button {
   fill: #dde2e7;
 }
 
+/* Floor plan: slab, column grid and the lift and stair core */
+
+.plan-slab {
+  fill: #eef1f4;
+  stroke: #9aa6b3;
+  stroke-width: 0.08;
+}
+
+.plan-grid {
+  stroke: #b6c0ca;
+  stroke-width: 0.04;
+  stroke-dasharray: 0.6 0.2 0.1 0.2;
+}
+
 .plan-core {
-  fill: #b4bec9;
+  fill: #c9d0d8;
+  stroke: #8a95a3;
+  stroke-width: 0.06;
+}
+
+.plan-balcony {
+  fill: #f3f6ee;
+}
+
+.plan-north path {
+  fill: var(--ink);
+}
+
+.plan-north text {
+  font-size: 0.3px;
+  font-weight: 600;
 }
 
 .plan-svg text {

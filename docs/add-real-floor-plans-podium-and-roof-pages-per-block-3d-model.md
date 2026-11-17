@@ -1,10 +1,15 @@
 # Add real floor plans, podium and roof pages, per-block 3D model
 
-This commit replaces the mock apartment floors with the architect's typical floor plan for towers
-B and C. It adds floor pages for the podium (block A, floors 1–4) and for each tower's roof. It
-splits the 3D model into one file per block, so blocks can be worked on separately and merged.
-Everything is traced from the drawings in hand: the site DWG, sections, elevations, podium plans,
-the typical floor plan of B/C and the roof plan.
+This adds floor pages for the podium (block A, floors 1–4) and for each tower's roof, splits the
+3D model into one file per block so blocks can be worked on separately and merged, and models the
+stairs, lifts and escalators. Everything is traced from the drawings in hand: the site DWG,
+sections, elevations, podium plans and the roof plan.
+
+**Merged with `main`.** `main` meanwhile got the real apartment floors for towers B and C, built
+from the full schematic design (sheets 17–20): 155 apartments, the homeowners' association room on
+floor 4 of block B, the capacity figures, unit numbers like `B1203`. Where this branch had traced
+the same flats from two screenshots, `main`'s version was kept and this branch's additions were
+ported on top of it; the apartment section below says what is whose.
 
 ## Block key
 
@@ -30,30 +35,29 @@ The towers were called A/B before; they are now B/C to match the drawings.
   - the glazed volume on X1–X2;
   - the external steel stair;
   - the roof playground.
-- **Towers B and C** are now 25.4 × 21.6 m from floor 4 up, overhanging the podium as the typical
-  floor plan and section 1-1 show. The site DWG's 22.6 × 22.0 m rectangle is the podium under
-  each tower and is still used for that. The offset lives in `towerPlate()` (`building.ts`) and
-  `plate()` (`build-model.py`); keep the two in step.
+- **Towers B and C** are now 25.7 × 21.4 m from floor 4 up (`PLATE` in `building.ts`, from `main`'s
+  traced floor plate), overhanging the podium as the typical floor plan and section 1-1 show. The
+  site DWG's 22.6 × 22.0 m rectangle is the podium under each tower and is still used for that. The
+  offset lives in `towerPlate()` (`building.ts`) and `plate()` (`build-model.py`); keep the two in
+  step.
 - **Technical floor** on each tower roof: walls on grid lines X4–X5 / Y4–Y2 (tower C) and
   X5–X6 / Y12–Y10 (tower B), from +50.7 to +54.7 m.
 
-### Apartment floors, towers B and C (`src/data/layouts.ts`, `building.ts`)
+### Apartment floors, towers B and C
 
-- **Flats:** six per floor, A–F, traced from the typical floor plan. D, E and F are mirror images
-  of C, B and A.
-- **Areas** come from the room schedule: A/F 67.9 m², B/E 50.3 m², C/D 85.1 m². Rooms are
-  rectangles accurate to about 0.2 m.
-- **Core:** stair 602, two lifts and corridor 601. Tower B's core is mirrored (stair to the
-  east), as its roof plan shows.
-- **Apartment IDs** are tower + floor + letter, e.g. `C12D`.
-- **Availability:** every apartment is for sale (placeholder until a sales list is connected).
-- **Floor page:**
-  - Flats are furnished, and each flat's floor is painted its own colour.
-  - The same colour is used on the tag, the list entry and the 2D plan.
-  - Tags stay inside the frame; on phones they show the ID only.
-- **Apartment page:** shows the schedule areas. The traced room sizes and ceiling heights are
-  gone, since the drawings don't give them. The 3D view and 2D plan now have north at the top.
-- **Home page:** the layouts table lists the six flats, with area and position.
+The apartment data (`layouts.ts`, `building.ts`, `types.ts`, the apartment and home pages, the 2D
+floor plan) is `main`'s: six plans A–F, areas from the room schedule, L-shaped rooms as joined
+rectangles, 155 apartments, unit numbers like `B1203`. On top of it this branch adds:
+
+- **Floor page:** each plan's floor is painted its own colour in the 3D view (furniture and walls
+  stay as on the apartment page). The same colour is on the tag, the list entry and the 2D plan
+  (`flatColors` in `layouts.ts`). Tags stay inside the frame, and on phones show the ID only. The
+  camera starts looking down steeply and steps back on narrow screens.
+- **Stair and lifts:** the stair and lifts in the core are modelled (`three/Cores.tsx`) in place of
+  grey boxes, fitted into `main`'s core rectangles; the stair's flight down opens a hole in the slab.
+- **Availability:** every apartment is for sale. `main`'s placeholder mix of sold and reserved was
+  removed on request; `status` in `building.ts` is the one place to connect a sales list.
+- **Roof link:** "Floor above" on floor 16 goes to the roof page.
 
 ### Podium floors, block A (`src/data/podium.ts`, `PodiumFloorExperience`, `three/PodiumScene`)
 
@@ -91,31 +95,35 @@ $B --background --python scripts/merge-blocks.py -- public/models/blocks public/
 ```
 
 A single block can be rebuilt or edited by hand in Blender, as long as it's exported with the same
-settings. Re-run the merge afterwards.
+settings. Re-run the merge afterwards. The merge reads only `A`, `B`, `C`, `D` and `site`;
+`environment.glb`, which `main` added to the same folder, is not merged into the complex.
 
 ## To confirm with the architect
 
 These are guesses where the drawings are silent:
 
-- Floor 4 of B and C uses the typical plan (drawn for floors 5–16).
-- Tower B's flats keep the same letters by position (A = north-west); only its core is mirrored.
+- Tower B's stair and lifts are drawn mirrored on its roof plan, but `main`'s apartment floor
+  uses one core for both towers. The stair and lifts follow `main`'s core; only the roof stair is
+  mirrored on tower B.
 - Door positions of the podium stairs, and of the stair onto the roof; the roof stair continuing
   up (tower B's plan marks it "UP").
 - The tower lifts open only on floor 1 of the podium, where their lobbies are.
 - Which way the escalators run.
 - The floor-1 fit-out: the plans show almost no furniture, so this is a plausible layout.
 - Store 109 and the corridor beside it overlap by about 1.7 m in the traced podium plan.
-- The 2.7 m room height used to draw apartments (only 3.0 m floor to floor is given).
+- Which side of the stair and lifts the doors open on in `main`'s core: east for the stair, south
+  for the lifts, both onto the lift lobby.
 
 ## Checked
 
-- The type check and the production build pass. The build generates 570 pages: every
-  apartment, floor, podium floor and roof, in all three languages.
-- The floor pages, apartment pages, podium floors 1–4 and both roofs were checked in the browser
-  on desktop, and the floor page on phone width too.
-- A script checked the traced floor: no overlapping rooms; every door joins two rooms; every room
-  can be reached from the front door; every front door opens onto corridor 601; schedule areas add
-  up per flat.
+- The type check and the production build pass. The build generates 567 pages: 155 apartments,
+  every floor, podium floor and roof, in all three languages.
+- After the merge with `main`, checked in the browser: floors 4 and 11 of the towers (including
+  block B's floor 4 with the association room), an apartment page, the home page with the new
+  facts and layouts table, podium floor 1 and both roofs.
+- Before the merge, the floor pages were also checked at phone width, and a script checked the
+  traced floor (rooms, doors, reachability, areas). That script was for this branch's own tracing,
+  which `main`'s data replaced.
 
 ## Not in this commit
 

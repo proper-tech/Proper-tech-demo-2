@@ -525,11 +525,11 @@ def build_podium():
 # ---------------------------------------------------------------- towers
 def plate(rect):
     """The apartment floors (4-16), which overhang the podium. rect is the site plan's tower
-    rectangle, the grid plus 0.5 m, which is the podium under the tower; on the typical floor plan
-    and section 1-1 the outer walls stand about 1.9 m beyond the end grid lines east and west and
-    0.3 m north and south. Keep in step with towerPlate() in src/data/building.ts."""
+    rectangle, the grid plus 0.5 m, which is the podium under the tower. The floor slab (PLATE in
+    src/data/building.ts) runs 2.05 m past the end grid lines east and west, 0.15 m past the south
+    one and 0.2 m past the north one. Keep in step with towerPlate() in src/data/building.ts."""
     x0, y0, x1, y1 = rect
-    return x0 - 1.4, y0 + 0.2, x1 + 1.4, y1 - 0.2
+    return x0 - 1.55, y0 + 0.35, x1 + 1.55, y1 - 0.3
 
 
 def build_tower(name, rect):
@@ -561,7 +561,7 @@ def build_tower(name, rect):
             d = (c - a).normalized() * 0.04
             b.fquad(p - d, p + d, PODIUM_HEIGHT, TOP, 0.03, "joint")
     crown = [(cx + (p[0] - cx) * 1.045, cy + (p[1] - cy) * 1.045) for p in fp]
-    b.prism(crown, TOP, TOP + 1.5, "white", "roof")
+    b.prism(crown, TOP, TOP + 1.2, "white", "roof")                 # parapet round the roof
     # technical floor over the lift and stair core (roof plan and section 1-1): its walls stand on
     # the tower's grid lines X4-X5 and Y4-Y2 (X5-X6, Y12-Y10 for tower B), so the block is flush
     # with the north facade and the same on both towers. Same as BLOCK in src/data/roof.ts.

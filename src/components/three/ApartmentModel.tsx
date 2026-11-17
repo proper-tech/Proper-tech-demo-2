@@ -52,6 +52,8 @@ function WallEdge({ edge, H, wall, mats }: { edge: Edge; H: number; wall: Materi
         const w = seg.to - seg.from;
         const x = (seg.from + seg.to) / 2;
         switch (seg.kind) {
+          case 'open':
+            return null;
           case 'solid':
             return <Panel key={i} x={x} y0={0} y1={H} w={w} mat={wall} />;
           case 'opening':
@@ -85,7 +87,11 @@ function WallEdge({ edge, H, wall, mats }: { edge: Edge; H: number; wall: Materi
         }
       })}
       {/* Dark line along the top of the wall: the "cut" outline seen from above. */}
-      <Bar p={[edge.length / 2, H + 0.05, 0.03]} s={[edge.length, 0.04, 0.06]} mat={mats.cap} />
+      {edge.segments
+        .filter((seg) => seg.kind !== 'open')
+        .map((seg, i) => (
+          <Bar key={`cap${i}`} p={[(seg.from + seg.to) / 2, H + 0.05, 0.03]} s={[seg.to - seg.from, 0.04, 0.06]} mat={mats.cap} />
+        ))}
     </group>
   );
 }
@@ -99,6 +105,7 @@ function RoomFloor({
 }: {
   room: Room;
   color: string;
+  /** Flat paint instead of wood or tiles. */
   plain?: boolean;
   selected: boolean;
   onSelect?: (id: string) => void;
@@ -177,7 +184,7 @@ export function ApartmentModel({ layout, finish, muted, floorColor, selectedRoom
             room={room}
             color={floorColor ?? (room.wet && !muted ? '#DCE3E6' : finish.floor)}
             plain={!!floorColor}
-            selected={selectedRoom === room.id}
+            selected={selectedRoom === (room.partOf ?? room.id)}
             onSelect={onSelectRoom}
           />
           <mesh position={[room.x + room.w / 2, room.h, room.z + room.d / 2]} rotation={[Math.PI / 2, 0, 0]} material={mats.ceiling}>

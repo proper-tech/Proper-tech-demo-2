@@ -35,17 +35,20 @@ export function SitePlan({ t }: { t: Dict }) {
       <path className="site-podium" d={d(site.podium, true)} />
       <path className="site-annex" d={d(site.annex, true)} />
       {/* the towers as seen from above: their apartment floors overhang the podium */}
-      {towers.map((id) => [id, towerPlate(id)] as const).map(([id, tw]) => (
-        <g key={id}>
+      {towers.map((tower) => {
+        const tw = towerPlate(tower);
+        return (
+        <g key={tower}>
           <rect className="site-tower" x={tw.u0} y={-tw.v1} width={tw.u1 - tw.u0} height={tw.v1 - tw.v0} />
           <text className="site-title" x={(tw.u0 + tw.u1) / 2} y={-(tw.v0 + tw.v1) / 2}>
-            {fmt(t.home.towerN, { t: id })}
+            {fmt(t.home.towerN, { t: tower })}
           </text>
           <text className="site-note" x={(tw.u0 + tw.u1) / 2} y={-(tw.v0 + tw.v1) / 2 + 3}>
-            {(tw.u1 - tw.u0).toFixed(1)} × {(tw.v1 - tw.v0).toFixed(1)} m
+            {t.home.siteTowerNote}
           </text>
         </g>
-      ))}
+        );
+      })}
       {site.trees.map(([u, v], i) => (
         <circle key={i} className="site-tree" cx={u} cy={-v} r={0.9} />
       ))}

@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
 import { VideoSection } from '@/components/VideoSection';
 import { SitePlan } from '@/components/SitePlan';
-import { FLOOR_MAX, FLOOR_MIN, availableUnits, towerFootprint, units } from '@/data/building';
-import site from '@/data/site.json';
-import { layouts } from '@/data/layouts';
+import { FLOOR_MAX, FLOOR_MIN, availableUnits, capacity, units } from '@/data/building';
+import { apartmentTypes, layouts } from '@/data/layouts';
 import { fmt, getDict } from '@/i18n/config';
-import { m } from '@/lib/geometry';
+import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
 const renders = [
   ['aerial-front', 'aerialFront'],
@@ -17,8 +16,6 @@ const renders = [
   ['annex', 'annex'],
 ] as const;
 
-const span = (i: number) => Math.round(Math.max(...site.boundary.map((p) => p[i])) - Math.min(...site.boundary.map((p) => p[i])));
-const siteSize = [span(0), span(1)];
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -47,7 +44,22 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="site" id="site">
         <div>
           <h2>{t.home.siteHeading}</h2>
-          <p className="lead">{fmt(t.home.siteLead, { w: towerFootprint.w.toFixed(1), d: towerFootprint.d.toFixed(1), sw: siteSize[0], sd: siteSize[1] })}</p>
+          <p className="lead">{t.home.siteLead}</p>
+          <dl className="facts">
+            {(
+              [
+                [t.home.factApartments, String(capacity.apartments)],
+                [t.home.factPublic, `${capacity.publicArea.toLocaleString('en-US')} m²`],
+                [t.home.factFootprint, `${capacity.footprint.toLocaleString('en-US')} m²`],
+                [t.home.factParking, fmt(t.home.factParkingValue, { heated: capacity.heatedParking, outdoor: capacity.outdoorParking })],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
         <SitePlan t={t} />
       </section>
@@ -61,28 +73,32 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <tr>
               <th>{t.home.colLayout}</th>
               <th>{t.home.colArea}</th>
-              <th>{t.home.colFacing}</th>
+              <th>{t.home.colCeiling}</th>
               <th>{t.home.colForSale}</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {Object.values(layouts).map((layout) => {
-              const id = layout.id;
-              const forSale = availableUnits.filter((u) => u.layout === id);
+            {apartmentTypes.map(({ plans, layout: id }) => {
+              const layout = layouts[id];
+              const forSale = availableUnits.filter((u) => plans.includes(u.plan));
+              const example = forSale.find((u) => u.layout === id) ?? forSale[0];
               return (
                 <tr key={id}>
                   <th scope="row">
-                    <b>{t.beds[layout.bedrooms as 1 | 2 | 3]}</b>
-                    <span>{fmt(t.home.layoutN, { id })}</span>
+                    <b>
+                      {t.beds[layout.bedrooms as 1 | 2 | 3]}
+                      {layout.bathrooms > 1 ? `, ${t.baths[2]}` : ''}
+                    </b>
+                    <span>{fmt(t.home.layoutN, { a: plans[0], b: plans[1] })}</span>
                   </th>
-                  <td>{m(layout.area)} m²</td>
-                  <td>{t.facing[layout.facing]}</td>
+                  <td>{m(layoutArea(layout))} m²</td>
+                  <td>{fmt(t.home.ceilingUpTo, { h: m(maxCeiling(layout)) })}</td>
                   <td>{forSale.length}</td>
                   <td>
-                    {forSale[0] && (
-                      <Link className="button" href={`/${locale}/apartments/${forSale[0].id}`}>
-                        {fmt(t.home.viewOne, { id: forSale[0].id })}
+                    {example && (
+                      <Link className="button" href={`/${locale}/apartments/${example.id}`}>
+                        {fmt(t.home.viewOne, { id: example.id })}
                       </Link>
                     )}
                   </td>
