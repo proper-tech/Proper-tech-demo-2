@@ -7,15 +7,19 @@ export type RoomType =
   | 'hall'
   | 'corridor'
   | 'storage'
-  | 'closet';
+  | 'closet'
+  | 'balcony';
 
 /** A rectangular room. All measurements are in metres, in the apartment's own coordinates:
- *  x runs along the facade, z runs from the entrance wall (z = 0) to the window wall. */
+ *  x runs east, z runs south (north is at the top of every plan). */
 export interface Room {
   id: string;
   type: RoomType;
   /** Number shown after the name when a layout has several rooms of one type ("Bedroom 2"). */
   n?: number;
+  /** Area from the architect's room schedule. Left out on the pieces an L-shaped room is cut
+   *  into (the kitchen end of a living room, say): their area is counted in that room's. */
+  area?: number;
   x: number;
   z: number;
   w: number;
@@ -61,7 +65,13 @@ export type FurnitureType =
   | 'vanity'
   | 'plant'
   | 'shelf'
-  | 'shoeCabinet';
+  | 'shoeCabinet'
+  // shops and service rooms on the podium
+  | 'gondola'
+  | 'checkout'
+  | 'chiller'
+  | 'rack'
+  | 'bench';
 
 export interface FurnitureItem {
   type: FurnitureType;
@@ -74,11 +84,20 @@ export interface FurnitureItem {
   w?: number;
 }
 
-export type LayoutId = 'A' | 'B' | 'C';
+/** The six apartments of a tower floor, lettered as on the architect's plan. */
+export type LayoutId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+
+/** Which sides the windows face. */
+export type Facing = 'NW' | 'W' | 'SW' | 'SE' | 'E' | 'NE';
 
 export interface Layout {
   id: LayoutId;
   bedrooms: number;
+  /** Total from the room schedule. */
+  area: number;
+  facing: Facing;
+  /** Where the apartment's (0, 0) sits on the floor plate (see PLATE in building.ts). */
+  at: [number, number];
   w: number;
   d: number;
   rooms: Room[];
@@ -86,7 +105,9 @@ export interface Layout {
   furniture: FurnitureItem[];
 }
 
-export type TowerId = 'A' | 'B';
+export type TowerId = 'B' | 'C';
+/** A block in the architect's key: A the podium, B and C the apartment towers. */
+export type BlockId = 'A' | TowerId;
 
 export type UnitStatus = 'available' | 'reserved' | 'sold';
 
@@ -94,13 +115,8 @@ export interface Unit {
   id: string;
   tower: TowerId;
   floor: number;
-  pos: 1 | 2 | 3 | 4;
   layout: LayoutId;
   status: UnitStatus;
-  /** Which side of the building the windows face. */
-  side: 'N' | 'S';
-  /** Left edge of the apartment on the floor plate. */
-  x0: number;
 }
 
 export interface Finish {

@@ -9,7 +9,7 @@ import { layouts } from '@/data/layouts';
 import type { Finish, Unit } from '@/data/types';
 import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
-import { doorLinks, layoutArea, m, roomArea } from '@/lib/geometry';
+import { doorLinks, m } from '@/lib/geometry';
 import { ApartmentPlan } from './Plan2D';
 import type { RoomLabel } from './three/ApartmentScene';
 
@@ -35,7 +35,8 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
 
   const labels = useMemo(() => {
     const out: Record<string, RoomLabel> = {};
-    for (const r of layout.rooms) out[r.id] = { name: roomName(t, r), area: `${m(roomArea(r))} m²` };
+    // rooms without a schedule area are part of another room (the kitchen end of the living room)
+    for (const r of layout.rooms) out[r.id] = { name: roomName(t, r), area: r.area !== undefined ? `${m(r.area)} m²` : '' };
     return out;
   }, [layout, t]);
   const names = useMemo(() => Object.fromEntries(Object.entries(labels).map(([id, l]) => [id, l.name])), [labels]);
@@ -76,7 +77,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               : layout.rooms.map((r) => (
                   <div key={r.id} className={`room-tag${r.id === room.id ? ' is-selected' : ''}`} data-anchor={`room:${r.id}`}>
                     <b>{labels[r.id].name}</b>
-                    <span>{labels[r.id].area}</span>
+                    {labels[r.id].area && <span>{labels[r.id].area}</span>}
                   </div>
                 ))}
           </div>
@@ -93,7 +94,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </Link>
           <h1>{fmt(t.apt.title, { id: unit.id })}</h1>
           <p>
-            {t.beds[layout.bedrooms as 1 | 2 | 3]}, {m(layoutArea(layout))} m²
+            {t.beds[layout.bedrooms as 1 | 2 | 3]}, {m(layout.area)} m²
             <span className={`status status-${unit.status}`}>{t.status[unit.status]}</span>
           </p>
           <div className="segmented" role="group">
@@ -109,7 +110,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           <div className="tour-bar">
             <p className="tour-room">
               <b>{labels[room.id].name}</b>
-              {m(room.w)} × {m(room.d)} m, {labels[room.id].area}, {t.apt.colCeiling.toLowerCase()} {m(room.h)} m
+              {labels[room.id].area}
             </p>
             <div className="tour-rooms">
               {layout.rooms.map((r) => (
@@ -130,9 +131,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             <thead>
               <tr>
                 <th>{t.apt.colRoom}</th>
-                <th>{t.apt.colSize}</th>
                 <th>{t.apt.colArea}</th>
-                <th>{t.apt.colCeiling}</th>
               </tr>
             </thead>
             <tbody>
@@ -143,20 +142,14 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
                       {labels[r.id].name}
                     </button>
                   </th>
-                  <td>
-                    {m(r.w)} × {m(r.d)} m
-                  </td>
-                  <td>{m(roomArea(r))} m²</td>
-                  <td>{m(r.h)} m</td>
+                  <td>{labels[r.id].area}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <th scope="row">{t.apt.total}</th>
-                <td />
-                <td>{m(layoutArea(layout))} m²</td>
-                <td />
+                <td>{m(layout.area)} m²</td>
               </tr>
             </tfoot>
           </table>

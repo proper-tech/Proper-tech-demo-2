@@ -5,9 +5,8 @@ import { SitePlan } from '@/components/SitePlan';
 import { FLOOR_MAX, FLOOR_MIN, availableUnits, towerFootprint, units } from '@/data/building';
 import site from '@/data/site.json';
 import { layouts } from '@/data/layouts';
-import type { LayoutId } from '@/data/types';
 import { fmt, getDict } from '@/i18n/config';
-import { layoutArea, m, maxCeiling } from '@/lib/geometry';
+import { m } from '@/lib/geometry';
 
 const renders = [
   ['aerial-front', 'aerialFront'],
@@ -62,14 +61,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <tr>
               <th>{t.home.colLayout}</th>
               <th>{t.home.colArea}</th>
-              <th>{t.home.colCeiling}</th>
+              <th>{t.home.colFacing}</th>
               <th>{t.home.colForSale}</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {(['A', 'B', 'C'] as LayoutId[]).map((id) => {
-              const layout = layouts[id];
+            {Object.values(layouts).map((layout) => {
+              const id = layout.id;
               const forSale = availableUnits.filter((u) => u.layout === id);
               return (
                 <tr key={id}>
@@ -77,8 +76,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                     <b>{t.beds[layout.bedrooms as 1 | 2 | 3]}</b>
                     <span>{fmt(t.home.layoutN, { id })}</span>
                   </th>
-                  <td>{m(layoutArea(layout))} m²</td>
-                  <td>{fmt(t.home.ceilingUpTo, { h: m(maxCeiling(layout)) })}</td>
+                  <td>{m(layout.area)} m²</td>
+                  <td>{t.facing[layout.facing]}</td>
                   <td>{forSale.length}</td>
                   <td>
                     {forSale[0] && (

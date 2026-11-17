@@ -1,17 +1,23 @@
-# Builds public/models/complex.glb for the site's 3D viewer from the architect's site plan.
+# Builds the 3D model of the complex, one GLB per block, from the architect's site plan:
+#   A.glb  podium (floors 1-3 under the whole complex) + roof playground + media screen
+#   B.glb  north tower (floors 4-16, on the main road)     C.glb  south tower (floors 4-16)
+#   D.glb  annex                                            site.glb  parked cars
 #
-#   blender --background --python scripts/build-model.py -- src/data/site.json public/models/complex.glb
-#   (or: pip install bpy; python3 scripts/build-model.py src/data/site.json public/models/complex.glb)
+#   blender --background --python scripts/build-model.py -- src/data/site.json public/models/blocks
+#   then merge them into the single file the viewer loads (see scripts/merge-blocks.py):
+#   blender --background --python scripts/merge-blocks.py -- public/models/blocks public/models/complex.glb
 #
-# Footprints come from site.json, so the model sits exactly on the site plan drawn by
-# three/BuildingScene.tsx (scene x = u, scene z = -v). Heights must match src/data/building.ts.
+# Every block is exported with the same settings in the same coordinate frame, so blocks can be
+# rebuilt or replaced one at a time and merged again. Footprints come from site.json, so the model
+# sits exactly on the site plan drawn by three/BuildingScene.tsx (scene x = u, scene z = -v).
+# Heights must match src/data/building.ts.
 import bpy, bmesh, json, math, os, random, sys
 from mathutils import Vector, Matrix
 
 random.seed(7)
 ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
 SITE_JSON = ARGS[0] if len(ARGS) > 0 else "src/data/site.json"
-OUT_GLB = ARGS[1] if len(ARGS) > 1 else "public/models/complex.glb"
+OUT_DIR = ARGS[1] if len(ARGS) > 1 else "public/models/blocks"
 bpy.ops.wm.read_factory_settings(use_empty=True)
 ROOT = bpy.data.collections.new("Tower Complex")
 bpy.context.scene.collection.children.link(ROOT)
@@ -100,12 +106,26 @@ class Builder:
     def idx(self, key):
         return self.mats.index(key)
 
+    BOX_FACES = ((0, 2, 3, 1), (4, 5, 7, 6), (0, 1, 5, 4), (2, 6, 7, 3), (0, 4, 6, 2), (1, 3, 7, 5))
+
     def box(self, c, s, key, rz=0.0):
         hx, hy, hz = s[0] / 2, s[1] / 2, s[2] / 2
         rot = Matrix.Rotation(rz, 3, "Z")
         v = [self.bm.verts.new(Vector(c) + rot @ Vector((x * hx, y * hy, z * hz)))
              for z in (-1, 1) for y in (-1, 1) for x in (-1, 1)]
-        for q in ((0, 2, 3, 1), (4, 5, 7, 6), (0, 1, 5, 4), (2, 6, 7, 3), (0, 4, 6, 2), (1, 3, 7, 5)):
+        for q in self.BOX_FACES:
+            self.bm.faces.new([v[i] for i in q]).material_index = self.idx(key)
+
+    def beam(self, a, b, w, h, key):
+        """A box running from 3D point a to b (a stair flight, a rail): w wide across, h thick."""
+        a, b = Vector(a), Vector(b)
+        d = b - a
+        side = d.cross(Vector((0, 0, 1)))
+        side = (side.normalized() if side.length > 1e-6 else Vector((1, 0, 0))) * (w / 2)
+        up = side.cross(d).normalized() * (h / 2)
+        # same vertex order as box(): along d fastest, then across, then up
+        v = [self.bm.verts.new(e + s * side + t * up) for t in (-1, 1) for s in (-1, 1) for e in (a, b)]
+        for q in self.BOX_FACES:
             self.bm.faces.new([v[i] for i in q]).material_index = self.idx(key)
 
     def box2(self, x0, x1, y0, y1, z0, z1, key):
@@ -235,14 +255,17 @@ def inset(pts, d):
 
 # ---------------------------------------------------------------- site plan + dimensions (metres)
 SITE = json.load(open(SITE_JSON))
-PODIUM_HEIGHT = 13.2               # keep in step with src/data/building.ts
-FLOOR_HEIGHT = 3.1
+# Levels from the architect's sections (metres above the 1st-floor slab). Keep in step with
+# src/data/building.ts. Podium: 1st floor 4.5 m, 2nd and 3rd 3.6 m; playground roof at +11.7.
+LEVELS = (0.0, 4.5, 8.1, 11.7)
+PODIUM_HEIGHT = LEVELS[-1]
+FLOOR_HEIGHT = 3.0                 # apartment floors 4-16
 FLOOR_MIN, FLOOR_MAX = 4, 16
 FLOORS = FLOOR_MAX - FLOOR_MIN + 1
-TOP = PODIUM_HEIGHT + FLOORS * FLOOR_HEIGHT
+TOP = PODIUM_HEIGHT + FLOORS * FLOOR_HEIGHT     # +50.7, roof of the 16th floor
+TECH_TOP = TOP + 4.0                             # +54.7, roof of the technical floor (section 1-1)
 ANNEX_HEIGHT = 14.0
 CHAMFER = 2.4                      # glazed tower corners; BuildingScene.tsx uses the same value
-BANDS = ((0.35, 4.4, "glass_l"), (5.4, 8.6, "glass"), (9.4, 12.0, "glass"))   # podium glazing per level
 
 
 def ccw(pts):
@@ -300,27 +323,142 @@ def tower_footprint(x0, y0, x1, y1, c=CHAMFER):
             (x1 - c, y1), (x0 + c, y1), (x0, y1 - c), (x0, y0 + c)]
 
 
-def curtain_wall(b, run):
-    """Glazing with mullions and projecting floor bands along an exposed ground-level facade."""
+# ---------------------------------------------------------------- block A facades (architect's elevations)
+# Block A is the three podium floors under the whole complex, including under each tower, plus the
+# playground on its roof; towers B and C stand on that roof. Elevations: glazed shopfronts on the
+# 1st floor, white wall with punched windows on the 2nd and 3rd, the rounded north-west end glazed
+# full height.
+def is_lobe(p, q):
+    """Segment on the rounded north-west end (glazed full height on the west and north elevations)."""
+    return (p[0] + q[0]) / 2 < -8.0 and (p[1] + q[1]) / 2 > 3.0
+
+
+def corners(run, same=lambda s, t: True):
+    """Drop the points densify() added on straight stretches; keep real corners, curves, and the
+    points where same(segment, next segment) says the facade changes."""
+    out = [run[0]]
+    for i in range(1, len(run) - 1):
+        a, p, c = out[-1], run[i], run[i + 1]
+        bend = abs((p[0] - a[0]) * (c[1] - p[1]) - (p[1] - a[1]) * (c[0] - p[0])) > 1e-3
+        if bend or not same((run[i - 1], p), (p, c)):
+            out.append(p)
+    out.append(run[-1])
+    return out
+
+
+def glazing(b, p, q, z0, z1, key):
+    """Glass panels with white mullions, roughly every 1.5 m, between heights z0 and z1."""
+    p, q = Vector(p), Vector(q)
+    k = max(1, round((q - p).length / 1.5))
+    for i in range(k):
+        a, c = p.lerp(q, i / k), p.lerp(q, (i + 1) / k)
+        b.fquad(a, c, z0, z1, 0.06, key)
+        b.fquad(a, a + (c - a).normalized() * 0.07, z0, z1, 0.12, "white")
+
+
+def punched_windows(b, p, q, level, height):
+    """One window about every 3 m, sill 0.8 m above the floor (2nd- and 3rd-floor elevations)."""
+    p, q = Vector(p), Vector(q)
+    L = (q - p).length
+    if L < 1.5:
+        return
+    n = max(1, round(L / 3.0))
+    t = (q - p).normalized() * min(0.75, L / n * 0.3)
+    for i in range(n):
+        m = p.lerp(q, (i + 0.5) / n)
+        b.fquad(m - t, m + t, level + 0.8, level + min(2.8, height - 0.5), 0.05, "glass")
+
+
+def podium_facade(b, run, open_ground=None):
+    """Facade along one exposed run of block A. open_ground(p, q) marks segments with no 1st-floor wall."""
+    run = corners(run, lambda s, t: not open_ground or open_ground(*s) == open_ground(*t))
+    for p, q in zip(run, run[1:]):
+        if is_lobe(p, q):
+            glazing(b, p, q, 0.3, PODIUM_HEIGHT - 0.3, "glass")
+            continue
+        if not (open_ground and open_ground(p, q)):
+            glazing(b, p, q, 0.3, LEVELS[1] - 0.35, "glass_l")
+        for lo, hi in zip(LEVELS[1:-1], LEVELS[2:]):
+            punched_windows(b, p, q, lo, hi - lo)
     d = densify(run, 1.5, closed=False)
-    for p, q in zip(d, d[1:]):
-        for z0, z1, k in BANDS:
-            b.fquad(p, q, z0, z1, 0.06, k)
-            t = Vector((q[0] - p[0], q[1] - p[1])).normalized() * 0.07
-            b.fquad(p, (p[0] + t.x, p[1] + t.y), z0, z1, 0.12, "white")
-    for z0, z1, w in ((4.45, 5.35, 0.28), (8.65, 9.35, 0.28)):
-        b.strip(d, w, z0, z1, "white")
+    for z in LEVELS[1:-1]:                                              # slab edges at +4.5 and +8.1
+        b.strip(d, 0.28, z - 0.4, z + 0.2, "white")
     return d
 
 
-# ---------------------------------------------------------------- podium + roof terrace
+# ---------------------------------------------------------------- block A: podium + roof playground
+BASES = [[(x0, y0), (x1, y0), (x1, y1), (x0, y1)] for x0, y0, x1, y1 in TOWERS]   # floors 1-3 under the towers: square corners
+SOUTH = 1 - STREET                                     # tower C; site.json lists the towers south to north
+GRID_U, GRID_V = SITE["grid"]["u"], SITE["grid"]["v"]  # axes X1-X6 and Y1-Y12 of the drawings
+Y1, Y2 = GRID_V[0], GRID_V[1]
+RECESS = Y2 + 2.4      # 1st-floor shopfront under tower C (1st-floor plan); same as GROUND_SOUTH in src/data/podium.ts
+
+
+def outside_a(p, q):
+    o = outward(p, q, 0.3)
+    return not any(inside(o, part) for part in [PODIUM] + BASES)
+
+
 def build_podium():
     b = Builder("Podium", ["white", "paver", "glass_l", "glass", "hedge", "pink", "blue", "orange", "wood", "metal", "dark"])
     z = PODIUM_HEIGHT
+
+    # floors 1-3 under each tower; under tower C the 1st floor is an open walkway south of RECESS,
+    # with columns on axes Y1 and Y2
+    for i, (x0, y0, x1, y1) in enumerate(TOWERS):
+        if i == SOUTH:
+            b.prism([(x0, RECESS), (x1, RECESS), (x1, y1), (x0, y1)], 0, z, "white", "paver")
+            b.prism([(x0, y0), (x1, y0), (x1, RECESS), (x0, RECESS)], LEVELS[1], z, "white", "paver")
+            for u in GRID_U[1:]:
+                for v in (Y1, Y2):
+                    if x0 < u < x1:
+                        b.box((u, v, LEVELS[1] / 2), (0.6, 0.6, LEVELS[1]), "white")
+            glazing(b, (x0, RECESS), (x1, RECESS), 0.3, LEVELS[1] - 0.35, "glass_l")      # recessed shopfront
+            outline = [(x0, y0), (x1, y0), (x1, RECESS), (x1, y1), (x0, y1), (x0, RECESS)]
+            open_ground = lambda p, q: max(p[1], q[1]) <= RECESS + 0.01
+        else:
+            outline, open_ground = BASES[i], None
+            b.prism(outline, 0, z, "white", "paver")
+        for run in open_runs(densify(outline), outside_a):
+            podium_facade(b, run, open_ground)
+
+    # glazed volume west of tower C on axes X1-X2 (south elevation, section 1-1). Its length along
+    # the building is not dimensioned; on the plans it stands over the basement ramp.
+    gx0, gx1, gy0, gy1 = GRID_U[0], TOWERS[SOUTH][0], Y2 + 1.5, Y2 + 6.3
+    b.box2(gx0, gx1, gy0, gy1, 0, z - 0.2, "glass")
+    b.box2(gx0 - 0.3, gx1, gy0 - 0.3, gy1 + 0.3, z - 0.2, z + 0.3, "white")
+    for p, q in (((gx0, gy0), (gx1, gy0)), ((gx1, gy1), (gx0, gy1)), ((gx0, gy1), (gx0, gy0))):
+        p, q = Vector(p), Vector(q)
+        k = max(1, round((q - p).length / 1.5))
+        for j in range(k + 1):
+            a = p.lerp(q, j / k)
+            b.fquad(a, a + (q - p).normalized() * 0.07, 0, z - 0.2, 0.04, "white")
+        for zz in LEVELS[1:-1]:
+            b.fquad(p, q, zz - 0.08, zz + 0.08, 0.04, "white")
+
+    # external steel stair east of tower C, 1st floor to the roof (section 1-1, plans of floors 1-3):
+    # two flights per storey, side by side, with landings at each end
+    sx0 = TOWERS[SOUTH][2] + 0.3
+    sx1 = sx0 + 6.2
+    vm = TOWERS[SOUTH][3] - 1.9
+    lanes = ((vm - 1.8, vm), (vm, vm + 1.8))
+    for z0, z1 in zip(LEVELS, LEVELS[1:]):
+        zm = (z0 + z1) / 2
+        for (va, vb), za, zb, xa, xb, rail in ((lanes[0], z0, zm, sx0 + 1.4, sx1 - 1.4, lanes[0][0]),
+                                               (lanes[1], zm, z1, sx1 - 1.4, sx0 + 1.4, lanes[1][1])):
+            b.beam((xa, (va + vb) / 2, za), (xb, (va + vb) / 2, zb), vb - va - 0.1, 0.22, "dark")
+            b.beam((xa, rail, za + 1.0), (xb, rail, zb + 1.0), 0.05, 0.05, "dark")
+        b.box2(sx1 - 1.4, sx1, lanes[0][0], lanes[1][1], zm - 0.22, zm, "dark")
+        b.box2(sx0, sx0 + 1.4, lanes[0][0], lanes[1][1], z1 - 0.22, z1, "dark")
+    for x in (sx0 + 0.07, sx1 - 0.07):
+        for v in (lanes[0][0] + 0.07, lanes[1][1] - 0.07):
+            b.box((x, v, (z + 1.1) / 2), (0.14, 0.14, z + 1.1), "dark")
+
+    # the podium between the towers, with the roof playground
     b.prism(PODIUM, 0, z, "white", "paver")
-    for run in open_runs(PODIUM, lambda p, q: not in_tower(outward(p, q, 0.3))):
-        d = curtain_wall(b, run)
-        b.strip(d, 0.42, 12.1, z + 1.0, "white")                       # terrace parapet
+    for run in open_runs(densify(PODIUM), outside_a):
+        d = podium_facade(b, run)
+        b.strip(d, 0.42, z - 0.4, z + 1.1, "white")                    # terrace parapet
         hedge = inset(d, 1.5)[2:-2]
         b.strip(hedge, 0.55, z, z + 0.95, "hedge")
         for i, p in enumerate(hedge):
@@ -370,10 +508,11 @@ def build_podium():
     if segs:
         p, q = max(segs, key=lambda s: abs(s[1][1] - s[0][1]))
         y0, y1, x, s = min(p[1], q[1]) + 0.6, max(p[1], q[1]) - 0.6, p[0] - 0.2, 0.9
-        b.box2(x + 0.05, x + 0.15, y0 - 0.2, y1 + 0.2, 5.8, 11.6, "dark")
+        zs = LEVELS[1] + 0.4                                            # over the 2nd and 3rd floors
+        b.box2(x + 0.05, x + 0.15, y0 - 0.2, y1 + 0.2, zs - 0.2, z - 0.1, "dark")
         for i in range(int((y1 - y0) / s)):
-            for j in range(6):
-                ya, za = y0 + i * s, 6.0 + j * s
+            for j in range(int((z - 0.3 - zs) / s)):
+                ya, za = y0 + i * s, zs + j * s
                 c = [(ya, za), (ya + s, za), (ya + s, za + s), (ya, za + s)]
                 for t in (((0, 1, 2), (0, 2, 3)) if (i + j) % 2 else ((0, 1, 3), (1, 2, 3))):
                     if random.random() < 0.14:
@@ -384,14 +523,21 @@ def build_podium():
 
 
 # ---------------------------------------------------------------- towers
+def plate(rect):
+    """The apartment floors (4-16), which overhang the podium. rect is the site plan's tower
+    rectangle, the grid plus 0.5 m, which is the podium under the tower; on the typical floor plan
+    and section 1-1 the outer walls stand about 1.9 m beyond the end grid lines east and west and
+    0.3 m north and south. Keep in step with towerPlate() in src/data/building.ts."""
+    x0, y0, x1, y1 = rect
+    return x0 - 1.4, y0 + 0.2, x1 + 1.4, y1 - 0.2
+
+
 def build_tower(name, rect):
-    fp = tower_footprint(*rect)
-    cx, cy = (rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2
-    b = Builder(name, ["white", "glass", "glass_l", "joint", "roof"])
-    b.prism(fp, 0, TOP, "white", "roof")
-    for run in open_runs(fp, lambda p, q: not inside(outward(p, q, 0.3), PODIUM)):     # street-level floors
-        curtain_wall(b, run)
-        b.strip(densify(run, 1.5, closed=False), 0.3, 12.3, PODIUM_HEIGHT, "white")
+    x0, y0, x1, y1 = plate(rect)
+    fp = tower_footprint(x0, y0, x1, y1)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    b = Builder(name, ["white", "glass", "joint", "roof"])
+    b.prism(fp, PODIUM_HEIGHT, TOP, "white", "roof")                   # floors 4-16, standing on block A
     for i in range(8):
         a, c = Vector(fp[i]), Vector(fp[(i + 1) % 8])
         L = (c - a).length
@@ -416,11 +562,11 @@ def build_tower(name, rect):
             b.fquad(p - d, p + d, PODIUM_HEIGHT, TOP, 0.03, "joint")
     crown = [(cx + (p[0] - cx) * 1.045, cy + (p[1] - cy) * 1.045) for p in fp]
     b.prism(crown, TOP, TOP + 1.5, "white", "roof")
-    b.box((cx, cy, TOP + 1.5 + 2.4), (9.5, 8.0, 4.8), "white")
-    for s in (-1, 1):
-        for g in range(5):
-            b.box((cx - 3.8 + g * 1.9, cy + s * 4.02, TOP + 4.0), (1.6, 0.06, 3.6), "glass")
-            b.box((cx + s * 4.77, cy - 3.0 + g * 1.5, TOP + 4.0), (0.06, 1.25, 3.6), "glass")
+    # technical floor over the lift and stair core (roof plan and section 1-1): its walls stand on
+    # the tower's grid lines X4-X5 and Y4-Y2 (X5-X6, Y12-Y10 for tower B), so the block is flush
+    # with the north facade and the same on both towers. Same as BLOCK in src/data/roof.ts.
+    gx, gy = rect[0] + 0.5, rect[3] - 0.5                              # grid crossing at the NW corner
+    b.box2(gx + 6.95, gx + 14.65, gy - 14.05, gy + 0.25, TOP, TECH_TOP, "white")
     return b.finish()
 
 
@@ -436,7 +582,7 @@ def build_screen():
     lengths = [0.0]
     for p, q in zip(path, path[1:]):
         lengths.append(lengths[-1] + (Vector(q) - Vector(p)).length)
-    z0, z1 = 5.3, PODIUM_HEIGHT - 0.2
+    z0, z1 = LEVELS[1] + 0.8, PODIUM_HEIGHT - 0.2
     for i in range(len(path) - 1):
         p, q = path[i], path[i + 1]
         vs = [b.bm.verts.new((p[0], p[1], z0)), b.bm.verts.new((q[0], q[1], z0)),
@@ -451,12 +597,13 @@ def build_screen():
     # louvred signage wall beside the screen (plain blocks stand in for tenant signs)
     a, c = ex - sx * 17.5, ex - sx * 10.2
     lx0, lx1 = min(a, c), max(a, c)
-    b.box2(lx0, lx1, y1, y1 + 0.25, 5.8, 12.6, "dark")
-    for k in range(19):
-        b.box(((lx0 + lx1) / 2, y1 + 0.38, 6.0 + k * 0.35), (lx1 - lx0, 0.28, 0.12), "white")
-    for (fx, z, w, h) in ((0.27, 11.2, 1.8, 0.9), (0.73, 11.2, 1.6, 0.9), (0.27, 9.4, 1.5, 0.8), (0.73, 9.4, 1.5, 0.8), (0.5, 7.6, 2.6, 0.8)):
-        b.box((lx0 + (lx1 - lx0) * fx, y1 + 0.56, z), (w, 0.08, h), "dark")
-    b.box2(lx0 - 1, lx1 + 1, y1, y1 + 2.2, 4.2, 4.6, "white")            # entrance canopy
+    top = PODIUM_HEIGHT - 0.4
+    b.box2(lx0, lx1, y1, y1 + 0.25, LEVELS[1] + 1.3, top, "dark")
+    for k in range(int((top - LEVELS[1] - 1.5) / 0.35)):
+        b.box(((lx0 + lx1) / 2, y1 + 0.38, LEVELS[1] + 1.5 + k * 0.35), (lx1 - lx0, 0.28, 0.12), "white")
+    for (fx, dz, w, h) in ((0.27, 1.4, 1.8, 0.9), (0.73, 1.4, 1.6, 0.9), (0.27, 3.2, 1.5, 0.8), (0.73, 3.2, 1.5, 0.8), (0.5, 5.0, 2.6, 0.8)):
+        b.box((lx0 + (lx1 - lx0) * fx, y1 + 0.56, top - dz), (w, 0.08, h), "dark")
+    b.box2(lx0 - 1, lx1 + 1, y1, y1 + 2.2, LEVELS[1] - 0.3, LEVELS[1] + 0.1, "white")   # entrance canopy
     return b.finish()
 
 
@@ -506,16 +653,20 @@ def build_cars():
     return b.finish()
 
 
-# ---------------------------------------------------------------- build + export
-build_podium()
+# ---------------------------------------------------------------- build + export, one GLB per block
+BLOCKS = {"A": [build_podium(), build_screen()], "D": [build_annex()], "site": [build_cars()]}
 for i, rect in enumerate(TOWERS):
-    build_tower("Tower " + "AB"[i], rect)
-build_screen()
-build_annex()
-build_cars()
-os.makedirs(os.path.dirname(os.path.abspath(OUT_GLB)), exist_ok=True)
-bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True,
-                          export_cameras=False, export_lights=False)
-print("Wrote", OUT_GLB, os.path.getsize(OUT_GLB) // 1024, "KB")
+    k = "B" if i == STREET else "C"        # architect's block key: B on the main road (north), C to the south
+    BLOCKS[k] = [build_tower("Tower " + k, rect)]
+
+os.makedirs(os.path.abspath(OUT_DIR), exist_ok=True)
+for k, objects in sorted(BLOCKS.items()):
+    for ob in bpy.context.scene.objects:
+        ob.select_set(ob in objects)
+    path = os.path.join(OUT_DIR, k + ".glb")
+    # Same exporter settings for every block (and for the merged file), so blocks always merge cleanly.
+    bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_format="GLB", export_apply=True,
+                              export_yup=True, export_cameras=False, export_lights=False)
+    print("Wrote", path, os.path.getsize(path) // 1024, "KB")
 if "--blend" in sys.argv:
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.splitext(os.path.abspath(OUT_GLB))[0] + ".blend")
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(os.path.abspath(OUT_DIR), "complex.blend"))

@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { floors, towers } from '@/data/building';
 import { layouts } from '@/data/layouts';
-import type { TowerId } from '@/data/types';
+import { podiumFloors } from '@/data/podium';
+import { ROOF_FLOOR } from '@/data/roof';
+import type { BlockId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { FloorKey } from './three/BuildingScene';
@@ -23,7 +25,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const layer = useRef<HTMLDivElement>(null);
-  const [tower, setTower] = useState<TowerId>('A');
+  const [tower, setTower] = useState<BlockId>('B');
   const [hovered, setHovered] = useState<FloorKey | null>(null);
   const [touched, setTouched] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
@@ -40,6 +42,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         .map((n) => t.beds[n as 1 | 2 | 3])
         .join(', ')
     : '';
+  // the podium (block A): floors 1-3 and the roof playground, always open, nothing for sale
+  const podiumPanel = [...podiumFloors].sort((a, b) => panelOrder(a.floor, b.floor));
+  const podiumFloor = hovered?.tower === 'A' ? (hovered.floor as 1 | 2 | 3 | 4) : null;
+  // the technical floor on a tower's roof, floor 17: always open, nothing for sale
+  const roofTower = hovered && hovered.tower !== 'A' && hovered.floor === ROOF_FLOOR ? hovered.tower : null;
   const isHovered = (floor: number) => hovered?.tower === tower && hovered.floor === floor;
   const hover = (floor: number | null) => setHovered(floor === null ? null : { tower, floor });
 
@@ -49,16 +56,28 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         {children}
         <div className="lift">
           <div className="segmented" role="group">
-            {towers.map((id) => (
+            {(['A', ...towers] as BlockId[]).map((id) => (
               <button key={id} type="button" aria-pressed={tower === id} onClick={() => setTower(id)}>
-                {fmt(t.home.towerN, { t: id })}
+                {id === 'A' ? t.home.podiumTab : fmt(t.home.towerN, { t: id })}
               </button>
             ))}
           </div>
           <div className="lift-display" aria-live="polite">
-            <span className="lift-number">{current ? current.floor : '–'}</span>
+            <span className="lift-number">{current ? current.floor : roofTower ? t.roof.button : (podiumFloor ?? '–')}</span>
             <span className="lift-text">
-              {current ? (
+              {podiumFloor ? (
+                <>
+                  <b>{t.podium.name}</b>
+                  {t.podium.use[podiumFloor]}
+                </>
+              ) : roofTower ? (
+                <>
+                  <b>
+                    {fmt(t.home.towerN, { t: roofTower })}, {t.roof.name.toLowerCase()}
+                  </b>
+                  {t.roof.use}
+                </>
+              ) : current ? (
                 current.available > 0 ? (
                   <>
                     <b>
@@ -77,6 +96,37 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </span>
           </div>
           <ol className="lift-buttons" aria-label={t.home.panelLabel}>
+            {tower === 'A' &&
+              podiumPanel.map((f) => (
+                <li key={f.floor}>
+                  <Link
+                    href={`/${locale}/floors/A/${f.floor}`}
+                    className={isHovered(f.floor) ? 'is-hovered' : undefined}
+                    aria-label={`${fmt(t.home.openFloor, { n: f.floor })}, ${t.podium.use[f.floor as 1 | 2 | 3 | 4]}`}
+                    onMouseEnter={() => hover(f.floor)}
+                    onMouseLeave={() => hover(null)}
+                    onFocus={() => hover(f.floor)}
+                    onBlur={() => hover(null)}
+                  >
+                    {f.floor}
+                  </Link>
+                </li>
+              ))}
+            {tower !== 'A' && (
+              <li className="lift-roof">
+                <Link
+                  href={`/${locale}/floors/${tower}/${ROOF_FLOOR}`}
+                  className={isHovered(ROOF_FLOOR) ? 'is-hovered' : undefined}
+                  aria-label={`${fmt(t.home.towerN, { t: tower })}, ${t.roof.name}: ${t.roof.use}`}
+                  onMouseEnter={() => hover(ROOF_FLOOR)}
+                  onMouseLeave={() => hover(null)}
+                  onFocus={() => hover(ROOF_FLOOR)}
+                  onBlur={() => hover(null)}
+                >
+                  {t.roof.button}
+                </Link>
+              </li>
+            )}
             {panel.map((f) => (
               <li key={f.floor}>
                 {f.available > 0 ? (

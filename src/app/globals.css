@@ -210,6 +210,11 @@ button {
   justify-content: center;
 }
 
+/* the roof button gets the top row to itself, so the floor pairs below stay in step */
+.lift-buttons .lift-roof {
+  grid-column: 1 / -1;
+}
+
 .lift-buttons a,
 .lift-buttons span {
   display: grid;
@@ -774,8 +779,11 @@ button {
   font-size: 0.95rem;
 }
 
+/* on the floor pages --flat is the apartment's own colour (flatColors in data/layouts.ts); the
+   white ring keeps the tag readable on a floor of the same colour */
 .unit-tag.status-available {
-  background: var(--amber);
+  background: var(--flat, var(--amber));
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.95), 0 2px 6px rgb(20 35 59 / 0.18);
 }
 
 .unit-tag.status-available span {
@@ -1031,7 +1039,8 @@ button {
 }
 
 .unit-list a,
-.unit-list .is-off {
+.unit-list .is-off,
+.unit-list .is-static {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -1048,7 +1057,8 @@ button {
 }
 
 .unit-list a:hover,
-.unit-list li.is-hovered a {
+.unit-list li.is-hovered a,
+.unit-list li.is-hovered .is-static {
   border-color: var(--sky);
   box-shadow: 0 0 0 1px var(--sky);
 }
@@ -1057,6 +1067,20 @@ button {
   font-family: var(--display);
   font-size: 1.05rem;
   font-weight: 500;
+}
+
+.unit-id.is-flat {
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: var(--flat);
+}
+
+/* phones: six two-line tags cover the floor, so tags show the apartment only; the list below
+   the plan has the details */
+@media (max-width: 600px) {
+  .unit-tag:not(.podium-tag) span {
+    display: none;
+  }
 }
 
 .unit-info {
@@ -1132,6 +1156,10 @@ button {
   fill: #dde2e7;
 }
 
+.plan-core {
+  fill: #b4bec9;
+}
+
 .plan-svg text {
   text-anchor: middle;
   pointer-events: none;
@@ -1151,7 +1179,7 @@ button {
 
 .plan-unit text {
   paint-order: stroke;
-  stroke: var(--amber-soft);
+  stroke: var(--flat, var(--amber-soft));
   stroke-width: 0.2px;
   stroke-linejoin: round;
 }
@@ -1179,7 +1207,7 @@ button {
 }
 
 .plan-unit.is-available .plan-room {
-  fill: var(--amber-soft);
+  fill: var(--flat, var(--amber-soft));
 }
 
 .plan-unit.is-available.is-hovered .plan-room {
@@ -1254,4 +1282,109 @@ button {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Podium floors (block A): 2D plan in site-plan metres, north up */
+
+.podium-slab {
+  fill: #eef1f4;
+  stroke: var(--ink);
+  stroke-width: 0.25;
+}
+
+.podium-space {
+  stroke: #9aa5b1;
+  stroke-width: 0.12;
+}
+
+.podium-hall { fill: #efe6da; }
+.podium-supermarket { fill: #f5efd8; }
+.podium-retail { fill: #e8eef5; }
+.podium-storage,
+.podium-staff,
+.podium-office { fill: #e4e8ee; }
+.podium-stairs { fill: #c7cfd8; }
+.podium-lifts,
+.podium-escalators { fill: #aeb8c3; }
+.podium-vestibule { fill: #e3eee7; }
+.podium-toilets { fill: #dbe8ef; }
+.podium-corridor { fill: #f4f6f8; }
+.podium-covered { fill: #f7f8fa; stroke-dasharray: 0.6 0.4; }
+.podium-playground { fill: #dcebd2; }
+.podium-tower { fill: #d0d6dd; }
+.podium-technical { fill: #e1e6ec; }
+.podium-roof { fill: #eef1f4; }
+
+.podium-space.is-clickable {
+  cursor: pointer;
+}
+
+.podium-space.is-hovered {
+  fill: #cfe0fb;
+  stroke: var(--sky);
+}
+
+.podium-pad,
+.podium-pavilion,
+.podium-climber {
+  pointer-events: none;
+}
+
+.podium-pad.is-blue { fill: #9cc1ea; }
+.podium-pad.is-red { fill: #e6a28f; }
+
+.podium-pavilion {
+  fill: #d6b48c;
+  stroke: #8a6a45;
+  stroke-width: 0.12;
+}
+
+.podium-climber {
+  fill: none;
+  stroke: #e6a28f;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.plan-svg .podium-label {
+  dominant-baseline: middle;
+}
+
+.plan-svg .podium-no {
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+.podium-total {
+  margin-top: 1rem;
+  font-size: 0.9375rem;
+}
+
+.podium-note {
+  margin-top: 0.35rem;
+  color: var(--stone);
+  font-size: 0.8125rem;
+}
+
+/* Podium floor tags: small rooms show just their number until pointed at */
+
+.unit-tag.is-compact {
+  padding: 0.15rem 0.45rem;
+}
+
+.unit-tag.is-compact b {
+  font-size: 0.8125rem;
+}
+
+.podium-tag.is-hovered {
+  z-index: 1;
+}
+
+.podium-tag.is-hovered:not(.status-available) {
+  background: var(--sky);
+  color: var(--paper);
+}
+
+.podium-tag.is-hovered:not(.status-available) span {
+  color: #dbe7fb;
 }
