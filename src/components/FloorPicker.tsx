@@ -23,7 +23,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const layer = useRef<HTMLDivElement>(null);
-  const [tower, setTower] = useState<TowerId>('A');
+  const [tower, setTower] = useState<TowerId>(towers[0]);
   const [hovered, setHovered] = useState<FloorKey | null>(null);
   const [touched, setTouched] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);

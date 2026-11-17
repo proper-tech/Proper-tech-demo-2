@@ -6,10 +6,15 @@ Next.js 16 (App Router) + React 19 + three.js (`@react-three/fiber`).
 
 | Real (from your files) | Still a placeholder |
 | --- | --- |
-| Site plan: tower, podium and annex footprints, kerbs, parking bays, trees (`src/data/site.json`, extracted from `ET_coordinattai.dwg`) | Apartment layouts and room sizes (`src/data/layouts.ts`) |
-| Tower footprint 22.6 × 22.0 m, column grid, site size | Number of storeys (`PODIUM_FLOORS`, `FLOOR_MAX` in `src/data/building.ts`, estimated from the renders) |
-| The six renders (`public/media/renders`) | Which apartments are sold (`statusOf` in `building.ts`) |
-| | Intro video (`public/media/intro.mp4`), project name, phone number |
+| Site plan: tower, podium and annex footprints, kerbs, parking bays, trees (`src/data/site.json`, extracted from `ET_coordinattai.dwg`) | Which apartments are sold (`statusOf` in `src/data/building.ts`) |
+| Blocks A-D, storeys and levels: apartments on floors 4-16 at 3.0 m from +11.7 m, roof +54.7 m (`src/data/building.ts`, from sections 1-1 and 2-2 of the schematic design) | Ceiling heights in `src/data/layouts.ts` (estimated from the 3.0 m storey height) |
+| The six apartments on each floor, their rooms and areas, the lift and stair core (`src/data/layouts.ts`, traced from floor plans sheets 17-20) | Intro video (`public/media/intro.mp4`), project name, phone number |
+| 155 apartments, including floor 4 of Block B, where the homeowners' association room replaces apartment B | Furniture (only there to show scale) |
+| Capacity figures on the home page (general plan, sheet 7) | |
+| The six renders (`public/media/renders`) | |
+
+Source: "СЭВОЦЗ" ХХК-ийн үйлчилгээ, орон сууцны цогцолбор, schematic design, Уран проект ХХК, 2026.
+Unit numbers are tower + floor + position 01-06 for plans A-F (B1203 is Block B, floor 12, plan C).
 
 To re-extract the site plan after the drawing changes: convert the DWG to DXF with LibreDWG
 (`dwg2dxf -o site.dxf ET_coordinattai.dwg`), then

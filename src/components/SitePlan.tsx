@@ -1,4 +1,4 @@
-import { towers } from '@/data/building';
+import { towerSiteIndex, towers } from '@/data/building';
 import site from '@/data/site.json';
 import type { Dict } from '@/i18n/config';
 import { fmt } from '@/i18n/config';
@@ -34,17 +34,20 @@ export function SitePlan({ t }: { t: Dict }) {
       ))}
       <path className="site-podium" d={d(site.podium, true)} />
       <path className="site-annex" d={d(site.annex, true)} />
-      {site.towers.map((tw, i) => (
-        <g key={i}>
+      {towers.map((tower) => {
+        const tw = site.towers[towerSiteIndex[tower]];
+        return (
+        <g key={tower}>
           <rect className="site-tower" x={tw.u0} y={-tw.v1} width={tw.u1 - tw.u0} height={tw.v1 - tw.v0} />
           <text className="site-title" x={(tw.u0 + tw.u1) / 2} y={-(tw.v0 + tw.v1) / 2}>
-            {fmt(t.home.towerN, { t: towers[i] })}
+            {fmt(t.home.towerN, { t: tower })}
           </text>
           <text className="site-note" x={(tw.u0 + tw.u1) / 2} y={-(tw.v0 + tw.v1) / 2 + 3}>
-            {(tw.u1 - tw.u0).toFixed(1)} × {(tw.v1 - tw.v0).toFixed(1)} m
+            {t.home.siteTowerNote}
           </text>
         </g>
-      ))}
+        );
+      })}
       {site.trees.map(([u, v], i) => (
         <circle key={i} className="site-tree" cx={u} cy={-v} r={0.9} />
       ))}

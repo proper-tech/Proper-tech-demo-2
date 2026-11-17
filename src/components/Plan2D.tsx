@@ -1,5 +1,5 @@
 import type { Layout } from '@/data/types';
-import { m, roomArea, roomEdges } from '@/lib/geometry';
+import { hasParts, m, roomArea, roomEdges } from '@/lib/geometry';
 
 /** Maps apartment coordinates to SVG coordinates: svg = origin + sign * value. */
 export interface PlanTx {
@@ -30,12 +30,12 @@ export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, mu
       {layout.rooms.map((r) => (
         <rect
           key={r.id}
-          className={`plan-room${r.wet ? ' plan-wet' : ''}${selected === r.id ? ' is-selected' : ''}${onSelect ? ' is-clickable' : ''}`}
+          className={`plan-room${r.type === 'balcony' ? ' plan-balcony' : r.wet ? ' plan-wet' : ''}${selected === (r.partOf ?? r.id) ? ' is-selected' : ''}${onSelect ? ' is-clickable' : ''}`}
           x={Math.min(X(r.x), X(r.x + r.w))}
           y={Math.min(Z(r.z), Z(r.z + r.d))}
           width={r.w}
           height={r.d}
-          onClick={onSelect ? () => onSelect(r.id) : undefined}
+          onClick={onSelect ? () => onSelect(r.partOf ?? r.id) : undefined}
         />
       ))}
       {layout.rooms.flatMap((r) =>
@@ -58,10 +58,13 @@ export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, mu
         ),
       )}
       {names &&
-        layout.rooms.map((r) => {
+        layout.rooms
+          .filter((r) => !r.partOf)
+          .map((r) => {
           const cx = X(r.x + r.w / 2);
           const cy = Z(r.z + r.d / 2);
           const roomy = showSizes && r.d >= 2 && r.w >= 2;
+          const plain = !hasParts(layout, r);
           return (
             <g key={r.id} className="plan-label">
               <text
@@ -74,11 +77,13 @@ export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, mu
               </text>
               {roomy && (
                 <>
-                  <text x={cx} y={cy + 0.18} className="plan-size">
-                    {m(r.w)} × {m(r.d)} m
-                  </text>
-                  <text x={cx} y={cy + 0.52} className="plan-size">
-                    {m(roomArea(r))} m²
+                  {plain && (
+                    <text x={cx} y={cy + 0.18} className="plan-size">
+                      {m(r.w)} × {m(r.d)} m
+                    </text>
+                  )}
+                  <text x={cx} y={plain ? cy + 0.52 : cy + 0.18} className="plan-size">
+                    {m(roomArea(r, layout))} m²
                   </text>
                 </>
               )}
@@ -89,12 +94,18 @@ export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, mu
   );
 }
 
-/** A single apartment plan, entrance at the bottom and windows at the top. */
+/** A single apartment plan, north at the top as on the architect's drawings. */
 export function ApartmentPlan(props: Omit<PlanGroupProps, 'tx'>) {
   const { w, d } = props.layout;
   return (
-    <svg className="plan-svg" viewBox={`-0.4 -0.4 ${w + 0.8} ${d + 0.8}`} role="img">
-      <PlanGroup {...props} tx={{ ox: w, sx: -1, oz: d, sz: -1 }} />
+    <svg className="plan-svg" viewBox={`-0.4 -0.4 ${w + 1.5} ${d + 0.8}`} role="img">
+      <PlanGroup {...props} tx={{ ox: 0, sx: 1, oz: 0, sz: 1 }} />
+      <g className="plan-north" transform={`translate(${w + 0.6} 0.15)`}>
+        <path d="M0 -0.05 L0.22 0.5 L0 0.38 L-0.22 0.5 Z" />
+        <text x={0} y={0.85}>
+          N
+        </text>
+      </g>
     </svg>
   );
 }

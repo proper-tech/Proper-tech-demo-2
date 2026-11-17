@@ -4,7 +4,7 @@ import { Suspense, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { ExtrudeGeometry, Shape } from 'three';
-import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towers, type FloorSummary } from '@/data/building';
+import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerSiteIndex, towers, type FloorSummary } from '@/data/building';
 import site from '@/data/site.json';
 import type { TowerId } from '@/data/types';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -63,17 +63,16 @@ useGLTF.preload(MODEL_URL);
  * One see-through, clickable band per floor, wrapped around the tower in the model.
  * Floors with apartments for sale carry a faint amber tint; the hovered floor lights up.
  */
-function FloorZones({ index, floors, hovered, onHover, onOpen }: { index: number; floors: FloorSummary[] } & Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
-  const tower = towers[index];
+function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerId; floors: FloorSummary[] } & Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   const geometry = useMemo(() => {
-    const t = site.towers[index];
+    const t = site.towers[towerSiteIndex[tower]];
     const [u0, u1, v0, v1, c] = [t.u0 - 0.3, t.u1 + 0.3, t.v0 - 0.3, t.v1 + 0.3, CHAMFER];
     const outline = [
       [u0 + c, v0], [u1 - c, v0], [u1, v0 + c], [u1, v1 - c],
       [u1 - c, v1], [u0 + c, v1], [u0, v1 - c], [u0, v0 + c],
     ];
     return extrude(outline, FLOOR_HEIGHT - 0.12);
-  }, [index]);
+  }, [tower]);
 
   return (
     <>
@@ -122,10 +121,10 @@ function Strip({ a, b, width, color }: { a: Pt; b: Pt; width: number; color: str
 export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer }: Props) {
   const anchors = useMemo<Anchor[]>(
     () =>
-      site.towers.map((t, i) => ({
-        id: `tower:${towers[i]}`,
-        position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2],
-      })),
+      towers.map((tower) => {
+        const t = site.towers[towerSiteIndex[tower]];
+        return { id: `tower:${tower}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] };
+      }),
     [],
   );
 
@@ -160,8 +159,8 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         <Model />
       </Suspense>
 
-      {towers.map((tower, i) => (
-        <FloorZones key={tower} index={i} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
+      {towers.map((tower) => (
+        <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
       ))}
 
       {site.trees.map(([u, v], i) => (

@@ -4,27 +4,27 @@ import { useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FLOOR_MAX, FLOOR_MIN, PLATE, getFloor } from '@/data/building';
+import { FLOOR_MAX, FLOOR_MIN, PLATE, coreFor, getFloor } from '@/data/building';
 import { layouts } from '@/data/layouts';
-import type { TowerId, Unit } from '@/data/types';
+import type { Layout, TowerId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { layoutArea, m } from '@/lib/geometry';
 import { PlanGroup, type PlanTx } from './Plan2D';
+import { unitCentre } from './three/FloorScene';
 
 const FloorScene = dynamic(() => import('./three/FloorScene'), {
   ssr: false,
   loading: () => <div className="stage-loading" />,
 });
 
-/** Same placement as the 3D floor, seen from above with the north side at the top. */
-function planTx(unit: Unit): PlanTx {
-  const w = layouts[unit.layout].w;
-  const half = PLATE.w / 2;
-  return unit.side === 'N'
-    ? { ox: half - unit.x0, sx: -1, oz: 8, sz: -1 }
-    : { ox: half - unit.x0 - w, sx: 1, oz: 8 + PLATE.corridor, sz: 1 };
-}
+// The 2D floor plan: floor-plate coordinates (X east, Y north) -> SVG, north at the top.
+const PX = (X: number) => X - PLATE.x0;
+const PY = (Y: number) => PLATE.y1 - Y;
+const PLAN_W = PLATE.x1 - PLATE.x0;
+const PLAN_H = PLATE.y1 - PLATE.y0;
+
+const planTx = (layout: Layout): PlanTx => ({ ox: PX(layout.origin[0]), sx: 1, oz: PY(layout.origin[1]), sz: 1 });
 
 export function FloorExperience({ tower, floor }: { tower: TowerId; floor: number }) {
   const { locale, t } = useI18n();
@@ -32,6 +32,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   const [view, setView] = useState<'3d' | '2d'>('3d');
   const [hovered, setHovered] = useState<string | null>(null);
   const summary = getFloor(tower, floor)!;
+  const core = coreFor(tower, floor);
   const layer = useRef<HTMLDivElement>(null);
   const open = (id: string) => router.push(`/${locale}/apartments/${id}`);
 
@@ -51,7 +52,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
     <div className="floor">
       <section className="floor-stage">
         <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <FloorScene units={summary.units} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} />
+          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
               <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} data-anchor={`unit:${u.id}`}>
@@ -63,17 +64,36 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
         </div>
         {view === '2d' && (
           <div className="floor-plan">
-            <svg className="plan-svg" viewBox={`-0.5 -0.5 ${PLATE.w + 1} ${PLATE.d + 1}`} role="img">
-              <rect className="plan-corridor" x={0} y={8} width={PLATE.w} height={PLATE.corridor} />
-              <text className="plan-name" x={PLATE.w / 2} y={9.1}>
-                {t.floor.corridor}
-              </text>
+            <svg className="plan-svg" viewBox={`-0.6 -0.6 ${PLAN_W + 1.2} ${PLAN_H + 1.2}`} role="img">
+              <rect className="plan-slab" x={0} y={0} width={PLAN_W} height={PLAN_H} rx={PLATE.corner} />
+              {PLATE.grid.x.map((X) => (
+                <line key={`gx${X}`} className="plan-grid" x1={PX(X)} y1={-0.5} x2={PX(X)} y2={PLAN_H + 0.5} />
+              ))}
+              {PLATE.grid.y.map((Y) => (
+                <line key={`gy${Y}`} className="plan-grid" x1={-0.5} y1={PY(Y)} x2={PLAN_W + 0.5} y2={PY(Y)} />
+              ))}
+              {core.map((c) => (
+                <g key={c.id}>
+                  <rect className={c.id === 'corridor' ? 'plan-corridor' : 'plan-core'} x={PX(c.x0)} y={PY(c.y1)} width={c.x1 - c.x0} height={c.y1 - c.y0} />
+                  {c.id !== 'shafts' && (
+                    <text
+                      className="plan-name"
+                      x={PX((c.x0 + c.x1) / 2)}
+                      y={PY((c.y0 + c.y1) / 2) + 0.1}
+                      transform={c.id === 'stair' ? `rotate(-90 ${PX((c.x0 + c.x1) / 2)} ${PY((c.y0 + c.y1) / 2)})` : undefined}
+                    >
+                      {t.floor.core[c.id]}
+                    </text>
+                  )}
+                </g>
+              ))}
               {summary.units.map((u) => {
                 const layout = layouts[u.layout];
-                const tx = planTx(u);
+                const tx = planTx(layout);
                 const available = u.status === 'available';
-                const cx = tx.ox + tx.sx * (layout.w / 2);
-                const cy = tx.oz + tx.sz * (layout.d / 2);
+                const [X, Y] = unitCentre(layout);
+                const cx = PX(X);
+                const cy = PY(Y);
                 return (
                   <g
                     key={u.id}
@@ -124,7 +144,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 <span className="unit-id">{u.id}</span>
                 <span className="unit-info">
                   <b>{t.beds[layout.bedrooms as 1 | 2 | 3]}</b>
-                  {m(layoutArea(layout))} m², {t.facing[u.side].toLowerCase()}
+                  {fmt(t.apt.planN, { p: u.plan })}, {m(layoutArea(layout))} m², {t.facing[u.facing].toLowerCase()}
                 </span>
                 <span className={`status status-${u.status}`}>{t.status[u.status]}</span>
                 {available && <span className="unit-open">{t.floor.open}</span>}

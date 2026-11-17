@@ -235,14 +235,16 @@ def inset(pts, d):
 
 # ---------------------------------------------------------------- site plan + dimensions (metres)
 SITE = json.load(open(SITE_JSON))
-PODIUM_HEIGHT = 13.2               # keep in step with src/data/building.ts
-FLOOR_HEIGHT = 3.1
+# Levels from sections 1-1 and 2-2 of the schematic design; keep in step with src/data/building.ts.
+PODIUM_HEIGHT = 11.7               # floor 4: first apartment floor and the podium roof
+FLOOR_HEIGHT = 3.0
+TECH_FLOOR = 4.0                   # technical floor on top, roof at +54.7
 FLOOR_MIN, FLOOR_MAX = 4, 16
 FLOORS = FLOOR_MAX - FLOOR_MIN + 1
 TOP = PODIUM_HEIGHT + FLOORS * FLOOR_HEIGHT
 ANNEX_HEIGHT = 14.0
 CHAMFER = 2.4                      # glazed tower corners; BuildingScene.tsx uses the same value
-BANDS = ((0.35, 4.4, "glass_l"), (5.4, 8.6, "glass"), (9.4, 12.0, "glass"))   # podium glazing per level
+BANDS = ((0.35, 4.1, "glass_l"), (4.9, 7.7, "glass"), (8.5, 11.1, "glass"))   # podium glazing: floors at 0 / 4.5 / 8.1
 
 
 def ccw(pts):
@@ -308,7 +310,7 @@ def curtain_wall(b, run):
             b.fquad(p, q, z0, z1, 0.06, k)
             t = Vector((q[0] - p[0], q[1] - p[1])).normalized() * 0.07
             b.fquad(p, (p[0] + t.x, p[1] + t.y), z0, z1, 0.12, "white")
-    for z0, z1, w in ((4.45, 5.35, 0.28), (8.65, 9.35, 0.28)):
+    for z0, z1, w in ((4.15, 4.85, 0.28), (7.75, 8.45, 0.28)):
         b.strip(d, w, z0, z1, "white")
     return d
 
@@ -320,7 +322,7 @@ def build_podium():
     b.prism(PODIUM, 0, z, "white", "paver")
     for run in open_runs(PODIUM, lambda p, q: not in_tower(outward(p, q, 0.3))):
         d = curtain_wall(b, run)
-        b.strip(d, 0.42, 12.1, z + 1.0, "white")                       # terrace parapet
+        b.strip(d, 0.42, 11.15, z + 1.0, "white")                      # terrace parapet
         hedge = inset(d, 1.5)[2:-2]
         b.strip(hedge, 0.55, z, z + 0.95, "hedge")
         for i, p in enumerate(hedge):
@@ -391,7 +393,7 @@ def build_tower(name, rect):
     b.prism(fp, 0, TOP, "white", "roof")
     for run in open_runs(fp, lambda p, q: not inside(outward(p, q, 0.3), PODIUM)):     # street-level floors
         curtain_wall(b, run)
-        b.strip(densify(run, 1.5, closed=False), 0.3, 12.3, PODIUM_HEIGHT, "white")
+        b.strip(densify(run, 1.5, closed=False), 0.3, 11.15, PODIUM_HEIGHT, "white")
     for i in range(8):
         a, c = Vector(fp[i]), Vector(fp[(i + 1) % 8])
         L = (c - a).length
@@ -415,12 +417,12 @@ def build_tower(name, rect):
             d = (c - a).normalized() * 0.04
             b.fquad(p - d, p + d, PODIUM_HEIGHT, TOP, 0.03, "joint")
     crown = [(cx + (p[0] - cx) * 1.045, cy + (p[1] - cy) * 1.045) for p in fp]
-    b.prism(crown, TOP, TOP + 1.5, "white", "roof")
-    b.box((cx, cy, TOP + 1.5 + 2.4), (9.5, 8.0, 4.8), "white")
+    b.prism(crown, TOP, TOP + 1.2, "white", "roof")              # parapet round the technical floor
+    b.box((cx, cy, TOP + TECH_FLOOR / 2), (9.5, 8.0, TECH_FLOOR), "white")
     for s in (-1, 1):
         for g in range(5):
-            b.box((cx - 3.8 + g * 1.9, cy + s * 4.02, TOP + 4.0), (1.6, 0.06, 3.6), "glass")
-            b.box((cx + s * 4.77, cy - 3.0 + g * 1.5, TOP + 4.0), (0.06, 1.25, 3.6), "glass")
+            b.box((cx - 3.8 + g * 1.9, cy + s * 4.02, TOP + TECH_FLOOR / 2), (1.6, 0.06, 2.8), "glass")
+            b.box((cx + s * 4.77, cy - 3.0 + g * 1.5, TOP + TECH_FLOOR / 2), (0.06, 1.25, 2.8), "glass")
     return b.finish()
 
 
@@ -436,7 +438,7 @@ def build_screen():
     lengths = [0.0]
     for p, q in zip(path, path[1:]):
         lengths.append(lengths[-1] + (Vector(q) - Vector(p)).length)
-    z0, z1 = 5.3, PODIUM_HEIGHT - 0.2
+    z0, z1 = 4.9, PODIUM_HEIGHT - 0.3
     for i in range(len(path) - 1):
         p, q = path[i], path[i + 1]
         vs = [b.bm.verts.new((p[0], p[1], z0)), b.bm.verts.new((q[0], q[1], z0)),
@@ -451,10 +453,10 @@ def build_screen():
     # louvred signage wall beside the screen (plain blocks stand in for tenant signs)
     a, c = ex - sx * 17.5, ex - sx * 10.2
     lx0, lx1 = min(a, c), max(a, c)
-    b.box2(lx0, lx1, y1, y1 + 0.25, 5.8, 12.6, "dark")
-    for k in range(19):
-        b.box(((lx0 + lx1) / 2, y1 + 0.38, 6.0 + k * 0.35), (lx1 - lx0, 0.28, 0.12), "white")
-    for (fx, z, w, h) in ((0.27, 11.2, 1.8, 0.9), (0.73, 11.2, 1.6, 0.9), (0.27, 9.4, 1.5, 0.8), (0.73, 9.4, 1.5, 0.8), (0.5, 7.6, 2.6, 0.8)):
+    b.box2(lx0, lx1, y1, y1 + 0.25, 5.2, 11.2, "dark")
+    for k in range(17):
+        b.box(((lx0 + lx1) / 2, y1 + 0.38, 5.4 + k * 0.35), (lx1 - lx0, 0.28, 0.12), "white")
+    for (fx, z, w, h) in ((0.27, 10.1, 1.8, 0.9), (0.73, 10.1, 1.6, 0.9), (0.27, 8.4, 1.5, 0.8), (0.73, 8.4, 1.5, 0.8), (0.5, 6.7, 2.6, 0.8)):
         b.box((lx0 + (lx1 - lx0) * fx, y1 + 0.56, z), (w, 0.08, h), "dark")
     b.box2(lx0 - 1, lx1 + 1, y1, y1 + 2.2, 4.2, 4.6, "white")            # entrance canopy
     return b.finish()

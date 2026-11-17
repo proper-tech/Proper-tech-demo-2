@@ -9,7 +9,7 @@ import { layouts } from '@/data/layouts';
 import type { Finish, Unit } from '@/data/types';
 import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
-import { doorLinks, layoutArea, m, roomArea } from '@/lib/geometry';
+import { doorLinks, hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
 import { ApartmentPlan } from './Plan2D';
 import type { RoomLabel } from './three/ApartmentScene';
 
@@ -33,14 +33,17 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     if (view === 'tour' || view === 'plan') setMode(view);
   }, []);
 
+  const rooms = useMemo(() => listedRooms(layout), [layout]);
   const labels = useMemo(() => {
     const out: Record<string, RoomLabel> = {};
-    for (const r of layout.rooms) out[r.id] = { name: roomName(t, r), area: `${m(roomArea(r))} m²` };
+    for (const r of rooms) out[r.id] = { name: roomName(t, r), area: `${m(roomArea(r, layout))} m²` };
     return out;
-  }, [layout, t]);
+  }, [layout, rooms, t]);
+  // A click on a rectangle that is part of a bigger room selects that room.
+  const selectRoom = (id: string) => setRoomId(layout.rooms.find((r) => r.id === id)?.partOf ?? id);
   const names = useMemo(() => Object.fromEntries(Object.entries(labels).map(([id, l]) => [id, l.name])), [labels]);
 
-  const room = layout.rooms.find((r) => r.id === roomId) ?? layout.rooms[0];
+  const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const layer = useRef<HTMLDivElement>(null);
   const doors = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
   const index = availableUnits.findIndex((u) => u.id === unit.id);
@@ -64,7 +67,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             mode={mode === 'tour' ? 'tour' : 'model'}
             roomId={room.id}
             layer={layer}
-            onSelectRoom={setRoomId}
+            onSelectRoom={selectRoom}
           />
           <div className="label-layer" ref={layer}>
             {mode === 'tour'
@@ -73,7 +76,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
                     {labels[door.to.id].name}
                   </button>
                 ))
-              : layout.rooms.map((r) => (
+              : rooms.map((r) => (
                   <div key={r.id} className={`room-tag${r.id === room.id ? ' is-selected' : ''}`} data-anchor={`room:${r.id}`}>
                     <b>{labels[r.id].name}</b>
                     <span>{labels[r.id].area}</span>
@@ -83,7 +86,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
         </div>
         {mode === 'plan' && (
           <div className="apt-plan">
-            <ApartmentPlan layout={layout} names={names} showSizes selected={room.id} onSelect={setRoomId} />
+            <ApartmentPlan layout={layout} names={names} showSizes selected={room.id} onSelect={selectRoom} />
           </div>
         )}
 
@@ -93,7 +96,8 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </Link>
           <h1>{fmt(t.apt.title, { id: unit.id })}</h1>
           <p>
-            {t.beds[layout.bedrooms as 1 | 2 | 3]}, {m(layoutArea(layout))} m²
+            {fmt(t.apt.planN, { p: unit.plan })}, {t.beds[layout.bedrooms as 1 | 2 | 3]}
+            {layout.bathrooms > 1 ? `, ${t.baths[2]}` : ''}, {m(layoutArea(layout))} m²
             <span className={`status status-${unit.status}`}>{t.status[unit.status]}</span>
           </p>
           <div className="segmented" role="group">
@@ -109,10 +113,11 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           <div className="tour-bar">
             <p className="tour-room">
               <b>{labels[room.id].name}</b>
-              {m(room.w)} × {m(room.d)} m, {labels[room.id].area}, {t.apt.colCeiling.toLowerCase()} {m(room.h)} m
+              {hasParts(layout, room) ? '' : `${m(room.w)} × ${m(room.d)} m, `}
+              {labels[room.id].area}, {t.apt.colCeiling.toLowerCase()} {m(room.h)} m
             </p>
             <div className="tour-rooms">
-              {layout.rooms.map((r) => (
+              {rooms.map((r) => (
                 <button key={r.id} type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
                   {labels[r.id].name}
                 </button>
@@ -136,17 +141,15 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               </tr>
             </thead>
             <tbody>
-              {layout.rooms.map((r) => (
+              {rooms.map((r) => (
                 <tr key={r.id} className={r.id === room.id ? 'is-selected' : undefined}>
                   <th scope="row">
                     <button type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
                       {labels[r.id].name}
                     </button>
                   </th>
-                  <td>
-                    {m(r.w)} × {m(r.d)} m
-                  </td>
-                  <td>{m(roomArea(r))} m²</td>
+                  <td>{hasParts(layout, r) ? '' : `${m(r.w)} × ${m(r.d)} m`}</td>
+                  <td>{m(roomArea(r, layout))} m²</td>
                   <td>{m(r.h)} m</td>
                 </tr>
               ))}

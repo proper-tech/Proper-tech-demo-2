@@ -69,22 +69,41 @@ export interface DoorLink {
   to: Room;
 }
 
+/** The room a rectangle belongs to: itself, or the room it is part of. */
+export const ownerOf = (layout: Layout, room: Room): Room =>
+  (room.partOf && layout.rooms.find((r) => r.id === room.partOf)) || room;
+
+/** Rooms as they are listed in tables and pickers: rectangles that are part of another room are left out. */
+export const listedRooms = (layout: Layout) => layout.rooms.filter((r) => !r.partOf);
+
 /** Doors and openings that lead out of a room, used for the walk-through hotspots. */
 export function doorLinks(layout: Layout, roomId: string): DoorLink[] {
   const links: DoorLink[] = [];
+  const seen = new Set<string>();
   for (const o of layout.openings) {
-    if (o.kind === 'window' || o.kind === 'entry') continue;
+    if (o.kind === 'window' || o.kind === 'entry' || o.kind === 'open') continue;
     const a = o.axis === 'x' ? roomAt(layout, o.x, o.z - 0.05) : roomAt(layout, o.x - 0.05, o.z);
     const b = o.axis === 'x' ? roomAt(layout, o.x, o.z + 0.05) : roomAt(layout, o.x + 0.05, o.z);
     if (!a || !b) continue;
-    if (a.id === roomId) links.push({ opening: o, to: b });
-    else if (b.id === roomId) links.push({ opening: o, to: a });
+    const ra = ownerOf(layout, a);
+    const rb = ownerOf(layout, b);
+    if (ra.id === rb.id) continue;
+    const to = ra.id === roomId ? rb : rb.id === roomId ? ra : null;
+    if (!to || seen.has(to.id)) continue;
+    seen.add(to.id);
+    links.push({ opening: o, to });
   }
   return links;
 }
 
-export const roomArea = (r: Room) => r.w * r.d;
-export const layoutArea = (l: Layout) => l.rooms.reduce((sum, r) => sum + roomArea(r), 0);
+const rectArea = (r: Room) => r.w * r.d;
+/** Area of a room, including the rectangles that are part of it. */
+export const roomArea = (r: Room, layout?: Layout) =>
+  rectArea(r) + (layout ? layout.rooms.filter((p) => p.partOf === r.id).reduce((sum, p) => sum + rectArea(p), 0) : 0);
+/** Apartment area from the architect's room schedule. */
+export const layoutArea = (l: Layout) => l.area;
+/** True when a room has rectangles added to it, so its size is not a plain width × depth. */
+export const hasParts = (l: Layout, r: Room) => l.rooms.some((p) => p.partOf === r.id);
 export const roomEye = (r: Room): [number, number] => r.eye ?? [r.x + r.w / 2, r.z + r.d / 2];
 export const maxCeiling = (l: Layout) => Math.max(...l.rooms.map((r) => r.h));
 
