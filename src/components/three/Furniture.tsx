@@ -20,6 +20,8 @@ function Box({ p, s, c, rough = 0.85 }: { p: V3; s: V3; c: string; rough?: numbe
 }
 
 const WHITE = '#F3F2EE';
+/** Colours for the goods on supermarket shelves. */
+const GOODS = ['#D9534F', '#F0AD4E', '#5CB85C', '#5BC0DE', '#E6E1D8', '#9B7FD1'];
 const mix = (color: string, target: string, amount: number) =>
   '#' + new Color(color).lerp(new Color(target), amount).getHexString();
 
@@ -248,6 +250,75 @@ function Piece({ item, finish }: { item: FurnitureItem; finish: Finish }) {
     }
     case 'shoeCabinet':
       return <Box p={[0, 0.5, 0]} s={[1, 1, 0.35]} c={wood} />;
+    case 'gondola': {
+      // supermarket shelving, stocked on both faces; w is the length (default 6 m)
+      const gw = w ?? 6;
+      return (
+        <>
+          <Box p={[0, 0.06, 0]} s={[gw, 0.12, 1]} c="#5B6672" />
+          <Box p={[0, 0.85, 0]} s={[gw, 1.5, 0.08]} c="#E3E7EB" />
+          {[0.35, 0.75, 1.15].flatMap((y, i) =>
+            [-1, 1].map((side) => (
+              <group key={`${y}${side}`}>
+                <Box p={[0, y, side * 0.27]} s={[gw, 0.03, 0.46]} c="#C9CED3" />
+                <Box p={[0, y + 0.13, side * 0.27]} s={[gw - 0.1, 0.22, 0.36]} c={GOODS[(i * 2 + side + 2) % GOODS.length]} />
+              </group>
+            )),
+          )}
+        </>
+      );
+    }
+    case 'checkout':
+      // till counter running along z: belt, till at the north end, cashier's seat beside it
+      return (
+        <>
+          <Box p={[0, 0.45, 0]} s={[0.7, 0.9, 1.9]} c={cabinet} />
+          <Box p={[-0.05, 0.91, 0.25]} s={[0.45, 0.02, 1.3]} c="#2B2F36" rough={0.4} />
+          <Box p={[0.15, 1.05, -0.65]} s={[0.35, 0.25, 0.3]} c="#3A4048" rough={0.4} />
+          <Box p={[0.65, 0.3, -0.45]} s={[0.4, 0.6, 0.4]} c={fabric} />
+        </>
+      );
+    case 'chiller': {
+      // open-front refrigerated cabinet against a wall, facing +z
+      const cw = w ?? 2.4;
+      return (
+        <>
+          <Box p={[0, 1.0, -0.12]} s={[cw, 2.0, 0.56]} c="#E8ECEF" />
+          {['#5BC0DE', '#F7F7F7', '#5CB85C'].map((c, i) => (
+            <Box key={c} p={[0, 0.5 + i * 0.45, 0.04]} s={[cw - 0.15, 0.28, 0.3]} c={c} />
+          ))}
+          <Box p={[0, 1.9, 0.12]} s={[cw, 0.2, 0.1]} c="#2F6FDE" />
+        </>
+      );
+    }
+    case 'rack': {
+      // steel storage rack with boxes; w is the length (default 2 m)
+      const rw = w ?? 2;
+      return (
+        <>
+          {[-1, 1].flatMap((sx) =>
+            [-1, 1].map((sz) => <Box key={`${sx}${sz}`} p={[sx * (rw / 2 - 0.03), 1.1, sz * 0.27]} s={[0.06, 2.2, 0.06]} c="#2F6FDE" />),
+          )}
+          {[0.15, 0.8, 1.45, 2.1].map((y) => (
+            <Box key={y} p={[0, y, 0]} s={[rw, 0.04, 0.6]} c="#C9CED3" />
+          ))}
+          {[0.15, 0.8, 1.45].map((y, i) => (
+            <Box key={y} p={[(i - 1) * rw * 0.2, y + 0.22, 0]} s={[rw * 0.55, 0.4, 0.5]} c="#C8A27A" />
+          ))}
+        </>
+      );
+    }
+    case 'bench': {
+      const bw = w ?? 1.8;
+      return (
+        <>
+          <Box p={[0, 0.43, 0]} s={[bw, 0.06, 0.45]} c={wood} />
+          {[-1, 1].map((sx) => (
+            <Box key={sx} p={[sx * (bw / 2 - 0.15), 0.2, 0]} s={[0.08, 0.4, 0.4]} c="#3A4048" />
+          ))}
+        </>
+      );
+    }
   }
 }
 

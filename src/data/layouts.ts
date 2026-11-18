@@ -304,6 +304,17 @@ export const layouts: Record<LayoutId, Layout> = {
   F: build(mirror(A, 'F', 'F')),
 };
 
+/** Each plan's colour on the floor pages (3D floor, 2D plan, tags, list), so an apartment is
+ *  easy to pick out and to match with its label. Neighbours round the core get far-apart hues. */
+export const flatColors: Record<PlanId, string> = {
+  A: '#F4C7CF',
+  B: '#F5E2A0',
+  C: '#C8E3B9',
+  D: '#D9CCF0',
+  E: '#F7CDA8',
+  F: '#BFE2E6',
+};
+
 /** The three apartment types, by the plans that share them. */
 export const apartmentTypes: { plans: PlanId[]; layout: LayoutId }[] = [
   { plans: ['B', 'E'], layout: 'B' },

@@ -67,7 +67,13 @@ export type FurnitureType =
   | 'vanity'
   | 'plant'
   | 'shelf'
-  | 'shoeCabinet';
+  | 'shoeCabinet'
+  // shops and service rooms on the podium
+  | 'gondola'
+  | 'checkout'
+  | 'chiller'
+  | 'rack'
+  | 'bench';
 
 export interface FurnitureItem {
   type: FurnitureType;
@@ -109,6 +115,8 @@ export interface Layout {
 /** The two residential towers, named as on the architect's drawings (Block A is the podium,
  *  Block D the service and parking building). */
 export type TowerId = 'B' | 'C';
+/** A block with floor pages: A the podium, B and C the towers. */
+export type BlockId = 'A' | TowerId;
 
 export type UnitStatus = 'available' | 'reserved' | 'sold';
 

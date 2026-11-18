@@ -1,4 +1,4 @@
-import { towerSiteIndex, towers } from '@/data/building';
+import { towerPlate, towers } from '@/data/building';
 import site from '@/data/site.json';
 import type { Dict } from '@/i18n/config';
 import { fmt } from '@/i18n/config';
@@ -34,8 +34,9 @@ export function SitePlan({ t }: { t: Dict }) {
       ))}
       <path className="site-podium" d={d(site.podium, true)} />
       <path className="site-annex" d={d(site.annex, true)} />
+      {/* the towers as seen from above: their apartment floors overhang the podium */}
       {towers.map((tower) => {
-        const tw = site.towers[towerSiteIndex[tower]];
+        const tw = towerPlate(tower);
         return (
         <g key={tower}>
           <rect className="site-tower" x={tw.u0} y={-tw.v1} width={tw.u1 - tw.u0} height={tw.v1 - tw.v0} />

@@ -1,4 +1,5 @@
-import type { Facing, LayoutId, PlanId, TowerId, Unit, UnitStatus } from './types';
+import site from './site.json';
+import type { Facing, LayoutId, PlanId, TowerId, Unit } from './types';
 
 // The complex, from the architect's schematic design ("СЭВОЦЗ" ХХК-ийн үйлчилгээ, орон сууцны
 // цогцолбор, Уран проект ХХК, 2026):
@@ -8,14 +9,17 @@ import type { Facing, LayoutId, PlanId, TowerId, Unit, UnitStatus } from './type
 //  - Block D: three-storey service building with heated parking on floors 2 and 3.
 //  - One basement level under A, B, C and D with heated parking.
 //
-// STILL A PLACEHOLDER, because the drawings do not contain it: which apartments are sold
-// (`statusOf`). Replace it with your sales system.
+// STILL A PLACEHOLDER, because the drawings do not contain it: which apartments are sold. For now
+// every apartment is for sale; connect your sales system where `status` is set below.
 
 /** In the order the floor picker shows them. */
 export const towers: TowerId[] = ['B', 'C'];
 
 /** Which footprint in site.json is which tower. Block B is the northern tower. */
 export const towerSiteIndex: Record<TowerId, number> = { B: 1, C: 0 };
+/** A tower's rectangle on the site plan: its column grid plus 0.5 m, which is the podium under
+ *  the tower (the apartment floors overhang it, see towerPlate). */
+export const siteTower = (tower: TowerId) => site.towers[towerSiteIndex[tower]];
 
 // Levels from sections 1-1 and 2-2 (m above floor 1).
 export const PODIUM_FLOORS = 3;
@@ -53,6 +57,23 @@ export const PLATE = {
   corner: 2.2,
   grid: { x: [0, 7.2, 14.4, 21.6], y: [0, 7.2, 13.8, 21.0] },
 };
+
+/** The apartment floors (4-16) on the site plan: PLATE, placed at the tower's grid lines (its
+ *  south-west column is 0.5 m inside the site plan's rectangle). They overhang the podium east
+ *  and west. Keep in step with plate() in scripts/build-model.py. */
+export function towerPlate(tower: TowerId) {
+  const t = siteTower(tower);
+  const [gx, gy] = [t.u0 + 0.5, t.v0 + 0.5];
+  return { u0: gx + PLATE.x0, u1: gx + PLATE.x1, v0: gy + PLATE.y0, v1: gy + PLATE.y1 };
+}
+
+/** A rectangle in plan: x east, z south, from its north-west corner. */
+export interface Rect {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+}
 
 export interface CoreSpace {
   id: 'corridor' | 'stair' | 'lifts' | 'shafts' | 'hoa' | 'trash';
@@ -96,17 +117,6 @@ function plansOn(tower: TowerId, floor: number): { plan: PlanId; layout: LayoutI
   });
 }
 
-// PLACEHOLDER sales status, so the site has something to show.
-const SOLD_OUT_FLOORS: Record<TowerId, number[]> = { B: [5, 9, 14], C: [4, 8, 11] };
-
-function statusOf(tower: TowerId, floor: number, pos: number): UnitStatus {
-  const k = floor + (tower === 'C' ? 5 : 0);
-  const h = (k * 7 + pos * 13 + k * pos * 3) % 10;
-  if (SOLD_OUT_FLOORS[tower].includes(floor)) return h < 3 ? 'reserved' : 'sold';
-  if (pos === (k % 6) + 1) return 'available';
-  return h < 5 ? 'available' : h < 7 ? 'reserved' : 'sold';
-}
-
 export interface FloorSummary {
   tower: TowerId;
   floor: number;
@@ -128,7 +138,7 @@ for (const tower of towers) {
         plan,
         layout,
         facing: slot.facing,
-        status: statusOf(tower, floor, slot.pos),
+        status: 'available',
       };
     });
     units.push(...list);

@@ -108,3 +108,52 @@ export const roomEye = (r: Room): [number, number] => r.eye ?? [r.x + r.w / 2, r
 export const maxCeiling = (l: Layout) => Math.max(...l.rooms.map((r) => r.h));
 
 export const m = (n: number) => n.toFixed(1);
+
+/** A point on the site plan: [u, v] in metres (u east, v north). */
+export type Pt = [number, number];
+
+/** Grows a counter-clockwise polygon outwards by d metres (negative d shrinks it). Corners are
+ *  mitred; fine for the building outlines here, not for very sharp spikes. */
+export function offsetPolygon(pts: Pt[], d: number): Pt[] {
+  const n = pts.length;
+  const normal = (a: Pt, b: Pt): Pt => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+    return [dy / len, -dx / len];              // outward for a counter-clockwise outline
+  };
+  return pts.map((p, i) => {
+    const n1 = normal(pts[(i - 1 + n) % n], p);
+    const n2 = normal(p, pts[(i + 1) % n]);
+    const mx = n1[0] + n2[0], my = n1[1] + n2[1], ml = Math.hypot(mx, my) || 1;
+    const k = d / Math.max((mx / ml) * n1[0] + (my / ml) * n1[1], 0.35);
+    return [p[0] + (mx / ml) * k, p[1] + (my / ml) * k];
+  });
+}
+
+/** Centre of a polygon (area-weighted, so L-shaped rooms get a sensible label spot). */
+export function polygonCentre(pts: Pt[]): Pt {
+  let a = 0, cx = 0, cy = 0;
+  pts.forEach((p, i) => {
+    const q = pts[(i + 1) % pts.length];
+    const f = p[0] * q[1] - q[0] * p[1];
+    a += f;
+    cx += (p[0] + q[0]) * f;
+    cy += (p[1] + q[1]) * f;
+  });
+  return a ? [cx / (3 * a), cy / (3 * a)] : pts[0];
+}
+
+/** Is p inside the polygon? (Even-odd rule.) */
+export function inPolygon([x, y]: Pt, pts: Pt[]) {
+  let hit = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    if (yi > y !== yj > y && x < xi + ((y - yi) * (xj - xi)) / (yj - yi)) hit = !hit;
+  }
+  return hit;
+}
+
+export function bounds(pts: Pt[]) {
+  const us = pts.map((p) => p[0]), vs = pts.map((p) => p[1]);
+  return { u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs) };
+}

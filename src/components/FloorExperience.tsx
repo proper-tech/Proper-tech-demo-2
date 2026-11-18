@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FLOOR_MAX, FLOOR_MIN, PLATE, coreFor, getFloor } from '@/data/building';
-import { layouts } from '@/data/layouts';
-import type { Layout, TowerId } from '@/data/types';
+import { flatColors, layouts } from '@/data/layouts';
+import { ROOF_FLOOR } from '@/data/roof';
+import type { Layout, PlanId, TowerId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { layoutArea, m } from '@/lib/geometry';
@@ -25,6 +26,9 @@ const PLAN_W = PLATE.x1 - PLATE.x0;
 const PLAN_H = PLATE.y1 - PLATE.y0;
 
 const planTx = (layout: Layout): PlanTx => ({ ox: PX(layout.origin[0]), sx: 1, oz: PY(layout.origin[1]), sz: 1 });
+
+/** The apartment's colour as a CSS variable, for its tag, list entry and 2D plan. */
+const flat = (plan: PlanId) => ({ '--flat': flatColors[plan] }) as CSSProperties;
 
 export function FloorExperience({ tower, floor }: { tower: TowerId; floor: number }) {
   const { locale, t } = useI18n();
@@ -55,7 +59,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
           <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
-              <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} data-anchor={`unit:${u.id}`}>
+              <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
                 <b>{tags[u.id].title}</b>
                 <span>{tags[u.id].detail}</span>
               </div>
@@ -98,6 +102,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   <g
                     key={u.id}
                     className={`plan-unit${available ? ' is-available' : ''}${hovered === u.id ? ' is-hovered' : ''}`}
+                    style={flat(u.plan)}
                     onMouseEnter={() => setHovered(u.id)}
                     onMouseLeave={() => setHovered(null)}
                     onClick={available ? () => open(u.id) : undefined}
@@ -141,7 +146,9 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             const available = u.status === 'available';
             const body = (
               <>
-                <span className="unit-id">{u.id}</span>
+                <span className="unit-id is-flat" style={flat(u.plan)}>
+                  {u.id}
+                </span>
                 <span className="unit-info">
                   <b>{t.beds[layout.bedrooms as 1 | 2 | 3]}</b>
                   {fmt(t.apt.planN, { p: u.plan })}, {m(layoutArea(layout))} m², {t.facing[u.facing].toLowerCase()}
@@ -183,7 +190,10 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
               {floor + 1}
             </Link>
           ) : (
-            <span />
+            <Link href={`/${locale}/floors/${tower}/${ROOF_FLOOR}`}>
+              <span>{t.floor.next}</span>
+              {t.roof.name}
+            </Link>
           )}
         </nav>
       </aside>

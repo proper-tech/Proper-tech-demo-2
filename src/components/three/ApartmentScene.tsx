@@ -47,8 +47,9 @@ function OrbitRig({ layout }: { layout: Layout }) {
   const narrow = useThree((s) => s.size.width / s.size.height < 0.9);
   const dist = Math.max(layout.w, layout.d * 1.4) * (narrow ? 1.4 : 1);
 
+  // from the south, so the model reads the same way as the north-up 2D plan
   useEffect(() => {
-    camera.position.set(cx + dist * 0.25, dist * 1.3, cz - dist * 1.25);
+    camera.position.set(cx + dist * 0.25, dist * 1.3, cz + dist * 1.25);
     camera.fov = 40;
     camera.updateProjectionMatrix();
   }, [camera, cx, cz, dist]);
@@ -190,7 +191,7 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 40, near: 0.05, far: 300, position: [layout.w / 2, 14, -12] }}>
+    <Canvas flat dpr={[1, 2]} camera={{ fov: 40, near: 0.05, far: 300, position: [layout.w / 2, 14, layout.d + 12] }}>
       <color attach="background" args={[mode === 'tour' ? '#D3E3F3' : '#E9EDF0']} />
       <Lights />
 

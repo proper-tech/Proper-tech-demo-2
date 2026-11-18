@@ -99,11 +99,14 @@ function WallEdge({ edge, H, wall, mats }: { edge: Edge; H: number; wall: Materi
 function RoomFloor({
   room,
   color,
+  plain,
   selected,
   onSelect,
 }: {
   room: Room;
   color: string;
+  /** Flat paint instead of wood or tiles. */
+  plain?: boolean;
   selected: boolean;
   onSelect?: (id: string) => void;
 }) {
@@ -127,7 +130,7 @@ function RoomFloor({
   return (
     <group position={[room.x + room.w / 2, 0, room.z + room.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh geometry={geometry} onClick={handleClick}>
-        <meshStandardMaterial color={color} map={room.wet ? tileTexture() : woodTexture()} roughness={room.wet ? 0.4 : 0.75} />
+        <meshStandardMaterial color={color} map={plain ? null : room.wet ? tileTexture() : woodTexture()} roughness={room.wet ? 0.4 : 0.75} />
       </mesh>
       {selected && (
         <mesh position={[0, 0, 0.012]}>
@@ -144,11 +147,14 @@ export interface ApartmentModelProps {
   finish: Finish;
   /** Grey massing model without furniture (sold and reserved apartments). */
   muted?: boolean;
+  /** Paints every floor this one colour, without wood or tiles. The floor overview uses it to
+   *  tell the apartments apart. */
+  floorColor?: string;
   selectedRoom?: string | null;
   onSelectRoom?: (id: string) => void;
 }
 
-export function ApartmentModel({ layout, finish, muted, selectedRoom, onSelectRoom }: ApartmentModelProps) {
+export function ApartmentModel({ layout, finish, muted, floorColor, selectedRoom, onSelectRoom }: ApartmentModelProps) {
   const H = maxCeiling(layout);
 
   const mats = useMemo<Mats>(() => {
@@ -176,7 +182,8 @@ export function ApartmentModel({ layout, finish, muted, selectedRoom, onSelectRo
         <group key={room.id}>
           <RoomFloor
             room={room}
-            color={room.wet && !muted ? '#DCE3E6' : finish.floor}
+            color={floorColor ?? (room.wet && !muted ? '#DCE3E6' : finish.floor)}
+            plain={!!floorColor}
             selected={selectedRoom === (room.partOf ?? room.id)}
             onSelect={onSelectRoom}
           />

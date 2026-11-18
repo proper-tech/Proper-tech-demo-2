@@ -31,9 +31,13 @@ export function Projector({ anchors, layer }: { anchors: Anchor[]; layer: LabelL
       v.set(...position).applyMatrix4(camera.matrixWorldInverse);
       const inFront = v.z < -0.1;
       v.applyMatrix4(camera.projectionMatrix);
-      el.style.visibility = inFront ? 'visible' : 'hidden';
-      const x = (v.x * 0.5 + 0.5) * size.width;
-      const y = (-v.y * 0.5 + 0.5) * size.height;
+      // hide labels whose point is off screen; push the rest fully inside so none is cut in half
+      const onScreen = Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1;
+      el.style.visibility = inFront && onScreen ? 'visible' : 'hidden';
+      const hw = el.offsetWidth / 2 + 4;
+      const hh = el.offsetHeight / 2 + 4;
+      const x = Math.min(Math.max((v.x * 0.5 + 0.5) * size.width, hw), size.width - hw);
+      const y = Math.min(Math.max((-v.y * 0.5 + 0.5) * size.height, hh), size.height - hh);
       el.style.transform = `translate(-50%, -50%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     }
   });
