@@ -1,0 +1,170 @@
+[
+  {
+    "from": "entry",
+    "to": "kitchen",
+    "point": [
+      11.45,
+      14.8,
+      1.0
+    ],
+    "heading": 270.0,
+    "pitch": -13.707,
+    "obstacle": null
+  },
+  {
+    "from": "kitchen",
+    "to": "entry",
+    "point": [
+      11.55,
+      15.1,
+      0.25
+    ],
+    "heading": 4.899,
+    "pitch": -35.439,
+    "obstacle": null
+  },
+  {
+    "from": "kitchen",
+    "to": "living",
+    "point": [
+      13.9,
+      16.85,
+      1.12
+    ],
+    "heading": 249.444,
+    "pitch": -12.537,
+    "obstacle": null
+  },
+  {
+    "from": "living",
+    "to": "kitchen",
+    "point": [
+      13.9,
+      16.85,
+      1.12
+    ],
+    "heading": 94.086,
+    "pitch": -28.435,
+    "obstacle": null
+  },
+  {
+    "from": "living",
+    "to": "hall",
+    "point": [
+      15.75,
+      17.22,
+      1.05
+    ],
+    "heading": 170.147,
+    "pitch": -13.135,
+    "obstacle": null
+  },
+  {
+    "from": "hall",
+    "to": "living",
+    "point": [
+      14.65,
+      17.4,
+      1.05
+    ],
+    "heading": 353.774,
+    "pitch": -15.169,
+    "obstacle": null
+  },
+  {
+    "from": "hall",
+    "to": "bed_d3",
+    "point": [
+      16.4,
+      17.72,
+      1.15
+    ],
+    "heading": 258.69,
+    "pitch": -34.466,
+    "obstacle": null
+  },
+  {
+    "from": "hall",
+    "to": "bed_d4",
+    "point": [
+      17.86,
+      17.175,
+      1.15
+    ],
+    "heading": 178.348,
+    "pitch": -12.64,
+    "obstacle": null
+  },
+  {
+    "from": "hall",
+    "to": "bath_d2",
+    "point": [
+      15.4,
+      16.658,
+      1.15
+    ],
+    "heading": 31.982,
+    "pitch": -18.256,
+    "obstacle": null
+  },
+  {
+    "from": "hall",
+    "to": "bath_d5",
+    "point": [
+      17.05,
+      16.658,
+      1.15
+    ],
+    "heading": 143.155,
+    "pitch": -20.478,
+    "obstacle": null
+  },
+  {
+    "from": "bed_d3",
+    "to": "hall",
+    "point": [
+      16.4,
+      17.94,
+      1.15
+    ],
+    "heading": 51.274,
+    "pitch": -14.445,
+    "obstacle": null
+  },
+  {
+    "from": "bed_d4",
+    "to": "hall",
+    "point": [
+      18.09,
+      17.175,
+      1.15
+    ],
+    "heading": 349.678,
+    "pitch": -12.846,
+    "obstacle": null
+  },
+  {
+    "from": "bath_d2",
+    "to": "hall",
+    "point": [
+      15.4,
+      16.59,
+      1.18
+    ],
+    "heading": 276.34,
+    "pitch": -35.251,
+    "obstacle": null
+  },
+  {
+    "from": "bath_d5",
+    "to": "hall",
+    "point": [
+      17.05,
+      16.59,
+      1.18
+    ],
+    "heading": 334.359,
+    "pitch": -38.426,
+    "obstacle": null
+  }
+]

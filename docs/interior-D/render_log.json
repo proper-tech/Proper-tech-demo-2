@@ -1,0 +1,106 @@
+[
+  {
+    "room": "hall",
+    "seconds": 271.2,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      16.3,
+      -17.22,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "bath_d5",
+    "seconds": 276.3,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      17.3,
+      -16.47,
+      1.4
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "bath_d2",
+    "seconds": 302.2,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      15.45,
+      -16.14,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "bed_d4",
+    "seconds": 371.9,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 12,
+    "camera": [
+      19.6,
+      -16.9,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "bed_d3",
+    "seconds": 365.4,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 12,
+    "camera": [
+      17.25,
+      -19,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "living",
+    "seconds": 266.9,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      13.85,
+      -17.55,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "entry",
+    "seconds": 254.8,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      11.45,
+      -12.75,
+      1.5
+    ],
+    "revision": "doors-v1"
+  },
+  {
+    "room": "kitchen",
+    "seconds": 258.2,
+    "width": 2560,
+    "height": 1280,
+    "max_samples": 8,
+    "camera": [
+      13.3,
+      -15.25,
+      1.5
+    ],
+    "revision": "doors-v1"
+  }
+]

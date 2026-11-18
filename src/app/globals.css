@@ -916,6 +916,12 @@ button {
   color: var(--paper);
 }
 
+.tour-note {
+  display: block;
+  margin-top: 0.25rem;
+  opacity: 0.85;
+}
+
 /* Side panel */
 
 .apt-panel {
