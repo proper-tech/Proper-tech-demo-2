@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { floors, towers } from '@/data/building';
+import { blockDFloors, blockDLabel } from '@/data/blockD';
 import { layouts } from '@/data/layouts';
 import { podiumFloors } from '@/data/podium';
 import { ROOF_FLOOR } from '@/data/roof';
@@ -45,8 +46,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   // the podium (block A): floors 1-3 and the roof playground, always open, nothing for sale
   const podiumPanel = [...podiumFloors].sort((a, b) => panelOrder(a.floor, b.floor));
   const podiumFloor = hovered?.tower === 'A' ? (hovered.floor as 1 | 2 | 3 | 4) : null;
+  // block D, the service and parking building: basement (B1) and floors 1-3, two to a row
+  const dPanel = [2, 3, 0, 1].filter((n) => blockDFloors.some((f) => f.floor === n));
+  const dFloor = hovered?.tower === 'D' ? (hovered.floor as 0 | 1 | 2 | 3) : null;
   // the technical floor on a tower's roof, floor 17: always open, nothing for sale
-  const roofTower = hovered && hovered.tower !== 'A' && hovered.floor === ROOF_FLOOR ? hovered.tower : null;
+  const roofTower = hovered && hovered.tower !== 'A' && hovered.tower !== 'D' && hovered.floor === ROOF_FLOOR ? hovered.tower : null;
   const isHovered = (floor: number) => hovered?.tower === tower && hovered.floor === floor;
   const hover = (floor: number | null) => setHovered(floor === null ? null : { tower, floor });
 
@@ -56,16 +60,23 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         {children}
         <div className="lift">
           <div className="segmented" role="group">
-            {(['A', ...towers] as BlockId[]).map((id) => (
+            {(['A', ...towers, 'D'] as BlockId[]).map((id) => (
               <button key={id} type="button" aria-pressed={tower === id} onClick={() => setTower(id)}>
                 {id === 'A' ? t.home.podiumTab : fmt(t.home.towerN, { t: id })}
               </button>
             ))}
           </div>
           <div className="lift-display" aria-live="polite">
-            <span className="lift-number">{current ? current.floor : roofTower ? t.roof.button : (podiumFloor ?? '–')}</span>
+            <span className="lift-number">
+              {current ? current.floor : roofTower ? t.roof.button : dFloor !== null ? blockDLabel(dFloor) : (podiumFloor ?? '–')}
+            </span>
             <span className="lift-text">
-              {podiumFloor ? (
+              {dFloor !== null ? (
+                <>
+                  <b>{t.blockD.name}</b>
+                  {t.blockD.use[dFloor]}
+                </>
+              ) : podiumFloor ? (
                 <>
                   <b>{t.podium.name}</b>
                   {t.podium.use[podiumFloor]}
@@ -112,7 +123,23 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                   </Link>
                 </li>
               ))}
-            {tower !== 'A' && (
+            {tower === 'D' &&
+              dPanel.map((n) => (
+                <li key={n}>
+                  <Link
+                    href={`/${locale}/floors/D/${n}`}
+                    className={isHovered(n) ? 'is-hovered' : undefined}
+                    aria-label={`${t.blockD.name}, ${n === 0 ? t.blockD.basementTitle : fmt(t.home.openFloor, { n })}, ${t.blockD.use[n as 0 | 1 | 2 | 3]}`}
+                    onMouseEnter={() => hover(n)}
+                    onMouseLeave={() => hover(null)}
+                    onFocus={() => hover(n)}
+                    onBlur={() => hover(null)}
+                  >
+                    {blockDLabel(n)}
+                  </Link>
+                </li>
+              ))}
+            {tower !== 'A' && tower !== 'D' && (
               <li className="lift-roof">
                 <Link
                   href={`/${locale}/floors/${tower}/${ROOF_FLOOR}`}
@@ -170,7 +197,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
           layer={layer}
         />
         <div className="label-layer" ref={layer}>
-          {towers.map((id) => (
+          {([...towers, 'D'] as BlockId[]).map((id) => (
             <div key={id} className={`tower-tag${tower === id ? ' is-selected' : ''}`} data-anchor={`tower:${id}`}>
               {fmt(t.home.towerN, { t: id })}
             </div>

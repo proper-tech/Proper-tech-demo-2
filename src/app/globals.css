@@ -1369,6 +1369,26 @@ button {
 .podium-tower { fill: #d0d6dd; }
 .podium-technical { fill: #e1e6ec; }
 .podium-roof { fill: #eef1f4; }
+.podium-parts { fill: #f5ecd8; }
+.podium-workshop { fill: #e9e7e1; }
+.podium-parking { fill: #e2e7ec; }
+.podium-ramp { fill: #cdd4dc; }
+.podium-waiting { fill: #efe6da; }
+.podium-changing { fill: #e4e8ee; }
+/* block D: gaps in the outside wall (garage doors), arrows up the ramps */
+.plan-gap {
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+.plan-ramp line { stroke-dasharray: 0.5 0.35; }
+.plan-ramp line,
+.plan-ramp path {
+  fill: none;
+  stroke: #5b6672;
+  stroke-width: 0.18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .podium-space.is-clickable {
   cursor: pointer;
@@ -1443,3 +1463,75 @@ button {
 .podium-tag.is-hovered:not(.status-available) span {
   color: #dbe7fb;
 }
+
+/* Block D walk-through: where you are, floor buttons, a small plan with your position */
+.label-layer.is-hidden { display: none; }
+.walk-hud {
+  position: absolute;
+  left: clamp(1rem, 3vw, 2.5rem);
+  bottom: 2.6rem;
+  z-index: 10;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+.walk-room {
+  display: grid;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(20, 35, 59, 0.82);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.walk-room span {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+.walk-floors {
+  display: flex;
+  gap: 0.4rem;
+}
+.walk-floors a {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.walk-floors a:hover { background: #fff; border-color: var(--ink); }
+.walk-map {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  width: clamp(8rem, 18vw, 13rem);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 18px rgba(20, 35, 59, 0.18);
+}
+.walk-map .podium-space { pointer-events: none; }
+.walk-spot { fill: #fff; stroke: #2f6fde; stroke-width: 0.18; }
+.walk-map:hover .walk-spot { fill: #dce7fb; }
+.walk-map .podium-space.is-here { fill: #bcd3f7; }
+.walk-cone { fill: rgba(47, 111, 222, 0.28); }
+.walk-dot { fill: #2f6fde; stroke: #fff; stroke-width: 0.3; pointer-events: none; }
+.walk-cone { pointer-events: none; }
+.floor-stage.is-walk .apt-head {
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(20, 35, 59, 0.15);
+  pointer-events: auto;
+}
+.floor-stage.is-walk .stage-hint {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.floor-stage.is-walk .stage-hint { max-width: calc(100% - 17rem); }

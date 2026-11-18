@@ -264,7 +264,6 @@ FLOOR_MIN, FLOOR_MAX = 4, 16
 FLOORS = FLOOR_MAX - FLOOR_MIN + 1
 TOP = PODIUM_HEIGHT + FLOORS * FLOOR_HEIGHT     # +50.7, roof of the 16th floor
 TECH_TOP = TOP + 4.0                             # +54.7, roof of the technical floor (section 1-1)
-ANNEX_HEIGHT = 14.0
 CHAMFER = 2.4                      # glazed tower corners; BuildingScene.tsx uses the same value
 
 
@@ -607,21 +606,268 @@ def build_screen():
     return b.finish()
 
 
-# ---------------------------------------------------------------- annex
+# ---------------------------------------------------------------- block D (the annex)
+# The service and parking building, from the architect's sheets 30-39 and the render of it. Column
+# grid 30 m (Y1-Y6, south to north) by 18 m (X1-X4, west to east); the outside of the walls is 0.45 m
+# out, which is the annex footprint in site.json. Roof +10.8, parapet to +11.7 (sections,
+# elevations). Cladding: white-beige metal panels, RGB 250,243,239 (note on the elevations), with
+# their joints. The stair and lift core stands out from the east wall at the north end: glazed full
+# height over the stair (a curtain wall you see the stair through), solid over the lift. Openings are
+# measured off the elevations; keep in step with src/data/blockD.ts (blockDWalk).
+D_ROOF = 10.8
+D_PARAPET = D_ROOF + 0.9
+D_WALL = 0.45
+D_CORE_E, D_CORE_S = 21.2, 19.6
+LEVELS_D = (0.0, 4.5, 7.8, 10.8)
+PANEL_W, PANEL_H = 1.5, 0.75       # cladding panels
+
+
+def srgb(r, g, b):
+    f = lambda c: (c / 255) / 12.92 if c / 255 <= 0.04045 else ((c / 255 + 0.055) / 1.055) ** 2.4
+    return (f(r), f(g), f(b))
+
+
+M["clad"] = mat("D Cladding", srgb(250, 243, 239), 0.42, 0.25)
+M["clad_joint"] = mat("D Panel Joint", srgb(196, 192, 188), 0.6)
+M["d_glass"] = mat("D Glass", srgb(52, 92, 130), 0.06, 0.35)
+M["d_frame"] = mat("D Frame", srgb(52, 56, 62), 0.4, 0.6)
+M["garage"] = mat("D Garage Door", srgb(150, 155, 160), 0.45, 0.4)
+M["stair"] = mat("D Stair", srgb(205, 205, 200), 0.8)
+M["rail"] = mat("D Railing", srgb(240, 240, 238), 0.3, 0.4)
+
+
+def glass_clear():
+    m = mat("D Curtain Wall", srgb(120, 170, 210), 0.04, 0.2)
+    bsdf = m.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Alpha"].default_value = 0.32
+    if hasattr(m, "surface_render_method"):
+        m.surface_render_method = "BLENDED"
+    else:
+        m.blend_method = "BLEND"
+    return m
+
+
+M["d_glass_t"] = glass_clear()
+
+
+def d_frame():
+    """Block metres (x east from axis X1, y north from axis Y1) -> site plan, and the block's angle."""
+    A = [Vector(p) for p in SITE["annex"]]
+    sw = min(A, key=lambda p: p.x + p.y)
+    se = max(A, key=lambda p: p.x - p.y)
+    nw = min(A, key=lambda p: p.x - p.y)
+    e, n = (se - sw).normalized(), (nw - sw).normalized()
+    o = sw + (e + n) * D_WALL
+    return (lambda x, y: tuple(o + e * x + n * y)), math.atan2(e.y, e.x)
+
+
+D_AT, D_ANGLE = d_frame()
+
+
+def d_box(b, x0, x1, y0, y1, z0, z1, key):
+    """A box given in block metres, turned with the block."""
+    if x1 - x0 < 1e-3 or y1 - y0 < 1e-3 or z1 - z0 < 1e-3:
+        return
+    cx, cy = D_AT((x0 + x1) / 2, (y0 + y1) / 2)
+    b.box((cx, cy, (z0 + z1) / 2), (x1 - x0, y1 - y0, z1 - z0), key, D_ANGLE)
+
+
+def d_quad(b, a, c, s0, s1, z0, z1, off, key):
+    """A quad on the outside of the wall from a to c (block metres, the outline counter-clockwise),
+    from s0 to s1 metres along it."""
+    A, C = Vector(a), Vector(c)
+    d = (C - A).normalized()
+    p, q = A + d * s0, A + d * s1
+    b.fquad(D_AT(p.x, p.y), D_AT(q.x, q.y), z0, z1, off, key)
+
+
+def free_runs(lo, hi, holes):
+    """[lo, hi] less the intervals in holes."""
+    runs = [(lo, hi)]
+    for h0, h1 in holes:
+        runs = [r for a, c in runs for r in ((a, min(c, h0)), (max(a, h1), c)) if r[1] - r[0] > 0.02]
+    return runs
+
+
+def clad_face(b, a, c, top, openings, s_from=0.0, s_to=None):
+    """Panel joints over the solid part of a wall face (openings: (s0, s1, z0, z1) along it)."""
+    L = (Vector(c) - Vector(a)).length if s_to is None else s_to
+    t = 0.008
+    k = 1
+    while k * PANEL_W < L - 0.05:
+        s = k * PANEL_W
+        if s > s_from:
+            for z0, z1 in free_runs(0.0, top, [(o[2], o[3]) for o in openings if o[0] - 0.05 < s < o[1] + 0.05]):
+                d_quad(b, a, c, s - t, s + t, z0, z1, 0.012, "clad_joint")
+        k += 1
+    z = PANEL_H
+    while z < top - 0.05:
+        for s0, s1 in free_runs(s_from, L, [(o[0], o[1]) for o in openings if o[2] - 0.05 < z < o[3] + 0.05]):
+            d_quad(b, a, c, s0, s1, z - t, z + t, 0.012, "clad_joint")
+        z += PANEL_H
+
+
+def framed(b, a, c, s0, s1, z0, z1, panes, glass="d_glass", frame=0.06):
+    """Glass in an opening with its frame and `panes` panes across."""
+    d_quad(b, a, c, s0, s1, z0, z1, 0.02, glass)
+    for k in range(panes + 1):
+        s = s0 + (s1 - s0) * k / panes
+        d_quad(b, a, c, s - frame / 2, s + frame / 2, z0, z1, 0.04, "d_frame")
+    for z in (z0, z1 - frame):
+        d_quad(b, a, c, s0, s1, z, z + frame, 0.04, "d_frame")
+
+
 def build_annex():
-    b = Builder("Annex", ["white", "glass", "joint", "roof"])
-    b.prism(ANNEX, 0, ANNEX_HEIGHT, "white", "roof")
-    for i in range(len(ANNEX)):
-        a, c = Vector(ANNEX[i]), Vector(ANNEX[(i + 1) % len(ANNEX)])
-        nb = max(1, round((c - a).length / 6))
-        for z in (2.8, 5.6, 8.4, 11.2):
-            b.fquad(a, c, z - 0.03, z + 0.03, 0.03, "joint")
-        for k in range(nb):
-            p, q = a.lerp(c, k / nb), a.lerp(c, (k + 1) / nb)
-            d = (c - a).normalized() * 0.03
-            b.fquad(p - d, p + d, 0, ANNEX_HEIGHT, 0.03, "joint")
-            for z in (4.6, 9.8):
-                b.fquad(p.lerp(q, 0.15), q.lerp(p, 0.15), z, z + 0.95, 0.05, "glass")
+    b = Builder("Annex", ["clad", "clad_joint", "d_glass", "d_glass_t", "d_frame", "garage", "stair", "rail", "roof"])
+    W = D_WALL
+    E, N = 18 + W, 30 + W
+    SW_, SE_, NE_, NW_ = (-W, -W), (E, -W), (E, N), (-W, N)
+
+    # ---- the main block, with the roof inside the parapet
+    b.prism([D_AT(*p) for p in (SW_, SE_, NE_, NW_)], 0, D_PARAPET, "clad", "roof")
+
+    # ---- openings, measured off the elevations; along each face s runs from its first corner
+    def strips(face_len, centres, flip):
+        out = []
+        for zl, (z0, z1) in ((LEVELS_D[1], (1.97, 2.6)), (LEVELS_D[2], (1.7, 2.35))):
+            for c in centres:
+                s = face_len - c if flip else c
+                out.append((s - 1.965, s + 1.965, zl + z0, zl + z1, "strip"))
+        return out
+
+    # east face, from the south-east corner northwards: s = v + 0.45
+    east = [(0.12 + W, 17.75 + W, 0.05, 4.1, "shop")] + strips(0, [3 + W, 9 + W, 15 + W], False)
+    # north face, from the north-east corner westwards: s = 18.45 - u
+    north = [
+        (E - 17.45, E - 12.45, 0.0, 3.5, "garage"),
+        (E - 11.5, E - 6.4, 0.0, 3.5, "garage"),
+        (E - 5.15, E - 3.36, 0.95, 2.58, "win"),
+        (E - 2.56, E - 0.74, 0.95, 2.58, "win"),
+    ] + strips(0, [E - 3, E - 9, E - 15], False)
+    # south face, from the south-west corner eastwards: s = u + 0.45
+    south = [
+        (0.86 + W, 2.6 + W, 0.88, 2.5, "win"),
+        (3.42 + W, 5.19 + W, 0.88, 2.5, "win"),
+        (7.01 + W, 10.99 + W, 3.37, 4.0, "win"),
+        (13.0 + W, 16.95 + W, 3.37, 4.0, "win"),
+    ] + strips(0, [3 + W, 9 + W, 15 + W], False)
+
+    for a, c, ops in ((SE_, NE_, east), (NE_, NW_, north), (SW_, SE_, south)):
+        clad_face(b, a, c, D_PARAPET, ops, s_to=(D_CORE_S + W) if a == SE_ else None)
+        for s0, s1, z0, z1, kind in ops:
+            if kind == "garage":
+                # sectional door: grey panels with grooves, a dark frame round it
+                d_quad(b, a, c, s0, s1, z0, z1, 0.02, "garage")
+                z = z0 + 0.5
+                while z < z1 - 0.1:
+                    d_quad(b, a, c, s0, s1, z - 0.012, z + 0.012, 0.03, "d_frame")
+                    z += 0.5
+                for s in (s0 - 0.08, s1):
+                    d_quad(b, a, c, s, s + 0.08, z0, z1 + 0.08, 0.04, "d_frame")
+                d_quad(b, a, c, s0, s1, z1, z1 + 0.08, 0.04, "d_frame")
+            elif kind == "strip":
+                framed(b, a, c, s0, s1, z0, z1, 4)
+            elif kind == "win":
+                framed(b, a, c, s0, s1, z0, z1, max(1, round((s1 - s0) / 0.9)))
+            elif kind == "shop":
+                framed(b, a, c, s0, s1, z0, z1, round((s1 - s0) / 1.5))
+                # transom at door head height, and the two entrances (customers' door, vestibule 11)
+                d_quad(b, a, c, s0, s1, 2.4, 2.46, 0.045, "d_frame")
+                for e0, e1 in ((2.3 + W, 3.3 + W), (12.7 + W, 13.9 + W)):
+                    d_quad(b, a, c, e0, e1, 0.0, 2.4, 0.05, "d_frame")
+                    d_quad(b, a, c, e0 + 0.08, e1 - 0.08, 0.08, 2.32, 0.055, "d_glass")
+                    d_quad(b, a, c, (e0 + e1) / 2 - 0.02, (e0 + e1) / 2 + 0.02, 0.08, 2.32, 0.06, "d_frame")
+    # west face: blank, panels only
+    clad_face(b, NW_, SW_, D_PARAPET, [])
+    # parapet coping
+    b.strip([D_AT(*p) for p in (SW_, SE_, NE_, NW_)], 0.1, D_PARAPET, D_PARAPET + 0.06, "d_frame", closed=True)
+
+    # ---- entrance portal round the door into vestibule 11: a dark frame standing out 0.9 m
+    for y0, y1 in ((12.25, 12.5), (14.1, 14.35)):
+        d_box(b, E, E + 0.9, y0, y1, 0, 3.3, "d_frame")
+    d_box(b, E, E + 0.9, 12.25, 14.35, 3.05, 3.3, "d_frame")
+
+    # ---- the stair and lift core
+    CE, CS = D_CORE_E, D_CORE_S
+    GLASS0, GLASS1, GTOP = 20.1, 27.8, 11.0
+    d_box(b, E, CE, CS, GLASS0, 0, D_PARAPET, "clad")             # south end
+    d_box(b, E, CE, GLASS1, N, 0, D_PARAPET, "clad")              # lift shaft and north end
+    d_box(b, E, CE, GLASS0, GLASS1, GTOP, D_PARAPET, "clad")      # band over the curtain wall
+    d_box(b, E, CE, GLASS0, GLASS1, -0.05, 0.02, "stair")         # ground floor in the core
+    core = [(E, CS), (CE, CS), (CE, N), (E, N)]
+    # joints on the core's solid faces
+    clad_face(b, core[0], core[1], D_PARAPET, [])
+    clad_face(b, core[2], core[3], D_PARAPET, [])
+    clad_face(b, core[1], core[2], D_PARAPET, [(GLASS0 - CS, GLASS1 - CS, 0.0, GTOP)])
+    b.strip([D_AT(*p) for p in core], 0.1, D_PARAPET, D_PARAPET + 0.06, "d_frame", closed=True)
+    # curtain wall: clear glass, mullions about every 1.5 m, transoms at the floors and half landings
+    d_quad(b, core[1], core[2], GLASS0 - CS, GLASS1 - CS, 0.0, GTOP, -0.08, "d_glass_t")
+    bays = 5
+    for k in range(bays + 1):
+        y = GLASS0 + (GLASS1 - GLASS0) * k / bays
+        d_box(b, CE - 0.1, CE + 0.06, y - 0.03, y + 0.03, 0.0, GTOP, "d_frame")
+    for z in (0.0, 2.4, 4.5, 6.15, 7.8, 9.3, GTOP - 0.08):
+        d_box(b, CE - 0.1, CE + 0.06, GLASS0, GLASS1, z, z + 0.06, "d_frame")
+    # the stair's outside double door, in the curtain wall's last bay (elevation 1)
+    y0 = GLASS0 + (GLASS1 - GLASS0) * (bays - 1) / bays
+    d_box(b, CE - 0.08, CE + 0.1, y0 + 0.02, GLASS1 - 0.02, 0.0, 2.4, "d_frame")
+    d_box(b, CE - 0.06, CE + 0.12, y0 + 0.1, GLASS1 - 0.1, 0.08, 2.32, "d_glass")
+    d_box(b, CE - 0.06, CE + 0.13, (y0 + GLASS1) / 2 - 0.02, (y0 + GLASS1) / 2 + 0.02, 0.08, 2.32, "d_frame")
+
+    # ---- the stair inside, seen through the glass: floor landing by the lift (north), half landing
+    # at the south end, two flights side by side (the one up from each floor on the glass side)
+    FL0, FL1 = 26.4, GLASS1      # floor landing
+    HL0, HL1 = GLASS0, 21.4      # half landing
+    near, far = (19.95, 21.0), (18.6, 19.65)
+    for zf in LEVELS_D[1:3]:
+        d_box(b, E, CE - 0.1, FL0, FL1, zf - 0.25, zf, "stair")
+    for z0, z1 in ((LEVELS_D[0], LEVELS_D[1]), (LEVELS_D[1], LEVELS_D[2])):
+        zm = (z0 + z1) / 2
+        d_box(b, E, CE - 0.1, HL0, HL1, zm - 0.25, zm, "stair")
+        for (x0, x1), (ya, za), (yb, zb) in ((near, (FL0, z0), (HL1, zm)), (far, (HL1, zm), (FL0, z1))):
+            n = max(1, round((zb - za) / 0.15))
+            run = (yb - ya) / n
+            for i in range(n):
+                y = ya + run * i
+                d_box(b, x0, x1, min(y, y + run), max(y, y + run), za + (zb - za) * i / n, za + (zb - za) * (i + 1) / n, "stair")
+            # the sloping slab under the steps
+            xm = (x0 + x1) / 2
+            p, q = D_AT(xm, ya), D_AT(xm, yb)
+            b.beam((p[0], p[1], za - 0.15), (q[0], q[1], zb - 0.15), x1 - x0, 0.2, "stair")
+            # white railing on both sides of the flight: handrail and posts
+            for xr in (x0 + 0.03, x1 - 0.03):
+                p, q = D_AT(xr, ya), D_AT(xr, yb)
+                b.beam((p[0], p[1], za + 0.95), (q[0], q[1], zb + 0.95), 0.05, 0.05, "rail")
+                for t in (0.15, 0.5, 0.85):
+                    y = ya + (yb - ya) * t
+                    zz = za + (zb - za) * t
+                    d_box(b, xr - 0.02, xr + 0.02, y - 0.02, y + 0.02, zz, zz + 0.95, "rail")
+    return b.finish()
+
+
+def build_annex_site():
+    """Planting in front of block D's east face and its core, and two street lamps (the render)."""
+    b = Builder("D Landscape", ["hedge", "leaf", "dark", "lamp"])
+    W = D_WALL
+    doors = ((2.1, 3.5), (12.1, 14.5), (25.9, 27.9))
+    def bush_row(x, y0, y1):
+        y = y0
+        while y <= y1:
+            if not any(d0 < y < d1 for d0, d1 in doors):
+                cx, cy = D_AT(x, y)
+                b.blob((cx, cy, 0.42), random.uniform(0.42, 0.55), "hedge", sz=0.85, jitter=0.15, sub=2)
+            y += 1.45
+    bush_row(18 + W + 1.0, 0.6, 19.0)
+    bush_row(D_CORE_E + 0.9, 20.3, 30.0)
+    for x, y, flip in ((25.5, 6.5, 1), (25.5, 25.5, -1)):
+        cx, cy = D_AT(x, y)
+        b.cyl((cx, cy, 3.9), 0.075, 7.8, "dark", seg=12)
+        b.cyl((cx, cy, 0.15), 0.18, 0.3, "dark", seg=12)
+        for z, reach in ((7.6, 1.6), (4.6, 0.9)):
+            ex, ey = D_AT(x - reach, y + 0.0 * flip)
+            b.beam((cx, cy, z), (ex, ey, z + 0.15), 0.06, 0.06, "dark")
+            b.box((ex, ey, z + 0.1), (0.55, 0.22, 0.1), "dark", D_ANGLE)
+            b.box((ex, ey, z + 0.03), (0.45, 0.16, 0.03), "lamp", D_ANGLE)
     return b.finish()
 
 
@@ -654,7 +900,7 @@ def build_cars():
 
 
 # ---------------------------------------------------------------- build + export, one GLB per block
-BLOCKS = {"A": [build_podium(), build_screen()], "D": [build_annex()], "site": [build_cars()]}
+BLOCKS = {"A": [build_podium(), build_screen()], "D": [build_annex(), build_annex_site()], "site": [build_cars()]}
 for i, rect in enumerate(TOWERS):
     k = "B" if i == STREET else "C"        # architect's block key: B on the main road (north), C to the south
     BLOCKS[k] = [build_tower("Tower " + k, rect)]

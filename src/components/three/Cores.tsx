@@ -95,6 +95,14 @@ export interface StairSpec {
   door: Side;
   /** Puts the flight going up on the west (or north) side instead of the east (or south). */
   flip?: boolean;
+  /** End of the floor landing, when the door is in a long wall (by default the south or east
+   *  end; a door in a short wall puts the landing at the door end). */
+  landing?: Side;
+  /** The top floor of the stair: no flight going up, only the one down. */
+  top?: boolean;
+  /** Where the door is along its wall, in scene metres (z on an east or west wall, x on a north or
+   *  south one), when the drawings put it somewhere other than the middle of the floor landing. */
+  doorAt?: number;
 }
 
 const RISER = 0.15;
@@ -105,11 +113,12 @@ const WELL = 0.1; // gap between the two flights
 
 /** Plan of a stair: two flights side by side along its long side. `a` runs across it, `s` along
  *  it from the half landing's wall; pt() turns (a, s, height) into scene coordinates. */
-function stairPlan({ r, storey, below, door, flip }: StairSpec) {
+function stairPlan({ r, storey, below, door, flip, landing }: StairSpec) {
   const ns = r.d >= r.w;
   const L = ns ? r.d : r.w;
   const A = ns ? r.w : r.d;
-  const reverse = door === (ns ? 'N' : 'W'); // door at the north (west) end: half landing at the other end
+  // floor landing at the north (west) end: half landing at the other end
+  const reverse = (landing ?? door) === (ns ? 'N' : 'W');
   const pt = (a: number, s: number, y: number): V3 => {
     const p = flip ? A - a : a;
     const q = reverse ? L - s : s;
@@ -143,7 +152,7 @@ export function Stairs({ wallH, cap, ...spec }: StairSpec & { wallH: number; cap
   // the door sits beside the floor landing in a long wall, or in the middle of a short one
   const long = p.ns ? door === 'E' || door === 'W' : door === 'N' || door === 'S';
   const landing = p.pt(0, (p.end + p.L) / 2, 0);
-  const at = long ? (p.ns ? landing[2] : landing[0]) : door === 'N' || door === 'S' ? r.x + r.w / 2 : r.z + r.d / 2;
+  const at = spec.doorAt ?? (long ? (p.ns ? landing[2] : landing[0]) : door === 'N' || door === 'S' ? r.x + r.w / 2 : r.z + r.d / 2);
   const [u0, u1] = p.up;
   const [d0, d1] = p.down;
 
@@ -151,17 +160,27 @@ export function Stairs({ wallH, cap, ...spec }: StairSpec & { wallH: number; cap
     <>
       <Box r={p.rect(0, p.A, p.end, p.L)} h={0.02} color="#DDE2E7" />
       <Walls r={r} h={wallH} cap={cap} door={{ side: door, at, w: 1.0 }} />
-      {/* going up: steps stacked on the slab, then the half landing */}
-      {Array.from({ length: p.n }, (_, i) => (
-        <Box key={`u${i}`} r={p.rect(u0, u1, p.end - (i + 1) * p.tread, p.end - i * p.tread)} h={(i + 1) * rise} color={CONCRETE} />
-      ))}
-      <Box r={p.rect(EDGE, p.A - EDGE, 0.1, HALF)} y={storey / 2 - 0.15} h={0.15} color={CONCRETE} />
+      {spec.top ? (
+        // the top floor: floor where the flight up would be, and a rail along the well
+        <>
+          <Box r={p.rect(u0, u1, HALF, p.end)} h={0.02} color="#DDE2E7" />
+          <Beam a={p.pt(u0 - 0.02, p.end, 0.95)} b={p.pt(u0 - 0.02, HALF, 0.95)} w={0.05} h={0.05} color={DARK} />
+        </>
+      ) : (
+        <>
+          {/* going up: steps stacked on the slab, then the half landing */}
+          {Array.from({ length: p.n }, (_, i) => (
+            <Box key={`u${i}`} r={p.rect(u0, u1, p.end - (i + 1) * p.tread, p.end - i * p.tread)} h={(i + 1) * rise} color={CONCRETE} />
+          ))}
+          <Box r={p.rect(EDGE, p.A - EDGE, 0.1, HALF)} y={storey / 2 - 0.15} h={0.15} color={CONCRETE} />
+        </>
+      )}
       {/* going down through the slab opening, to the half landing of the storey below */}
       {Array.from({ length: Math.max(p.m - 1, 0) }, (_, i) => (
         <Box key={`d${i}`} r={p.rect(d0, d1, p.end - (i + 1) * downTread, p.end - i * downTread)} y={-below / 2} h={(p.m - i - 1) * drop} color={CONCRETE} />
       ))}
       {/* handrails along the well between the flights */}
-      <Beam a={p.pt(u0 + 0.03, p.end, 0.9)} b={p.pt(u0 + 0.03, HALF, storey / 2 + 0.9)} w={0.05} h={0.05} color={DARK} />
+      {!spec.top && <Beam a={p.pt(u0 + 0.03, p.end, 0.9)} b={p.pt(u0 + 0.03, HALF, storey / 2 + 0.9)} w={0.05} h={0.05} color={DARK} />}
       {p.m > 0 && <Beam a={p.pt(d1 - 0.03, p.end, 0.9)} b={p.pt(d1 - 0.03, HALF, 0.9 - below / 2)} w={0.05} h={0.05} color={DARK} />}
     </>
   );
@@ -287,6 +306,53 @@ export function Escalators({ run: e, cut }: { run: EscalatorRun; cut: number }) 
             <Box r={{ x: x - 0.02, z: hole.z, w: 0.08, d: hole.d }} y={1.0} h={0.05} color={DARK} />
           </group>
         ))}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- car ramps
+
+/** A straight car ramp running north-south: concrete deck with kerbs and yellow edge lines. */
+export interface RampRun {
+  /** West and east edges. */
+  x0: number;
+  x1: number;
+  /** Scene z of its foot and of its top end. */
+  zLow: number;
+  zHigh: number;
+  /** Height of the foot above this floor: 0 for a ramp leaving this floor, minus the storey
+   *  height for one arriving from the floor below. */
+  y0: number;
+  rise: number;
+}
+
+/** Anything above `cut` is left off, like the walls of the cut-away floor. */
+export function Ramp({ run: e, cut }: { run: RampRun; cut: number }) {
+  const t = e.y0 + e.rise <= cut ? 1 : Math.max(0, (cut - e.y0) / e.rise);
+  const zEnd = e.zLow + (e.zHigh - e.zLow) * t;
+  const yEnd = e.y0 + e.rise * t;
+  const xc = (e.x0 + e.x1) / 2;
+  const w = e.x1 - e.x0;
+  return (
+    <>
+      <Beam a={[xc, e.y0 - 0.15, e.zLow]} b={[xc, yEnd - 0.15, zEnd]} w={w} h={0.3} color="#9AA3AD" />
+      {[e.x0 + 0.1, e.x1 - 0.1].map((x) => (
+        <group key={x}>
+          <Beam a={[x, e.y0 + 0.15, e.zLow]} b={[x, yEnd + 0.15, zEnd]} w={0.2} h={0.3} color={CONCRETE} />
+          <Beam a={[x + (x < xc ? 0.25 : -0.25), e.y0 + 0.01, e.zLow]} b={[x + (x < xc ? 0.25 : -0.25), yEnd + 0.01, zEnd]} w={0.1} h={0.02} color="#E8B931" />
+        </group>
+      ))}
+    </>
+  );
+}
+
+/** A steel rail along one edge of an opening in the floor. */
+export function Rail({ a, b }: { a: [number, number]; b: [number, number] }) {
+  return (
+    <>
+      <Beam a={[a[0], 1.0, a[1]]} b={[b[0], 1.0, b[1]]} w={0.06} h={0.06} color={DARK} />
+      <Beam a={[a[0], 0.5, a[1]]} b={[b[0], 0.5, b[1]]} w={0.04} h={0.04} color={STEEL} />
+      <Beam a={[a[0], 0.05, a[1]]} b={[b[0], 0.05, b[1]]} w={0.1} h={0.1} color={STEEL} />
     </>
   );
 }

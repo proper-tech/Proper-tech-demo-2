@@ -6,10 +6,10 @@ import { OrbitControls } from '@react-three/drei';
 import { ExtrudeGeometry, Path, Shape } from 'three';
 import type { Rect } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
-import { getPodiumFloor, listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType } from '@/data/podium';
+import { listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType, type WallOpening } from '@/data/podium';
 import { bounds, inPolygon, offsetPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import { Lights } from './ApartmentScene';
-import { Escalators, Lifts, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type StairSpec } from './Cores';
+import { Escalators, Lifts, Rail, Ramp, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type RampRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 
@@ -20,6 +20,8 @@ import { Projector, type Anchor, type LabelLayer } from './Projector';
 
 interface Props {
   floor: PodiumFloor;
+  /** The floor below, for the stairs, escalators and ramps coming up through this one. */
+  lower?: PodiumFloor;
   /** Element that holds the space tags (see Projector). */
   layer: LabelLayer;
   hovered: string | null;
@@ -45,18 +47,27 @@ const COLOR: Record<PodiumSpaceType, string> = {
   tower: '#CDD3DA',
   technical: '#DDE2E8',
   roof: '#D5DBE1',
+  parts: '#F2E8D2',
+  workshop: '#E2E0DA',
+  parking: '#D9DEE4',
+  ramp: '#C3CAD2',
+  waiting: '#EADFD0',
+  changing: '#E1E5EC',
 };
 /** The towers on the roof stand as solid blocks of this height (m). */
 const SOLID: Partial<Record<PodiumSpaceType, number>> = { tower: 4.5 };
 /** Rooms with walls around them, cut away at this height like the apartment floors. */
-const WALLS: Partial<Record<PodiumSpaceType, number>> = { hall: 2.4, storage: 2.4, staff: 2.4, office: 2.4, toilets: 2.4, vestibule: 2.4, technical: 2.4 };
+const WALLS: Partial<Record<PodiumSpaceType, number>> = {
+  hall: 2.4, storage: 2.4, staff: 2.4, office: 2.4, toilets: 2.4, vestibule: 2.4, technical: 2.4,
+  parts: 2.4, workshop: 2.4, waiting: 2.4, changing: 2.4,
+};
 /** Spaces modelled in detail instead of a floor tile; cut at the same height as the walls. */
 const CORES = new Set<PodiumSpaceType>(['stairs', 'lifts', 'escalators']);
 const CUT = 2.4;
 /** Storey under floor 1: the basement garage (section 1-1). */
 const BASEMENT = 3.9;
 /** Big spaces that other rooms sit on: drawn lower so the rooms on top never flicker. */
-const BACKGROUND = new Set<PodiumSpaceType>(['retail', 'supermarket', 'playground', 'roof']);
+const BACKGROUND = new Set<PodiumSpaceType>(['retail', 'supermarket', 'playground', 'roof', 'parking', 'parts', 'workshop']);
 const HOVER = '#BCD3F7';
 const noRay = () => null;
 
@@ -108,13 +119,31 @@ function Prism({ pts, at, y = 0, h, color, opacity = 1, holes, events }: PrismPr
   );
 }
 
-/** Thin walls along a closed outline. */
-function Walls({ pts, at, h, color, opacity = 1 }: { pts: Pt[]; at: Frame; h: number; color: string; opacity?: number }) {
+/** One edge of a counter-clockwise outline, less the gaps in its side of the building. Only
+ *  edges along u or v have a side; others are kept whole. */
+function splitEdge(p: Pt, q: Pt, gaps?: WallOpening[]): [Pt, Pt][] {
+  const [dx, dy] = [q[0] - p[0], q[1] - p[1]];
+  const side = Math.abs(dy) < 1e-6 ? (dx < 0 ? 'N' : 'S') : Math.abs(dx) < 1e-6 ? (dy > 0 ? 'E' : 'W') : null;
+  const mine = gaps?.filter((g) => g.side === side) ?? [];
+  if (!mine.length) return [[p, q]];
+  const alongU = side === 'N' || side === 'S';
+  const [a, b] = alongU ? [p[0], q[0]] : [p[1], q[1]];
+  let runs: [number, number][] = [[Math.min(a, b), Math.max(a, b)]];
+  for (const g of mine) {
+    runs = runs.flatMap(([r0, r1]): [number, number][] => [[r0, Math.min(r1, g.from)], [Math.max(r0, g.to), r1]]).filter(([r0, r1]) => r1 - r0 > 0.01);
+  }
+  const fixed = alongU ? p[1] : p[0];
+  return runs.map(([r0, r1]): [Pt, Pt] => (alongU ? [[r0, fixed], [r1, fixed]] : [[fixed, r0], [fixed, r1]]));
+}
+
+/** Thin walls along a closed outline, with gaps where `gaps` says. */
+function Walls({ pts, at, h, color, opacity = 1, gaps }: { pts: Pt[]; at: Frame; h: number; color: string; opacity?: number; gaps?: WallOpening[] }) {
+  const edges = pts.flatMap((p, i) => splitEdge(p, pts[(i + 1) % pts.length], gaps));
   return (
     <>
-      {pts.map((p, i) => {
+      {edges.map(([p, q], i) => {
         const [ax, ay] = at(p);
-        const [bx, by] = at(pts[(i + 1) % pts.length]);
+        const [bx, by] = at(q);
         const length = Math.hypot(bx - ax, by - ay);
         if (length < 0.05) return null;
         return (
@@ -138,6 +167,8 @@ function SpaceMesh({ space, at, holes, hovered, onHover, onOpen }: { space: Podi
         holes={holes}
         h={SOLID[space.type] ?? (BACKGROUND.has(space.type) ? 0.03 : 0.06)}
         color={hovered ? HOVER : COLOR[space.type]}
+        // an opening in the floor: a faint tint you can point at, the ramps show through it
+        opacity={space.void ? (hovered ? 0.5 : 0.12) : 1}
         events={{
           onPointerOver: (e) => {
             e.stopPropagation();
@@ -246,7 +277,7 @@ function CoreMesh({ space, r, hovered, onHover, onOpen, children }: { space: Pod
   );
 }
 
-export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: Props) {
+export default function PodiumScene({ floor, lower, layer, hovered, onHover, onOpen }: Props) {
   const b = bounds(floor.outline);
   const cu = (b.u0 + b.u1) / 2;
   const cv = (b.v0 + b.v1) / 2;
@@ -270,11 +301,10 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: 
   // height, the pair up from the floor below arrives through an opening in this floor.
   const cores = useMemo(() => {
     const storey = floor.z1 - floor.z0;
-    const lower = getPodiumFloor(floor.floor - 1);
     const below = floor.below ?? (lower ? lower.z1 - lower.z0 : BASEMENT);
     const stairs = floor.spaces
       .filter((s) => s.type === 'stairs')
-      .map((s) => ({ space: s, spec: { r: rectOf(s.outline), storey, below, door: s.door ?? 'S', flip: s.flip } satisfies StairSpec }));
+      .map((s) => ({ space: s, spec: { r: rectOf(s.outline), storey, below, door: s.door ?? 'S', flip: s.flip, landing: s.landing, top: s.top } satisfies StairSpec }));
     const runs: EscalatorRun[] = [];
     const own = floor.spaces.find((s) => s.type === 'escalators');
     if (own && floor.floor < 3) {
@@ -286,9 +316,22 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: 
       const r = rectOf(from.outline);
       runs.push({ x0: r.x, x1: r.x + r.w, z: r.z, y0: -below, rise: below });
     }
-    const holes = [...stairs.map((s) => stairOpening(s.spec)), ...runs.filter((e) => e.y0 < 0).map(escalatorVoid)].filter((h): h is Rect => !!h);
-    return { stairs, own, runs, holes };
-  }, [floor, rectOf]);
+    // car ramps (block D), and the openings in the floor over them
+    const ramps = (floor.ramps ?? []).map((r): RampRun => ({ x0: r.u0 - cu, x1: r.u1 - cu, zLow: cv - r.low, zHigh: cv - r.high, y0: r.y0, rise: r.rise }));
+    const voids = floor.spaces.filter((s) => s.void).map((s) => rectOf(s.outline));
+    const rails = floor.spaces.flatMap((s) => {
+      const r = rectOf(s.outline);
+      const ends: Record<string, [[number, number], [number, number]]> = {
+        N: [[r.x, r.z], [r.x + r.w, r.z]],
+        S: [[r.x, r.z + r.d], [r.x + r.w, r.z + r.d]],
+        W: [[r.x, r.z], [r.x, r.z + r.d]],
+        E: [[r.x + r.w, r.z], [r.x + r.w, r.z + r.d]],
+      };
+      return (s.rails ?? []).map((side) => ends[side]);
+    });
+    const holes = [...stairs.map((s) => stairOpening(s.spec)), ...runs.filter((e) => e.y0 < 0).map(escalatorVoid), ...voids].filter((h): h is Rect => !!h);
+    return { stairs, own, runs, ramps, rails, holes };
+  }, [floor, lower, rectOf, cu, cv]);
   /** The openings that fall inside a space, to cut out of its floor tile too. */
   const holesIn = (s: PodiumSpace) => cores.holes.filter((h) => inPolygon([h.x + h.w / 2 + cu, cv - (h.z + h.d / 2)], s.outline));
   const furniture = useMemo(() => floor.furniture?.map((f) => ({ ...f, x: f.x - cu, z: cv - f.z })) ?? [], [floor, cu, cv]);
@@ -309,7 +352,9 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: 
 
       <Prism pts={floor.outline} at={at} y={-0.3} h={0.3} color="#C5CDD6" holes={cores.holes} />
       {floor.spaces.map((s) =>
-        CORES.has(s.type) ? null : <SpaceMesh key={s.id} space={s} at={at} holes={holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} />,
+        CORES.has(s.type) ? null : (
+          <SpaceMesh key={s.id} space={s} at={at} holes={s.void ? undefined : holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} />
+        ),
       )}
       {cores.stairs.map(({ space, spec }) => (
         <CoreMesh key={space.id} space={space} r={spec.r} hovered={hovered === space.id} onHover={onHover} onOpen={onOpen}>
@@ -330,6 +375,12 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: 
           ))}
         </CoreMesh>
       )}
+      {cores.ramps.map((run, i) => (
+        <Ramp key={i} run={run} cut={CUT} />
+      ))}
+      {cores.rails.map(([a, b], i) => (
+        <Rail key={i} a={a} b={b} />
+      ))}
       <Furniture items={furniture} finish={defaultFinish} />
 
       {terrace && planting ? (
@@ -343,7 +394,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen }: 
         <Walls pts={floor.outline} at={at} h={1.2} color="#F4F5F7" />
       ) : (
         // the facade, cut away low so the rooms stay visible
-        <Walls pts={floor.outline} at={at} h={1.2} color="#8FB0C8" opacity={0.45} />
+        <Walls pts={floor.outline} at={at} h={1.2} color="#8FB0C8" opacity={0.45} gaps={floor.openings} />
       )}
       {floor.decor?.map((d, i) => (
         <DecorMesh key={i} d={d} at={at} />

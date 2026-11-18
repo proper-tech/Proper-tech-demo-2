@@ -13,7 +13,11 @@ export type PodiumSpaceType =
   | 'hall' | 'supermarket' | 'retail' | 'storage' | 'stairs' | 'lifts' | 'escalators' | 'vestibule'
   | 'staff' | 'office' | 'toilets' | 'corridor' | 'covered' | 'playground' | 'tower'
   // the technical floor on the tower roofs (roof.ts)
-  | 'technical' | 'roof';
+  | 'technical' | 'roof'
+  // block D, the service and parking building (blockD.ts)
+  | 'parts' | 'workshop' | 'parking' | 'ramp' | 'waiting' | 'changing';
+
+export type Side = 'N' | 'S' | 'E' | 'W';
 
 export interface PodiumSpace {
   id: string;
@@ -26,10 +30,42 @@ export interface PodiumSpace {
   /** For type 'tower': the tower standing on the roof (floor 4). */
   tower?: TowerId;
   /** For stairs: the wall with the door, and whether the flight going up is on the west side. */
-  door?: 'N' | 'S' | 'E' | 'W';
+  door?: Side;
   flip?: boolean;
+  /** For stairs with the door in a long wall: the end the floor landing is at. */
+  landing?: Side;
+  /** For stairs: the top floor they reach, so no flight goes up. */
+  top?: boolean;
+  /** An opening in the floor (over a ramp): no floor tile, the slab is cut away. */
+  void?: boolean;
+  /** For an opening: the edges that get a safety rail. */
+  rails?: Side[];
+  /** For an opening: the edges with a solid concrete upstand instead. */
+  parapet?: Side[];
+  /** For stairs: where the door is along its wall (v on an east or west wall, u on a north or
+   *  south one), when it is not at the floor landing. */
+  doorAt?: number;
   /** For lifts: the wall their doors are in, on floors where they stop. */
-  doors?: 'E' | 'W';
+  doors?: Side;
+}
+
+/** A straight car ramp rising along v (block D): `u0`-`u1` wide, its foot at v = `low`, `y0` above
+ *  this floor's level, its top end at v = `high`, `rise` higher. */
+export interface RampSpec {
+  u0: number;
+  u1: number;
+  low: number;
+  high: number;
+  y0: number;
+  rise: number;
+}
+
+/** A gap in the outside wall (garage doors, the way into the main car park): on the outline's
+ *  north or south side from u = `from` to `to`, on the east or west side from v = `from` to `to`. */
+export interface WallOpening {
+  side: Side;
+  from: number;
+  to: number;
 }
 
 /** Playground furniture on the roof, from the 4th-floor plan. */
@@ -54,6 +90,10 @@ export interface PodiumFloor {
   decor?: Decor[];
   /** Furniture in site-plan metres (x = u east, z = v north); rot 0 faces south. */
   furniture?: FurnitureItem[];
+  /** Car ramps leaving this floor or arriving from the one below (block D). */
+  ramps?: RampSpec[];
+  /** Gaps in the outside wall. */
+  openings?: WallOpening[];
 }
 
 // ---- axes of the drawings (site.json grid; X7 is one 7.2 m bay east of X6)

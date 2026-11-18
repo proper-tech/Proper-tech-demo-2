@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { ExtrudeGeometry, Shape } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
+import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
 import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
 import site from '@/data/site.json';
@@ -21,7 +22,7 @@ import { Projector, type Anchor, type LabelLayer } from './Projector';
 // (public/models/blocks, see scripts/merge-blocks.py).
 
 export interface FloorKey {
-  /** 'A' is the podium; B and C are the towers. */
+  /** 'A' is the podium; B and C are the towers; D the service and parking building. */
   tower: BlockId;
   floor: number;
 }
@@ -194,6 +195,46 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
   );
 }
 
+/** Block D: a band per floor above ground (1-3) round the building and its stair core, invisible
+ *  until pointed at. Its basement is only on the lift panel. */
+const D_ABOVE = blockDFloors.filter((f) => f.z0 >= 0);
+
+function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
+  const above = D_ABOVE;
+  const geometries = useMemo(() => {
+    const outline = offsetPolygon(blockDOutline.map(blockDToSite), 0.4);
+    return above.map((f) => extrude(outline, f.z1 - f.z0 - 0.12));
+  }, [above]);
+
+  return (
+    <>
+      {above.map((f, i) => {
+        const isHovered = hovered?.tower === 'D' && hovered.floor === f.floor;
+        return (
+          <mesh
+            key={f.floor}
+            geometry={geometries[i]}
+            position={[0, f.z0 + 0.06, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              onHover({ tower: 'D', floor: f.floor });
+            }}
+            onPointerOut={() => onHover(null)}
+            onClick={(e) => {
+              if (e.delta > 4) return;
+              e.stopPropagation();
+              onOpen({ tower: 'D', floor: f.floor });
+            }}
+          >
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.5 : 0} depthWrite={false} />
+          </mesh>
+        );
+      })}
+    </>
+  );
+}
+
 /** A flat strip along one segment of a site-plan line (kerbs and parking bay lines). */
 function Strip({ a, b, width, color }: { a: Pt; b: Pt; width: number; color: string }) {
   const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -207,14 +248,16 @@ function Strip({ a, b, width, color }: { a: Pt; b: Pt; width: number; color: str
 }
 
 export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer }: Props) {
-  const anchors = useMemo<Anchor[]>(
-    () =>
-      towers.map((id) => {
+  const anchors = useMemo<Anchor[]>(() => {
+    const [du, dv] = blockDToSite([9, 15]);
+    return [
+      ...towers.map((id): Anchor => {
         const t = towerPlate(id);
         return { id: `tower:${id}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] };
       }),
-    [],
-  );
+      { id: 'tower:D', position: [du, D_PARAPET + 6, -dv] },
+    ];
+  }, []);
 
   return (
     <Canvas flat dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 900, position: [-175, 95, 95] }}>
@@ -252,6 +295,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       ))}
       <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
       <RoofZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
+      <BlockDZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
 
       {site.trees.map(([u, v], i) => (
         <group key={i} position={[u, 0, -v]}>
