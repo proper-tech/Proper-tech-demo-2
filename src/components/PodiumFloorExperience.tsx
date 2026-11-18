@@ -11,6 +11,8 @@ import type { TowerId } from '@/data/types';
 import { fmt, type Dict } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { bounds, m, polygonCentre, type Pt } from '@/lib/geometry';
+import { ROOF_SPOTS, type Tour } from './three/Tour';
+import { TourBar } from './TourBar';
 
 const PodiumScene = dynamic(() => import('./three/PodiumScene'), {
   ssr: false,
@@ -64,7 +66,11 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
   const [view, setView] = useState<'3d' | '2d'>('3d');
   const [hovered, setHovered] = useState<string | null>(null);
   const layer = useRef<HTMLDivElement>(null);
+  const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   const pf = tower ? getRoofFloor(tower) : getPodiumFloor(floor)!;
+  // the roof playground (floor 4) has a 360° view you can walk through
+  const walkable = !tower && pf.spaces.some((s) => s.type === 'playground');
+  const walking = tour.kind === 'spot';
   const listed = listedSpaces(pf);
   const towerHref = (s: PodiumSpace) => `/${locale}/floors/${s.tower}/${FLOOR_MIN}`;
   const open = (s: PodiumSpace) => s.tower && router.push(towerHref(s));
@@ -82,8 +88,15 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
     <div className="floor">
       <section className="floor-stage">
         <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <PodiumScene floor={pf} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} />
-          <div className="label-layer" ref={layer}>
+          <PodiumScene
+            floor={pf}
+            layer={layer}
+            hovered={walking ? null : hovered}
+            onHover={(id) => !walking && setHovered(id)}
+            onOpen={(s) => !walking && open(s)}
+            tour={walkable ? tour : undefined}
+          />
+          <div className={`label-layer${walking ? ' is-hidden' : ''}`} ref={layer}>
             {listed.map((s) => (
               <div
                 key={s.id}
@@ -128,12 +141,20 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
             <button type="button" aria-pressed={view === '3d'} onClick={() => setView('3d')}>
               {t.floor.view3d}
             </button>
-            <button type="button" aria-pressed={view === '2d'} onClick={() => setView('2d')}>
+            <button
+              type="button"
+              aria-pressed={view === '2d'}
+              onClick={() => {
+                setView('2d');
+                setTour({ kind: 'overview' });
+              }}
+            >
               {t.floor.view2d}
             </button>
           </div>
         </div>
-        {view === '3d' && <p className="stage-hint">{t.podium.hint}</p>}
+        {view === '3d' && walkable && <TourBar tour={tour} setTour={setTour} spots={ROOF_SPOTS} label={t.tour.label} />}
+        {view === '3d' && <p className="stage-hint">{walking ? t.tour.lookHint : t.podium.hint}</p>}
       </section>
 
       <aside className="apt-panel">

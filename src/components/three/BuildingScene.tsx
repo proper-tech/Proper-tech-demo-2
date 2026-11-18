@@ -34,7 +34,7 @@ interface Props {
   autoRotate: boolean;
   /** Element that holds the tower name tags (see Projector). */
   layer: LabelLayer;
-  /** The 360° tour: overview orbit, drone flight or an eye-level viewpoint (see Tour.tsx). */
+  /** The 360° tour: overview orbit or an eye-level viewpoint (see Tour.tsx). */
   tour: Tour;
 }
 
