@@ -2,19 +2,19 @@
 
 import { Suspense, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
-import { ExtrudeGeometry, Shape } from 'three';
+import { useGLTF } from '@react-three/drei';
+import { ExtrudeGeometry, Shape, type Mesh, type MeshStandardMaterial } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
 import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
-import site from '@/data/site.json';
 import type { BlockId, TowerId } from '@/data/types';
 import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { CameraRig, type Tour } from './Tour';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
-// playground, media screen, annex, parked cars) standing on the architect's site plan
-// (site.json: paved site, kerbs, parking bays, trees). The model is generated from the same
+// playground, media screen, annex) standing in the environment model
+// (public/models/blocks/environment.glb: ground, roads, parking, cars, trees, people). The model is generated from the same
 // site.json by scripts/build-model.py, so the two always line up.
 // Site-plan coordinates (u, v) map to the scene as x = u, z = -v. Heights come from the
 // architect's sections (see building.ts). complex.glb is merged from one file per block
@@ -34,9 +34,13 @@ interface Props {
   autoRotate: boolean;
   /** Element that holds the tower name tags (see Projector). */
   layer: LabelLayer;
+  /** The 360° tour: overview orbit, drone flight or an eye-level viewpoint (see Tour.tsx). */
+  tour: Tour;
 }
 
 const MODEL_URL = '/models/complex.glb';
+/** Draco decoder for the compressed models, served from public/draco. */
+const DRACO_URL = '/draco/';
 const TOP = PODIUM_HEIGHT + (FLOOR_MAX - FLOOR_MIN + 1) * FLOOR_HEIGHT;
 /** Glazed tower corners. Same value as CHAMFER in scripts/build-model.py. */
 const CHAMFER = 2.4;
@@ -49,25 +53,60 @@ function extrude(outline: Pt[], height: number) {
   return new ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
 }
 
-/** Extrudes a site-plan outline upwards. */
-function Slab({ outline, y = 0, height, color }: { outline: Pt[]; y?: number; height: number; color: string }) {
-  const geometry = useMemo(() => extrude(outline, height), [outline, height]);
-  return (
-    <mesh geometry={geometry} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <meshStandardMaterial color={color} roughness={0.8} />
-    </mesh>
-  );
-}
 
 function Model() {
-  const { scene } = useGLTF(MODEL_URL);
+  const { scene } = useGLTF(MODEL_URL, DRACO_URL);
+  // The parked cars now come with the environment model, so the complex's own set is hidden.
+  useMemo(() => {
+    const cars = scene.getObjectByName('Cars');
+    if (cars) cars.visible = false;
+    // skinned people on the roof must not be culled by their rest-pose bounds
+    scene.traverse((o) => {
+      if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
+    });
+  }, [scene]);
   return <primitive object={scene} />;
 }
-useGLTF.preload(MODEL_URL);
+useGLTF.preload(MODEL_URL, DRACO_URL);
+
+/** Everything around the buildings, modelled in Blender (environment.blend): ground, roads,
+ *  parking with cars, trees, hedges, street lights, furniture and people. Same site-plan frame
+ *  as complex.glb (x = u, y = up, z = -v), so it needs no offset. Draco-compressed; the decoder
+ *  is served from public/draco. */
+const ENV_URL = '/models/blocks/environment.glb';
+
+/** Ground materials that are procedural (noise / tile nodes) in Blender reach glTF without a
+ *  colour, so they are given their average colour here. */
+const GROUND_COLORS: Record<string, string> = {
+  'Env Asphalt': '#5A5E63',
+  'Env Street Asphalt': '#4A4E53',
+  'Env Pavers': '#D6D3CC',
+  'Env Sidewalk': '#CFCDC8',
+  'Env Concrete': '#D9D6D0',
+  'Env Lawn': '#7FA35A',
+};
+
+function Environment() {
+  const { scene } = useGLTF(ENV_URL, DRACO_URL);
+  useMemo(() => {
+    scene.traverse((o) => {
+      // skinned people must not be culled by their rest-pose bounds
+      if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
+      const mesh = o as Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const color = GROUND_COLORS[m.name.replace(/\.\d{3}$/, '')];
+        if (color && 'color' in m) (m as MeshStandardMaterial).color.set(color);
+      }
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(ENV_URL, DRACO_URL);
 
 /**
  * One see-through, clickable band per floor, wrapped around the tower in the model.
- * Floors with apartments for sale carry a faint amber tint; the hovered floor lights up.
+ * Invisible until pointed at; the hovered floor lights up (blue when it has apartments for sale).
  */
 function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerId; floors: FloorSummary[] } & Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   const geometry = useMemo(() => {
@@ -86,7 +125,8 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
         const forSale = f.available > 0;
         const isHovered = hovered?.tower === tower && hovered.floor === f.floor;
         const color = isHovered ? (forSale ? '#2F6FDE' : '#5B6672') : '#F2B632';
-        const opacity = isHovered ? (forSale ? 0.62 : 0.4) : forSale ? 0.2 : 0;
+        // No tint at rest, so the facade shows its real colours; the floor picker marks the floors for sale.
+        const opacity = isHovered ? (forSale ? 0.62 : 0.4) : 0;
         return (
           <mesh
             key={f.floor}
@@ -194,19 +234,8 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
   );
 }
 
-/** A flat strip along one segment of a site-plan line (kerbs and parking bay lines). */
-function Strip({ a, b, width, color }: { a: Pt; b: Pt; width: number; color: string }) {
-  const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  if (length < 0.05) return null;
-  return (
-    <mesh position={[(a[0] + b[0]) / 2, 0.06, -(a[1] + b[1]) / 2]} rotation={[0, Math.atan2(b[1] - a[1], b[0] - a[0]), 0]}>
-      <boxGeometry args={[length, 0.08, width]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
-  );
-}
 
-export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer }: Props) {
+export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour }: Props) {
   const anchors = useMemo<Anchor[]>(
     () =>
       towers.map((id) => {
@@ -217,54 +246,26 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 900, position: [-175, 95, 95] }}>
+    <Canvas flat dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <ambientLight intensity={1.25} />
       <hemisphereLight args={['#ffffff', '#c3ccd6', 0.7]} />
       <directionalLight position={[-60, 90, 40]} intensity={2.0} />
-      <OrbitControls
-        makeDefault
-        target={[0, TOP / 2 - 6, 16]}
-        enablePan={false}
-        enableZoom={false}
-        autoRotate={autoRotate}
-        autoRotateSpeed={0.5}
-        minPolarAngle={0.7}
-        maxPolarAngle={1.5}
-      />
-
-      {/* Ground, the paved site, kerbs and parking bays */}
-      <mesh position={[0, -0.3, 16]}>
-        <cylinderGeometry args={[72, 72, 0.5, 72]} />
-        <meshStandardMaterial color="#D3DAE1" />
-      </mesh>
-      <Slab outline={site.boundary} y={-0.05} height={0.08} color="#BEC7D0" />
-      {site.kerbs.flatMap((line, i) => line.slice(1).map((p, j) => <Strip key={`k${i}-${j}`} a={line[j]} b={p} width={0.25} color="#EEF1F4" />))}
-      {site.parking.map((line, i) => (
-        <Strip key={`p${i}`} a={line[0]} b={line[line.length - 1]} width={0.18} color="#FFFFFF" />
-      ))}
+      <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       <Suspense fallback={null}>
+        <Environment />
         <Model />
       </Suspense>
 
-      {towers.map((tower) => (
+      {tour.kind === 'overview' && towers.map((tower) => (
         <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
       ))}
-      <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
-      <RoofZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
-
-      {site.trees.map(([u, v], i) => (
-        <group key={i} position={[u, 0, -v]}>
-          <mesh position={[0, 0.9, 0]}>
-            <cylinderGeometry args={[0.12, 0.15, 1.8, 6]} />
-            <meshStandardMaterial color="#8C7B6A" />
-          </mesh>
-          <mesh position={[0, 2.6, 0]}>
-            <icosahedronGeometry args={[1.3, 1]} />
-            <meshStandardMaterial color="#7FA27A" flatShading />
-          </mesh>
-        </group>
-      ))}
+      {tour.kind === 'overview' && (
+        <>
+          <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
+          <RoofZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
+        </>
+      )}
 
       <Projector anchors={anchors} layer={layer} />
     </Canvas>
