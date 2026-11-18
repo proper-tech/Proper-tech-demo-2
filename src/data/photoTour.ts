@@ -29,19 +29,22 @@ interface StopSpec {
   n?: number;
   /** Camera in the Blender scene: x, y (south), height. */
   cam: [number, number, number];
+  /** Point to face on arrival, in the Blender scene (x, y south). */
+  look: [number, number];
 }
 
 // Rooms of layout D (mirror of C): bedroom1 is the north-east bedroom (D4 on the drawing),
 // bedroom2 the south one (D3), bathroom1 has the bath (D5), bathroom2 the shower (D2).
+// `look`: the window wall of the living room, the kitchen with the living room behind, the beds, the bath and the shower.
 const STOPS: StopSpec[] = [
-  { id: 'entry', room: 'living', type: 'hall', cam: [11.45, 12.75, 1.5] },
-  { id: 'kitchen', room: 'living', type: 'kitchen', cam: [13.3, 15.25, 1.5] },
-  { id: 'living', room: 'living', type: 'living', cam: [13.85, 17.55, 1.5] },
-  { id: 'hall', room: 'living', type: 'corridor', cam: [16.3, 17.22, 1.5] },
-  { id: 'bed_d4', room: 'bedroom1', type: 'bedroom', n: 1, cam: [19.6, 16.9, 1.5] },
-  { id: 'bed_d3', room: 'bedroom2', type: 'bedroom', n: 2, cam: [17.25, 19.0, 1.5] },
-  { id: 'bath_d5', room: 'bathroom1', type: 'bathroom', n: 1, cam: [17.3, 16.47, 1.4] },
-  { id: 'bath_d2', room: 'bathroom2', type: 'bathroom', n: 2, cam: [15.45, 16.14, 1.5] },
+  { id: 'entry', room: 'living', type: 'hall', cam: [11.45, 12.75, 1.5], look: [11.6, 16.0] },
+  { id: 'kitchen', room: 'living', type: 'kitchen', cam: [13.3, 15.25, 1.5], look: [14.3, 16.15] },
+  { id: 'living', room: 'living', type: 'living', cam: [13.85, 17.55, 1.5], look: [12.5, 20.5] },
+  { id: 'hall', room: 'living', type: 'corridor', cam: [16.3, 17.22, 1.5], look: [18.5, 17.2] },
+  { id: 'bed_d4', room: 'bedroom1', type: 'bedroom', n: 1, cam: [19.6, 16.9, 1.5], look: [19.6, 15.2] },
+  { id: 'bed_d3', room: 'bedroom2', type: 'bedroom', n: 2, cam: [17.25, 19.0, 1.5], look: [18.9, 19.1] },
+  { id: 'bath_d5', room: 'bathroom1', type: 'bathroom', n: 1, cam: [17.3, 16.47, 1.4], look: [17.2, 14.6] },
+  { id: 'bath_d2', room: 'bathroom2', type: 'bathroom', n: 2, cam: [15.45, 16.14, 1.5], look: [15.6, 14.5] },
 ];
 
 /** Hotspots: from, to, point in the Blender scene (x, y south, height). navigation_visibility.json */
@@ -70,6 +73,7 @@ export function photoTourD(layout: Layout): PhotoStop[] {
     ...(s.n ? { n: s.n } : {}),
     panorama: `/media/360/D/${s.id}.jpg`,
     eye: toLocal(layout, s.cam[0], s.cam[1]),
+    look: toLocal(layout, s.look[0], s.look[1]),
     links: LINKS.filter(([from]) => from === s.id).map(([, to, p]) => {
       const [x, z] = toLocal(layout, p[0], p[1]);
       // keep the point's height relative to the camera, which stood lower than the site's eye
