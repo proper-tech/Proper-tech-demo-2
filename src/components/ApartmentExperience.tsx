@@ -50,6 +50,8 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
   const prev = availableUnits[(index - 1 + availableUnits.length) % availableUnits.length];
   const next = availableUnits[(index + 1) % availableUnits.length];
   const suffix = mode === 'tour' ? '?view=tour' : '';
+  // Plan D has a rendered 360° tour (public/tour, a self-contained file); it replaces the 3D tour.
+  const photoTour = mode === 'tour' && layout.id === 'D';
   const modes: [Mode, string][] = [
     ['model', t.apt.modeModel],
     ['plan', t.apt.modePlan],
@@ -60,7 +62,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     <div className="apt">
       <section className="apt-stage">
         {/* The canvas stays mounted while the 2D plan is shown, so switching back is instant. */}
-        <div className={mode === 'plan' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
+        <div className={mode === 'plan' || photoTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
           <ApartmentScene
             layout={layout}
             finish={finish}
@@ -84,13 +86,22 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
                 ))}
           </div>
         </div>
+        {photoTour && (
+          <iframe
+            className="apt-tour-frame"
+            src="/tour/index.html"
+            title={t.apt.modeTour}
+            allow="fullscreen"
+            onLoad={(e) => fitTourFrame(e.currentTarget)}
+          />
+        )}
         {mode === 'plan' && (
           <div className="apt-plan">
             <ApartmentPlan layout={layout} names={names} showSizes selected={room.id} onSelect={selectRoom} />
           </div>
         )}
 
-        <div className="apt-head">
+        <div className={photoTour ? 'apt-head is-over-photo' : 'apt-head'}>
           <Link className="back" href={`/${locale}/floors/${unit.tower}/${unit.floor}`}>
             {fmt(t.apt.backToFloor, { t: unit.tower, n: unit.floor })}
           </Link>
@@ -109,7 +120,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </div>
         </div>
 
-        {mode === 'tour' && (
+        {mode === 'tour' && !photoTour && (
           <div className="tour-bar">
             <p className="tour-room">
               <b>{labels[room.id].name}</b>
@@ -125,7 +136,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             </div>
           </div>
         )}
-        {mode !== 'plan' && <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}</p>}
+        {mode !== 'plan' && !photoTour && <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}</p>}
       </section>
 
       <aside className="apt-panel">
@@ -170,7 +181,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           )}
         </section>
 
-        <section>
+        <section hidden={photoTour}>
           <h2>{t.apt.tabFinishes}</h2>
           {finishKeys.map((key) => {
             const current = finishOptions[key].find((o) => o.color === finish[key]);
@@ -215,4 +226,23 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
       </aside>
     </div>
   );
+}
+
+/**
+ * The tour file has its own back button (to a building view of its own) and apartment heading;
+ * on this page the heading and the mode switch already cover those, so hide them and move the
+ * tour's room title and colour panel below this page's heading. Same origin, so this is allowed.
+ */
+function fitTourFrame(frame: HTMLIFrameElement) {
+  const doc = frame.contentDocument;
+  if (!doc || doc.getElementById('apt-embed-style')) return;
+  const style = doc.createElement('style');
+  style.id = 'apt-embed-style';
+  style.textContent = `
+    #panoBack, .tour-heading { display: none !important; }
+    .tour-header { justify-content: flex-end; }
+    .tour-intro { top: 224px !important; }
+    #tourDesignPanel { top: 310px !important; max-height: calc(100dvh - 480px) !important; }
+  `;
+  doc.head.appendChild(style);
 }
