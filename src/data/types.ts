@@ -127,6 +127,8 @@ export interface PhotoStop {
   /** Equirectangular JPG under /public. */
   panorama: string;
   eye: [number, number];
+  /** What the view turns to on arrival (the room's main feature), in the same coordinates. */
+  look: [number, number];
   /** Walk-through hotspots: the stop they lead to and the point they are pinned to (x, y, z). */
   links: { to: string; at: [number, number, number] }[];
 }
