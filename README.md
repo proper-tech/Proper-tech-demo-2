@@ -39,7 +39,6 @@ npm run build && npm start
 | Stairs, lifts, escalators | `three/Cores.tsx`, used by the tower, podium and roof floors |
 | 3D apartment | `/[locale]/apartments/[id]`, "3D model" (`three/ApartmentModel`) |
 | 360° view in every room, walking between rooms | Same page, "360° tour" (`three/ApartmentScene`); add `?view=tour` to link straight to it |
-| Rendered 360° photos of plan D (interior concept), 8 stops with walk-through hotspots | `src/data/photoTour.ts`, photos in `public/media/360/D`, source data in `docs/interior-D` |
 | Change floor, wall, furniture colours | "Finishes" panel (`data/finishes.ts`) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
 | Intro video | Home page (`VideoSection`) |
@@ -52,14 +51,6 @@ npm run build && npm start
   entries in `openings`. The 3D model, 2D plan, tour and size table all come from this file.
 - **Real 360° photos**: put an equirectangular JPG in `public/` and set `panorama: '/media/living.jpg'`
   on a room. The tour then shows the photo for that room instead of the 3D model.
-- **Rendered photo tour (plan D)**: `layout.photoTour` lists viewpoints, each with its own photo,
-  eye point and hotspots, so one room (the open living room) can hold several stops (entrance,
-  kitchen, living, corridor). Stops, cameras and hotspot points are in `src/data/photoTour.ts`,
-  taken from the Blender interior scene (`docs/interior-D`: `render_log.json`,
-  `navigation_visibility.json`). That scene's inner walls differ from `layouts.ts` by up to ~1.2 m,
-  which is why the stops do not use the layout's doors. The renders face east at the image centre;
-  the files in `public/media/360/D` are rolled half a turn to face west, as the photo sphere
-  expects. The `.blend` itself is not in git (see `.gitignore`).
 - **Video**: replace `public/media/intro.mp4`.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the

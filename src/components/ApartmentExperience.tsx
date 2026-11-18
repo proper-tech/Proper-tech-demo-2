@@ -25,23 +25,6 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
   const layout = layouts[unit.layout];
   const [mode, setMode] = useState<Mode>('model');
   const [roomId, setRoomId] = useState('living');
-  // Rendered photo tour (only some layouts have one): the stop being viewed, or null for the
-  // 3D model's own room view (rooms without a photo, such as the balcony).
-  const stops = layout.photoTour;
-  const [stopId, setStopId] = useState<string | null>(stops ? 'living' : null);
-  const stop = stops?.find((s) => s.id === stopId) ?? null;
-  const goStop = (id: string) => {
-    const s = stops?.find((x) => x.id === id);
-    if (!s) return;
-    setStopId(s.id);
-    setRoomId(s.room);
-  };
-  /** Picking a room: go to its first photo stop when it has one. */
-  const pickRoom = (id: string) => {
-    const owner = layout.rooms.find((r) => r.id === id)?.partOf ?? id;
-    setRoomId(owner);
-    if (stops) setStopId(stops.find((s) => s.room === owner)?.id ?? null);
-  };
   const [finish, setFinish] = useState<Finish>(defaultFinish);
 
   // Links such as /apartments/1203?view=tour open straight into the 360° tour.
@@ -57,7 +40,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     return out;
   }, [layout, rooms, t]);
   // A click on a rectangle that is part of a bigger room selects that room.
-  const selectRoom = pickRoom;
+  const selectRoom = (id: string) => setRoomId(layout.rooms.find((r) => r.id === id)?.partOf ?? id);
   const names = useMemo(() => Object.fromEntries(Object.entries(labels).map(([id, l]) => [id, l.name])), [labels]);
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
@@ -85,21 +68,11 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             roomId={room.id}
             layer={layer}
             onSelectRoom={selectRoom}
-            stop={stop}
           />
           <div className="label-layer" ref={layer}>
-            {mode === 'tour' && stop
-              ? stop.links.map((l) => {
-                  const to = stops!.find((x) => x.id === l.to)!;
-                  return (
-                    <button key={l.to} type="button" className="hotspot" data-anchor={`stop:${l.to}`} onClick={() => goStop(l.to)}>
-                      {roomName(t, { ...to, id: to.id, x: 0, z: 0, w: 0, d: 0, h: 0 })}
-                    </button>
-                  );
-                })
-              : mode === 'tour'
+            {mode === 'tour'
               ? doors.map((door) => (
-                  <button key={door.to.id} type="button" className="hotspot" data-anchor={`door:${door.to.id}`} onClick={() => pickRoom(door.to.id)}>
+                  <button key={door.to.id} type="button" className="hotspot" data-anchor={`door:${door.to.id}`} onClick={() => setRoomId(door.to.id)}>
                     {labels[door.to.id].name}
                   </button>
                 ))
@@ -144,36 +117,15 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               {labels[room.id].area}, {t.apt.colCeiling.toLowerCase()} {m(room.h)} m
             </p>
             <div className="tour-rooms">
-              {stops
-                ? [
-                    ...stops.map((s) => (
-                      <button key={s.id} type="button" aria-pressed={s.id === stopId} onClick={() => goStop(s.id)}>
-                        {roomName(t, { ...s, x: 0, z: 0, w: 0, d: 0, h: 0 })}
-                      </button>
-                    )),
-                    // rooms without a photo stay reachable in the 3D view
-                    ...rooms
-                      .filter((r) => !stops.some((s) => s.room === r.id))
-                      .map((r) => (
-                        <button key={r.id} type="button" aria-pressed={!stop && r.id === room.id} onClick={() => pickRoom(r.id)}>
-                          {labels[r.id].name}
-                        </button>
-                      )),
-                  ]
-                : rooms.map((r) => (
-                    <button key={r.id} type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
-                      {labels[r.id].name}
-                    </button>
-                  ))}
+              {rooms.map((r) => (
+                <button key={r.id} type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
+                  {labels[r.id].name}
+                </button>
+              ))}
             </div>
           </div>
         )}
-        {mode !== 'plan' && (
-          <p className="stage-hint">
-            {mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}
-            {mode === 'tour' && stop && <span className="tour-note">{t.apt.photoNote}</span>}
-          </p>
-        )}
+        {mode !== 'plan' && <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}</p>}
       </section>
 
       <aside className="apt-panel">
@@ -192,7 +144,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               {rooms.map((r) => (
                 <tr key={r.id} className={r.id === room.id ? 'is-selected' : undefined}>
                   <th scope="row">
-                    <button type="button" aria-pressed={r.id === room.id} onClick={() => pickRoom(r.id)}>
+                    <button type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
                       {labels[r.id].name}
                     </button>
                   </th>

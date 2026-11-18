@@ -110,25 +110,6 @@ export interface Layout {
   rooms: Room[];
   openings: Opening[];
   furniture: FurnitureItem[];
-  /** Rendered 360° photos with their own viewpoints (see data/photoTour.ts). When set, the
-   *  360° tour walks between these stops instead of one viewpoint per room. */
-  photoTour?: PhotoStop[];
-}
-
-/** One viewpoint of a rendered 360° photo tour. Coordinates are the apartment's own (x east,
- *  z south from its north-west corner), like rooms. */
-export interface PhotoStop {
-  id: string;
-  /** The room this stop stands in (for the room table and the info bar). */
-  room: string;
-  /** Room type and number used for the stop's label, so "Kitchen" can be a stop in the living room. */
-  type: RoomType;
-  n?: number;
-  /** Equirectangular JPG under /public. */
-  panorama: string;
-  eye: [number, number];
-  /** Walk-through hotspots: the stop they lead to and the point they are pinned to (x, y, z). */
-  links: { to: string; at: [number, number, number] }[];
 }
 
 /** The two residential towers, named as on the architect's drawings (Block A is the podium,
