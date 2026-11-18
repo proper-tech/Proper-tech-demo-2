@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,8 @@ import { useI18n } from '@/i18n/I18nProvider';
 import type { FloorKey } from './three/BuildingScene';
 import type { Tour } from './three/Tour';
 import { TourBar } from './TourBar';
+import { SunPanel } from './SunPanel';
+import { DEFAULT_SUN, type SunSettings } from './three/Sun';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
   ssr: false,
@@ -36,6 +38,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [touched, setTouched] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
+  const [sun, setSun] = useState<SunSettings>(DEFAULT_SUN);
+  // the 3D view stays under a loader until its models are in and drawn (see BuildingScene)
+  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const onReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -228,18 +235,31 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             if (key) setTower(key.tower);
           }}
           onOpen={(key) => router.push(`/${locale}/floors/${key.tower}/${key.floor}`)}
-          autoRotate={!touched && !reducedMotion && hovered === null}
+          autoRotate={ready && !touched && !reducedMotion && hovered === null}
           layer={layer}
           tour={tour}
+          sun={sun}
+          onReady={onReady}
+          onProgress={setProgress}
         />
         <div className={`label-layer${tour.kind === 'spot' ? ' is-hidden' : ''}`} ref={layer}>
-          {([...towers, 'D'] as BlockId[]).map((id) => (
+          {(['A', ...towers, 'D'] as BlockId[]).map((id) => (
             <div key={id} className={`tower-tag${tower === id ? ' is-selected' : ''}`} data-anchor={`tower:${id}`}>
               {fmt(t.home.towerN, { t: id })}
             </div>
           ))}
         </div>
         <TourBar tour={tour} setTour={setTour} />
+        <SunPanel setSun={setSun} />
+        <div className={`stage-loader${ready ? ' is-done' : ''}`} role="status" aria-live="polite" aria-hidden={ready}>
+          <div className="stage-loader-box">
+            <span className="stage-loader-spinner" aria-hidden="true" />
+            <p>{t.home.loading3d}</p>
+            <div className="stage-loader-bar" aria-hidden="true">
+              <span style={{ width: `${ready ? 100 : Math.min(96, Math.round(progress * 0.9 + 4))}%` }} />
+            </div>
+          </div>
+        </div>
         <p className="stage-hint">{tour.kind === 'spot' ? t.tour.lookHint : t.home.towerHint}</p>
       </div>
     </div>

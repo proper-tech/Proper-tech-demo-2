@@ -138,19 +138,29 @@ button {
 .picker {
   display: grid;
   grid-template-columns: minmax(20rem, 30rem) 1fr;
+  align-items: start;
   min-height: calc(100dvh - var(--header));
 }
 
 .picker-side {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 2.5rem 0 2.5rem clamp(1rem, 3vw, 2.5rem);
+  /* top-aligned: the lift panel is shorter for the podium than for the towers, and hovering a
+     floor in the 3D view switches between them, so centring made the whole column jump */
+  justify-content: flex-start;
+  gap: 1.1rem;
+  padding: clamp(2rem, 4vh, 3.25rem) 0 2.5rem clamp(1rem, 3vw, 2.5rem);
 }
 
 .picker-side h1 {
-  font-size: clamp(1.8rem, 2.7vw, 2.6rem);
+  font-size: clamp(2rem, 3.1vw, 3rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+
+.picker-side .lead {
+  font-size: 1rem;
+  max-width: 30rem;
 }
 
 .lift {
@@ -255,7 +265,10 @@ button {
 }
 
 .tower {
-  position: relative;
+  /* pinned under the header, one screen tall, while the floor panel beside it scrolls */
+  position: sticky;
+  top: var(--header);
+  height: calc(100dvh - var(--header));
   min-height: 28rem;
 }
 
@@ -272,9 +285,12 @@ button {
 }
 
 .gallery h2,
-.site h2 {
-  font-size: clamp(1.3rem, 2vw, 1.75rem);
-  margin-bottom: 0.6rem;
+.site h2,
+.layouts h2,
+.video h2 {
+  font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.8rem;
 }
 
 .gallery-grid {
@@ -304,8 +320,8 @@ button {
 
 .site {
   display: grid;
-  grid-template-columns: minmax(16rem, 24rem) 1fr;
-  gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(16rem, 26rem) 1fr;
+  gap: clamp(1.5rem, 4vw, 4.5rem);
   align-items: start;
 }
 
@@ -329,17 +345,18 @@ button {
 }
 
 .facts dd {
-  margin: 0.1rem 0 0;
+  margin: 0.15rem 0 0;
   font-family: var(--display);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .site-svg {
+  display: block;
   width: 100%;
-  max-width: 44rem;
-  max-height: 80vh;
-  justify-self: center;
+  max-height: 64vh;
 }
 
 .site-ground {
@@ -436,8 +453,7 @@ button {
 /* Home: layouts table, video, footer */
 
 .layouts,
-.video,
-.site-footer {
+.video {
   padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem);
   border-top: 1px solid var(--line);
 }
@@ -446,11 +462,6 @@ button {
   margin-top: 0.5rem;
 }
 
-.layouts h2,
-.video h2 {
-  font-size: clamp(1.3rem, 2vw, 1.75rem);
-  margin-bottom: 0.6rem;
-}
 
 .layouts table {
   width: 100%;
@@ -549,13 +560,7 @@ button {
   background: var(--amber);
 }
 
-.site-footer {
-  display: grid;
-  gap: 0.25rem;
-  padding-block: 2rem;
-  color: var(--stone);
-  font-size: 0.875rem;
-}
+
 
 /* Shared controls */
 
@@ -1313,7 +1318,17 @@ button {
   }
 
   .tower {
+    position: relative;
+    top: auto;
     height: 70vh;
+  }
+
+  .types {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-main {
+    grid-template-columns: 1fr;
   }
 
   .video,
