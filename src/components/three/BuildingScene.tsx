@@ -153,6 +153,9 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
   );
 }
 
+/** The podium floors you can see: the basement (floor 0) is underground, reached from the lift panel. */
+const aboveGround = podiumFloors.filter((f) => f.floor > 0);
+
 /**
  * The podium (block A): one clickable band per floor, floors 1-3 around the whole podium and
  * floor 4 around the roof playground. Invisible until pointed at, as the podium is not for sale.
@@ -160,13 +163,13 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
 function PodiumZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   // 0.6 m out from the walls, clear of the facade's mullions, slab edges and parapet
   const geometries = useMemo(
-    () => podiumFloors.map((f) => extrude(offsetPolygon(f.floor === 4 ? terraceOutline : podiumOutline, 0.6), f.z1 - f.z0 - 0.12)),
+    () => aboveGround.map((f) => extrude(offsetPolygon(f.floor === 4 ? terraceOutline : podiumOutline, 0.6), f.z1 - f.z0 - 0.12)),
     [],
   );
 
   return (
     <>
-      {podiumFloors.map((f, i) => {
+      {aboveGround.map((f, i) => {
         const isHovered = hovered?.tower === 'A' && hovered.floor === f.floor;
         return (
           <mesh

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { floors, towers } from '@/data/building';
 import { blockDFloors, blockDLabel } from '@/data/blockD';
 import { layouts } from '@/data/layouts';
-import { podiumFloors } from '@/data/podium';
+import { floorName, podiumFloors } from '@/data/podium';
 import { ROOF_FLOOR } from '@/data/roof';
 import type { BlockId } from '@/data/types';
 import { fmt } from '@/i18n/config';
@@ -23,6 +23,9 @@ const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
 
 // Buttons are laid out like a lift panel: highest floor at the top, two per row.
 const panelOrder = (a: number, b: number) => Math.floor((b - 1) / 2) - Math.floor((a - 1) / 2) || a - b;
+/** The basement car park, floor 0 of the podium: every tab has a button for it, as the tower lifts
+ *  go down to it too. */
+const BASEMENT: FloorKey = { tower: 'A', floor: 0 };
 
 export function FloorPicker({ children }: { children: ReactNode }) {
   const { locale, t } = useI18n();
@@ -47,9 +50,9 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         .join(', ')
     : '';
   // the podium (block A): floors 1-3 and the roof playground, always open, nothing for sale
-  const podiumPanel = [...podiumFloors].sort((a, b) => panelOrder(a.floor, b.floor));
-  const podiumFloor = hovered?.tower === 'A' ? (hovered.floor as 1 | 2 | 3 | 4) : null;
-  // block D, the service and parking building: basement (B1) and floors 1-3, two to a row
+  const podiumPanel = podiumFloors.filter((f) => f.floor > 0).sort((a, b) => panelOrder(a.floor, b.floor));
+  const podiumFloor = hovered?.tower === 'A' ? (hovered.floor as 0 | 1 | 2 | 3 | 4) : null;
+  // block D, the service and parking building: its own basement (B1) and floors 1-3, two to a row
   const dPanel = [2, 3, 0, 1].filter((n) => blockDFloors.some((f) => f.floor === n));
   const dFloor = hovered?.tower === 'D' ? (hovered.floor as 0 | 1 | 2 | 3) : null;
   // the technical floor on a tower's roof, floor 17: always open, nothing for sale
@@ -71,13 +74,26 @@ export function FloorPicker({ children }: { children: ReactNode }) {
           </div>
           <div className="lift-display" aria-live="polite">
             <span className="lift-number">
-              {current ? current.floor : roofTower ? t.roof.button : dFloor !== null ? blockDLabel(dFloor) : (podiumFloor ?? '–')}
+              {current
+                ? current.floor
+                : roofTower
+                  ? t.roof.button
+                  : dFloor !== null
+                    ? blockDLabel(dFloor)
+                    : podiumFloor !== null
+                      ? floorName(podiumFloor)
+                      : '–'}
             </span>
             <span className="lift-text">
               {dFloor !== null ? (
                 <>
                   <b>{t.blockD.name}</b>
                   {t.blockD.use[dFloor]}
+                </>
+              ) : podiumFloor === 0 ? (
+                <>
+                  <b>{t.basement.name}</b>
+                  {t.basement.use}
                 </>
               ) : podiumFloor ? (
                 <>
@@ -130,7 +146,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               dPanel.map((n) => (
                 <li key={n}>
                   <Link
-                    href={`/${locale}/floors/D/${n}`}
+                    href={`/${locale}/floors/D/${blockDLabel(n)}`}
                     className={isHovered(n) ? 'is-hovered' : undefined}
                     aria-label={`${t.blockD.name}, ${n === 0 ? t.blockD.basementTitle : fmt(t.home.openFloor, { n })}, ${t.blockD.use[n as 0 | 1 | 2 | 3]}`}
                     onMouseEnter={() => hover(n)}
@@ -183,6 +199,22 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                 )}
               </li>
             ))}
+            {/* block D has its own basement, on its own panel */}
+            {tower !== 'D' && (
+            <li className="lift-basement">
+              <Link
+                href={`/${locale}/floors/A/${floorName(0)}`}
+                className={podiumFloor === 0 ? 'is-hovered' : undefined}
+                aria-label={`${t.basement.name}: ${t.basement.use}`}
+                onMouseEnter={() => setHovered(BASEMENT)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(BASEMENT)}
+                onBlur={() => setHovered(null)}
+              >
+                {floorName(0)}
+              </Link>
+            </li>
+            )}
           </ol>
         </div>
       </div>

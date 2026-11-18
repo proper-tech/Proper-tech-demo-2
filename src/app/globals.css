@@ -210,8 +210,10 @@ button {
   justify-content: center;
 }
 
-/* the roof button gets the top row to itself, so the floor pairs below stay in step */
-.lift-buttons .lift-roof {
+/* the roof button gets the top row to itself, so the floor pairs below stay in step; the basement
+   button the bottom row */
+.lift-buttons .lift-roof,
+.lift-buttons .lift-basement {
   grid-column: 1 / -1;
 }
 
@@ -647,6 +649,15 @@ button {
   display: none;
 }
 
+.apt-tour-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #1c201e;
+}
+
 .stage-canvas {
   position: absolute;
   inset: 0;
@@ -671,6 +682,14 @@ button {
 
 .apt-head > * {
   pointer-events: auto;
+}
+
+/* Over the dark 360° photos of plan D: a light card keeps the heading readable. */
+.apt-head.is-over-photo {
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
 }
 
 .apt-head h1 {
@@ -1388,6 +1407,18 @@ button {
   stroke-width: 0.18;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.podium-parking { fill: #e3e7ec; }
+.podium-ramp { fill: #cdd4dc; }
+.podium-lobby { fill: #e3eee7; }
+
+/* parking spaces on the basement plan */
+.podium-stall {
+  fill: #f7f8fa;
+  stroke: #aeb8c3;
+  stroke-width: 0.08;
+  pointer-events: none;
 }
 
 .podium-space.is-clickable {

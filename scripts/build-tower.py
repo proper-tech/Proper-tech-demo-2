@@ -20,9 +20,12 @@ from mathutils import Vector, Matrix
 
 D = bpy.data
 # Which tower to build: set TOWER before exec(), or edit here. Footprints from buildings_su.json.
+# tech: the technical floor's walls, techBlock() in src/data/roof.ts (the roof plan's block at the
+# north end of each tower). door: centre (u, v) of its stair's door out onto the roof and the way it
+# faces (+1 east on B for stair 113, -1 west on C for stair 117), from the same plan.
 TOWERS = {
-    "B": dict(fp=(-4.42, 18.18, 9.81, 31.81), tech=(0.08, 13.68, 14.31, 27.31)),
-    "C": dict(fp=(-11.62, 10.98, -31.59, -9.59), tech=(-7.12, 6.48, -27.09, -14.09)),
+    "B": dict(fp=(-4.42, 18.18, 9.81, 31.81), tech=(3.03, 10.73, 17.26, 31.56), door=(10.73, 25.0, 1)),
+    "C": dict(fp=(-11.62, 10.98, -31.59, -9.59), tech=(-4.17, 3.53, -24.14, -9.84), door=(-4.17, -16.4, -1)),
 }
 TOWER = globals().get("TOWER", "B")
 U0, U1, V0, V1 = TOWERS[TOWER]["fp"]
@@ -256,6 +259,10 @@ for i in range(4):
     s += L
 top = bm.faces.new([bm.verts.new(c + Vector((0, 0, tz1))) for c in corners])
 top.material_index = ROOF
+# the stair's door onto the roof: a dark 1.0 x 2.1 m panel just proud of the wall
+du, dv, side = TOWERS[TOWER]["door"]
+du += side * 0.02
+quad([Vector((du, dv - 0.5, tz0)), Vector((du, dv + 0.5, tz0)), Vector((du, dv + 0.5, tz0 + 2.1)), Vector((du, dv - 0.5, tz0 + 2.1))], GLASS_W)
 
 # ------------------------------------------------------------------ object
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0005)

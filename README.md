@@ -12,6 +12,7 @@ Next.js 16 (App Router) + React 19 + three.js (`@react-three/fiber`).
 | 155 apartments, including floor 4 of Block B, where the homeowners' association room replaces apartment B | Furniture (only there to show scale), including the fit-out of podium floor 1 (`furnish()` in `src/data/podium.ts`) |
 | Capacity figures on the home page (general plan, sheet 7) | Door sides of the podium stairs and the roof stair, and the escalator direction (not on the drawings) |
 | Block A (podium) floors 1-4: rooms, numbers and areas from the room schedules (`src/data/podium.ts`), facade from the elevations (`scripts/build-model.py`) | Blocks B, C and D have a simplified facade in the 3D model |
+| Basement (B1): the car park under blocks A-C with its room schedule, the driveway to block D's garage, both ramps, the tower cores, 60 parking spaces as drawn (`src/data/podium.ts`, floor 0) | Ramp slopes: the plans stop at the building's edge, so the ramps are drawn reaching street level there, steeper than built |
 | Towers 25.7 × 21.4 m from floor 4 up, overhanging the podium (typical floor plan and section 1-1); technical floor on each roof, up to +54.7 m, rooms 113-118 (`src/data/roof.ts`, roof plan) | |
 | The six renders (`public/media/renders`) | |
 
@@ -34,7 +35,7 @@ npm run build && npm start
 | --- | --- |
 | Select a floor that is in stock | Home page: lift panel + clickable 3D building (`FloorPicker`, `three/BuildingScene`) |
 | Floor plan, 3D and 2D | `/[locale]/floors/[tower]/[floor]` (`FloorExperience`, `three/FloorScene`, `Plan2D`); each apartment's floor is painted its own colour (`flatColors` in `layouts.ts`) |
-| Podium floors 1-4, and each tower's roof (technical floor, as floor 17) | Same route, `A/1`-`A/4`, `B/17`, `C/17` (`PodiumFloorExperience`, `three/PodiumScene`; data in `podium.ts`, `roof.ts`) |
+| Podium floors 1-4, the basement car park (B1), and each tower's roof (technical floor, as floor 17) | Same route, `A/B1`, `A/1`-`A/4`, `B/17`, `C/17` (`PodiumFloorExperience`, `three/PodiumScene`; data in `podium.ts`, `roof.ts`) |
 | Stairs, lifts, escalators | `three/Cores.tsx`, used by the tower, podium and roof floors |
 | 3D apartment | `/[locale]/apartments/[id]`, "3D model" (`three/ApartmentModel`) |
 | 360° view in every room, walking between rooms | Same page, "360° tour" (`three/ApartmentScene`); add `?view=tour` to link straight to it |
@@ -50,6 +51,9 @@ npm run build && npm start
   entries in `openings`. The 3D model, 2D plan, tour and size table all come from this file.
 - **Real 360° photos**: put an equirectangular JPG in `public/` and set `panorama: '/media/living.jpg'`
   on a room. The tour then shows the photo for that room instead of the 3D model.
+- **360° tour of apartment D**: `public/tour/index.html`, served at `/tour`. It is one
+  self-contained file (panoramas, plan and scripts inside), exported from the interior package;
+  replace the file to update it. It does not use the site's code or data.
 - **Video**: replace `public/media/intro.mp4`.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the

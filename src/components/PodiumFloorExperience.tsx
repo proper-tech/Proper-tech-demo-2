@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FLOOR_MAX, FLOOR_MIN } from '@/data/building';
 import { blockDFloors, blockDLabel, blockDOutline, blockDWalk, getBlockDFloor } from '@/data/blockD';
-import { getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumFloor, type PodiumSpace } from '@/data/podium';
+import { floorName, getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumFloor, type PodiumSpace } from '@/data/podium';
 import { getRoofFloor } from '@/data/roof';
 import type { TowerId } from '@/data/types';
 import { fmt, type Dict } from '@/i18n/config';
@@ -143,7 +143,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
   const isD = block === 'D';
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   const pf = tower ? getRoofFloor(tower) : isD ? getBlockDFloor(floor)! : getPodiumFloor(floor)!;
-  const lower = tower ? undefined : isD ? getBlockDFloor(floor - 1) : getPodiumFloor(floor - 1);
+  const lower = isD ? getBlockDFloor(floor - 1) : undefined;
   // the roof playground (floor 4) has a 360° view you can walk through
   const walkable = !tower && !isD && pf.spaces.some((s) => s.type === 'playground');
   const walking = tour.kind === 'spot';
@@ -151,25 +151,41 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
   const towerHref = (s: PodiumSpace) => `/${locale}/floors/${s.tower}/${FLOOR_MIN}`;
   const open = (s: PodiumSpace) => s.tower && router.push(towerHref(s));
   const detail = (s: PodiumSpace) =>
-    s.tower ? t.podium.towerApartments : s.area !== undefined ? `${m(s.area)} m²` : s.type === 'playground' ? t.podium.playgroundFacts : '';
-  // every space always shows its number; big spaces, the towers and the space pointed at also
-  // show name and area (small rooms would cover each other otherwise)
-  const full = (s: PodiumSpace) => s.tower || (s.area ?? 0) >= 100 || s.type === 'playground' || hovered === s.id;
+    s.tower
+      ? t.podium.towerApartments
+      : s.type === 'playground'
+        ? t.podium.playgroundFacts
+        : s.type === 'ramp'
+          ? t.podium.rampUp
+          : [s.area !== undefined && `${m(s.area)} m²`, s.stalls && fmt(t.podium.stallsN, { n: s.stalls.length })].filter(Boolean).join(', ');
+  // every space always shows its number; big spaces, car parks, the towers and the space pointed
+  // at also show name and area (small rooms would cover each other otherwise)
+  const full = (s: PodiumSpace) => s.tower || (s.area ?? 0) >= 100 || !!s.stalls || s.type === 'playground' || hovered === s.id;
 
   // fit the plan to everything drawn, including the covered walkway outside the 1st-floor walls
   const b = bounds([...pf.outline, ...pf.spaces.flatMap((s) => s.outline)]);
   const list = isD ? blockDFloors : podiumFloors;
   const [first, last] = [list[0].floor, list[list.length - 1].floor];
   const key = isD ? 'D' : 'A';
-  const label = (n: number) => (isD ? blockDLabel(n) : String(n));
+  // B1 for a basement, in links and on buttons
+  const label = floorName;
+  const basement = !tower && !isD && floor === 0;
   const title = tower
     ? fmt(t.roof.title, { t: tower })
     : isD
       ? floor === 0
         ? t.blockD.basementTitle
         : fmt(t.blockD.title, { n: floor })
-      : fmt(t.podium.title, { n: floor });
-  const lead = tower ? t.roof.lead : isD ? t.blockD.lead[pf.floor as 0 | 1 | 2 | 3] : t.podium.lead[pf.floor as 1 | 2 | 3 | 4];
+      : basement
+        ? t.basement.title
+        : fmt(t.podium.title, { n: floor });
+  const lead = tower
+    ? t.roof.lead
+    : isD
+      ? t.blockD.lead[pf.floor as 0 | 1 | 2 | 3]
+      : basement
+        ? t.basement.lead
+        : t.podium.lead[pf.floor as 1 | 2 | 3 | 4];
 
   return (
     <div className="floor">
@@ -194,7 +210,6 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
           ) : (
             <PodiumScene
               floor={pf}
-              lower={lower}
               layer={layer}
               hovered={walking ? null : hovered}
               onHover={(id) => !walking && setHovered(id)}
@@ -210,7 +225,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
                 data-anchor={`space:${s.id}`}
               >
                 <b>{s.no ?? spaceName(t, s)}</b>
-                {full(s) && <span>{s.no ? [spaceName(t, s), s.area !== undefined ? `${m(s.area)} m²` : ''].filter(Boolean).join(', ') : detail(s)}</span>}
+                {full(s) && <span>{s.no ? [spaceName(t, s), detail(s)].filter(Boolean).join(', ') : detail(s)}</span>}
               </div>
             ))}
           </div>
@@ -229,6 +244,11 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
                   onClick={s.tower ? () => open(s) : undefined}
                 />
               ))}
+              {pf.spaces
+                .flatMap((s) => s.stalls ?? [])
+                .map((stall, i) => (
+                  <path key={`stall-${i}`} className="podium-stall" d={path(stall)} />
+                ))}
               {pf.decor?.map((d, i) => <PlanDecor key={i} d={d} />)}
               <PlanAccess pf={pf} />
               {listed.map((s) => (
@@ -276,10 +296,10 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
               </div>
               <div className="walk-floors">
                 {getBlockDFloor(floor + 1) && (
-                  <Link href={`/${locale}/floors/D/${floor + 1}?view=360`}>↑ {fmt(t.blockD.toFloor, { n: blockDLabel(floor + 1) })}</Link>
+                  <Link href={`/${locale}/floors/D/${floorName(floor + 1)}?view=360`}>↑ {fmt(t.blockD.toFloor, { n: blockDLabel(floor + 1) })}</Link>
                 )}
                 {getBlockDFloor(floor - 1) && (
-                  <Link href={`/${locale}/floors/D/${floor - 1}?view=360`}>↓ {fmt(t.blockD.toFloor, { n: blockDLabel(floor - 1) })}</Link>
+                  <Link href={`/${locale}/floors/D/${floorName(floor - 1)}?view=360`}>↓ {fmt(t.blockD.toFloor, { n: blockDLabel(floor - 1) })}</Link>
                 )}
               </div>
             </div>
@@ -306,7 +326,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
           {listed.map((s) => {
             const body = (
               <>
-                <span className="unit-id">{s.no ?? s.tower}</span>
+                <span className="unit-id">{s.no ?? s.tower ?? '↑'}</span>
                 <span className="unit-info">
                   <b>{spaceName(t, s)}</b>
                   {detail(s)}
@@ -341,7 +361,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
               {FLOOR_MAX}
             </Link>
           ) : floor > first ? (
-            <Link href={`/${locale}/floors/${key}/${floor - 1}`}>
+            <Link href={`/${locale}/floors/${key}/${label(floor - 1)}`}>
               <span>{t.floor.prev}</span>
               {label(floor - 1)}
             </Link>
@@ -349,7 +369,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
             <span />
           )}
           {!tower && floor < last ? (
-            <Link href={`/${locale}/floors/${key}/${floor + 1}`}>
+            <Link href={`/${locale}/floors/${key}/${label(floor + 1)}`}>
               <span>{t.floor.next}</span>
               {label(floor + 1)}
             </Link>
