@@ -51,6 +51,9 @@ npm run build && npm start
   entries in `openings`. The 3D model, 2D plan, tour and size table all come from this file.
 - **Real 360° photos**: put an equirectangular JPG in `public/` and set `panorama: '/media/living.jpg'`
   on a room. The tour then shows the photo for that room instead of the 3D model.
+- **360° tour of apartment D**: `public/tour/index.html`, served at `/tour`. It is one
+  self-contained file (panoramas, plan and scripts inside), exported from the interior package;
+  replace the file to update it. It does not use the site's code or data.
 - **Video**: replace `public/media/intro.mp4`.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the
