@@ -169,13 +169,18 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
 
 export default function FloorScene({ units, core, layer, hovered, onHover, onOpen }: Props) {
   const anchors = useMemo<Anchor[]>(
-    () =>
-      units.map((u) => {
+    () => [
+      ...units.map((u): Anchor => {
         const layout = layouts[u.layout];
         const [X, Y] = unitCentre(layout);
         return { id: `unit:${u.id}`, position: [sx(X), maxCeiling(layout) + 0.6, sz(Y)] };
       }),
-    [units],
+      // the homeowners' association room (block B, floor 4), where apartment 02 would be
+      ...core
+        .filter((c) => c.id === 'hoa')
+        .map((c): Anchor => ({ id: 'core:hoa', position: [sx((c.x0 + c.x1) / 2), CORE_LOOK.hoa.h + 0.6, sz((c.y0 + c.y1) / 2)] })),
+    ],
+    [units, core],
   );
 
   // The stair: the flight on the east side goes up, the door opens east onto the lift lobby, the

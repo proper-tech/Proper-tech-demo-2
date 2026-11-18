@@ -1,10 +1,10 @@
 import { bounds, inPolygon, type Pt } from '@/lib/geometry';
-import { siteTower, towerPlate } from './building';
+import { PLATE, siteTower, towerPlate } from './building';
 import site from './site.json';
 import type { FurnitureItem, TowerId } from './types';
 
-// Block A, the podium: shops and services on floors 1-3 and the playground on its roof (floor 4).
-// Traced from the architect's floor plans against the column grid (axes X1-X7, Y1-Y12), so walls
+// Block A, the podium: shops and services on floors 1-3 and the playground on its roof (floor 4),
+// and the basement car park under the whole complex (B1, kept here as floor 0). Traced from the architect's floor plans against the column grid (axes X1-X7, Y1-Y12), so walls
 // are accurate to roughly half a metre. Room numbers, names and areas are the architect's room
 // schedules; spaces without a number on the plans (lift and stair cores, corridors) have no area.
 // Outlines are in site-plan metres (u east, v north), the same frame as site.json and the 3D model.
@@ -13,7 +13,9 @@ export type PodiumSpaceType =
   | 'hall' | 'supermarket' | 'retail' | 'storage' | 'stairs' | 'lifts' | 'escalators' | 'vestibule'
   | 'staff' | 'office' | 'toilets' | 'corridor' | 'covered' | 'playground' | 'tower'
   // the technical floor on the tower roofs (roof.ts)
-  | 'technical' | 'roof';
+  | 'technical' | 'roof'
+  // the basement (B1)
+  | 'parking' | 'ramp' | 'lobby';
 
 export interface PodiumSpace {
   id: string;
@@ -30,6 +32,10 @@ export interface PodiumSpace {
   flip?: boolean;
   /** For lifts: the wall their doors are in, on floors where they stop. */
   doors?: 'E' | 'W';
+  /** For ramps: the way they go up, from this floor to ground level. */
+  rise?: 'N' | 'S' | 'E' | 'W';
+  /** For car parks: the parking spaces marked on the floor, as drawn on the plans. */
+  stalls?: Pt[][];
 }
 
 /** Playground furniture on the roof, from the 4th-floor plan. */
@@ -39,7 +45,8 @@ export type Decor =
   | { kind: 'climber'; path: Pt[]; w: number };
 
 export interface PodiumFloor {
-  /** 1-4 on the podium; the tower roofs (roof.ts) use the same shape as floor 17. */
+  /** 1-4 on the podium, 0 for the basement (B1); the tower roofs (roof.ts) use the same shape as
+   *  floor 17. */
   floor: number;
   /** Bottom and top of the storey, m above the 1st-floor slab (sections). Floor 4 is the open
    *  roof, so its top is the parapet. */
@@ -60,7 +67,7 @@ export interface PodiumFloor {
 const [X1, X2, X3, X4, X5, X6] = site.grid.u;
 const X7 = X6 + 7.2;
 const V = site.grid.v;
-const [Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y11, Y12] = [V[1], V[2], V[3], V[4], V[5], V[6], V[7], V[8], V[10], V[11]];
+const [Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11, Y12] = V;
 /** 1st-floor shopfront line under tower C, 2.4 m north of axis Y2 (1st-floor plan). South of
  *  it the ground floor is an open, covered walkway. Same value as RECESS in build-model.py. */
 const GROUND_SOUTH = Y2 + 2.4;
@@ -86,11 +93,16 @@ export const podiumOutline = outlineTo(C.v0);
 /** The roof playground: the podium between the towers. */
 export const terraceOutline = uniq(P);
 
-/** A tower's outline with its chamfered (glazed) corners, as in the 3D model. */
-export const towerOutline = (t: { u0: number; u1: number; v0: number; v1: number }, c = 2.4): Pt[] => [
-  [t.u0 + c, t.v0], [t.u1 - c, t.v0], [t.u1, t.v0 + c], [t.u1, t.v1 - c],
-  [t.u1 - c, t.v1], [t.u0 + c, t.v1], [t.u0, t.v1 - c], [t.u0, t.v0 + c],
-];
+/** A tower's outline with its rounded (glazed) corners, as on the roof plan and in the 3D model
+ *  (radius PLATE.corner); each corner is a quarter circle in 6 straight steps. */
+export const towerOutline = (t: { u0: number; u1: number; v0: number; v1: number }, r = PLATE.corner): Pt[] =>
+  // corner centres counter-clockwise from the south-east, each with the angle its arc starts at
+  ([[t.u1 - r, t.v0 + r, -90], [t.u1 - r, t.v1 - r, 0], [t.u0 + r, t.v1 - r, 90], [t.u0 + r, t.v0 + r, 180]] as const).flatMap(([cu, cv, a0]) =>
+    Array.from({ length: 7 }, (_, k): Pt => {
+      const a = ((a0 + 15 * k) * Math.PI) / 180;
+      return [cu + r * Math.cos(a), cv + r * Math.sin(a)];
+    }),
+  );
 
 // cores that run through floors 1-3. stairs-c and lifts-c are tower C's core (stair 602, lifts) on
 // its way down, stairs-b and lifts-b tower B's, mirrored like it. Door sides aren't on the podium
@@ -215,7 +227,106 @@ function furnish(spaces: PodiumSpace[]): FurnitureItem[] {
   ];
 }
 
+// ---- the basement (B1), 3.9 m below floor 1 (section 1-1). The car park under blocks A-C is
+// traced from its own plan ("Зоорийн давхрын байгуулалт") and room schedule, block D's garage and
+// the driveway to it from the combined basement plan. Each crossed box on the plans is one or two
+// 2.5 x 5 m parking spaces. The two plans place block D about 1.4 m apart; it follows site.json's
+// annex here. The plans stop where the ramps leave the building, so each ramp is drawn reaching
+// ground level at that point, steeper than it will be built.
+
+/** n parking spaces side by side filling a box, stacked along v (cars facing east or west) or
+ *  along u (cars facing north or south). `rect` makes the box, in the site frame or block D's. */
+const stalls = (u0: number, u1: number, v0: number, v1: number, n: number, along: 'u' | 'v' = 'v', rect = box): Pt[][] =>
+  Array.from({ length: n }, (_, i) => {
+    const [a, b] = along === 'v' ? [v0, v1] : [u0, u1];
+    const [s0, s1] = [a + ((b - a) * i) / n, a + ((b - a) * (i + 1)) / n];
+    return along === 'v' ? rect(u0, u1, s0, s1) : rect(s0, s1, v0, v1);
+  });
+/** Two parking spaces facing east or west, centred on the bay between two grid lines. */
+const pair = (u0: number, u1: number, va: number, vb: number) => stalls(u0, u1, (va + vb) / 2 - 2.55, (va + vb) / 2 + 2.55, 2);
+/** Spine of the double row of parking down the middle of the car park. */
+const ISLAND = X4 + 3.7;
+
+const carPark: Pt[][] = [
+  // west row, cars facing east
+  ...[[Y9, Y10], [Y7, Y8], [Y6, Y7], [Y5, Y6], [Y3, Y4]].flatMap(([a, b]) => pair(X1 + 1.25, X1 + 6.25, a, b)),
+  // east row, cars facing west, starting just south of room 04
+  ...stalls(X6 + 1.2, X6 + 6.2, Y10 + 0.4, Y10 + 3.4, 1),
+  ...[[Y9, Y10], [Y7, Y8], [Y6, Y7]].flatMap(([a, b]) => pair(X6 + 1.2, X6 + 6.2, a, b)),
+  // the double row down the middle, with one space across its north end
+  ...stalls(ISLAND - 2.6, ISLAND + 2.4, Y9 - 1.1, Y9 + 1.5, 1),
+  ...[[Y7, Y8], [Y6, Y7], [Y5, Y6], [Y2, Y3]].flatMap(([a, b]) => [...pair(ISLAND - 5, ISLAND, a, b), ...pair(ISLAND, ISLAND + 5, a, b)]),
+  // cars facing south beside tower B's core; the northern pair parks behind the next one
+  ...stalls(X4 + 1, X4 + 6.05, Y11 + 0.6, Y12 - 1.25, 2, 'u'),
+  ...stalls(X4 + 1, X4 + 6.05, Y11 - 5.95, Y11 - 0.75, 2, 'u'),
+  ...stalls(X5 + 2.95, X5 + 5.55, Y11 - 5.95, Y11 - 0.75, 1, 'u'),
+  // two along the south wall
+  ...stalls(X2 + 1.55, X2 + 6.55, Y1 + 0.3, Y1 + 3.1, 1),
+  ...stalls(X4 + 1.4, X4 + 6.4, Y1 + 0.3, Y1 + 3.1, 1),
+];
+
+// Block D's own frame: x east and y south from the outer north-west corner of its walls, along
+// them (it is turned about 2.5 degrees from the main grid). Its grid is 3 x 5 bays of 6 m.
+const [dNE, dNW, dSW] = site.annex as Pt[];
+const DW = Math.hypot(dNE[0] - dNW[0], dNE[1] - dNW[1]);
+const DL = Math.hypot(dSW[0] - dNW[0], dSW[1] - dNW[1]);
+const inD = (x: number, y: number): Pt => [
+  dNW[0] + (x / DW) * (dNE[0] - dNW[0]) + (y / DL) * (dSW[0] - dNW[0]),
+  dNW[1] + (x / DW) * (dNE[1] - dNW[1]) + (y / DL) * (dSW[1] - dNW[1]),
+];
+const boxD = (x0: number, x1: number, y0: number, y1: number): Pt[] => [inD(x0, y0), inD(x1, y0), inD(x1, y1), inD(x0, y1)];
+/** Block D's stair core stands out this far past the garage's east wall, and this far south. */
+const [D_CORE_W, D_CORE_L] = [2.9, 10.5];
+
+/** Two rows of parking along the side walls, a pair in every 6 m bay. */
+const garageD: Pt[][] = [0, 1, 2, 3, 4].flatMap((k) => {
+  const c = 3.45 + 6 * k;
+  const east = k ? stalls(12.7, 17.65, c - 2.65, c + 2.65, 2, 'v', boxD) : stalls(12.7, 17.65, 0.85, 3.35, 1, 'v', boxD);
+  return [...stalls(0.9, 6.2, c - 2.65, c + 2.65, 2, 'v', boxD), ...east];
+});
+
+/** The whole basement: the car park, the driveway south and block D's garage with its stair core.
+ *  The two ramps start at gaps in it, on axis X2 and on axis Y5. */
+const basementOutline: Pt[] = [
+  [X1, Y11], [X4, Y11], [X4, Y12], [X7, Y12], [X7, Y5], [X6, Y5], [X6, Y1],
+  inD(12.45, 0), inD(DW + D_CORE_W, 0), inD(DW + D_CORE_W, D_CORE_L), inD(DW, D_CORE_L), inD(DW, DL), inD(0, DL), inD(0, 0), inD(6.45, 0),
+  [X5 + 1.5, Y1], [X2, Y1], [X2, Y3 - 4.9], [X2, Y3], [X1, Y3],
+];
+
+const basement: PodiumSpace[] = [
+  {
+    id: '01', no: '01', type: 'parking', area: 1538.6, stalls: carPark,
+    outline: [[X1, Y11], [X4, Y11], [X4, Y12], [X7, Y12], [X7, Y5], [X6, Y5], [X6, Y1], [X2, Y1], [X2, Y3], [X1, Y3]],
+  },
+  { id: '02', no: '02', type: 'technical', area: 84.0, outline: box(X1, X4, Y10, Y11) },
+  // tower B's core, below the floor-1 lobby: the same lifts and stair
+  { id: '03', no: '03', type: 'lobby', area: 20.8, outline: [[X5, Y11], [X5 + 4.1, Y11], [X5 + 4.1, Y12 - 4.6], [X5 + 2.1, Y12 - 4.6], [X5 + 2.1, Y12], [X5, Y12]] },
+  { ...liftsB, doors: 'W' },
+  { id: 'stairs-b', type: 'stairs', door: 'W', flip: true, outline: box(X5 + 4.1, X6, Y11, Y12) },
+  { id: '04', no: '04', type: 'technical', area: 65.3, outline: box(X6, X7, Y11 - 2.7, Y12) },
+  // tower C's core: the lifts and their lobby 05, stair 07, and a lobby off the car park on the west
+  { id: 'lifts-c', type: 'lifts', doors: 'E', outline: box(X4 + 2.9, X4 + 5.0, Y4 - 4.0, Y4) },
+  { id: '05', no: '05', type: 'lobby', area: 21.2, outline: [[X4 + 2.9, Y4 - 4.0], [X4 + 5.0, Y4 - 4.0], [X4 + 5.0, Y4], [X5, Y4], [X5, Y3], [X4 + 2.9, Y3]] },
+  { id: '07', no: '07', type: 'stairs', area: 17.1, door: 'E', outline: box(X4 + 0.3, X4 + 2.9, Y3, Y4) },
+  { id: 'vestibule-c', type: 'vestibule', outline: box(X3, X4 + 0.3, Y3, Y4) },
+  { id: 'ramp-w', type: 'ramp', rise: 'W', outline: box(X1 - 1.9, X2, Y3 - 4.9, Y3) },
+  { id: 'ramp-e', type: 'ramp', rise: 'S', outline: box(X6, X7, Y3 - 3.6, Y5) },
+  { id: 'driveway', type: 'parking', outline: [[X5 + 1.5, Y1], [X6, Y1], inD(12.45, 0), inD(6.45, 0)] },
+  // block D's garage (no area on the schedule, which covers blocks A-C) and its stair core
+  { id: 'garage-d', no: 'D', type: 'parking', stalls: garageD, outline: boxD(0, DW, 0, DL) },
+  { id: 'lobby-d', type: 'lobby', outline: boxD(DW - 0.45, DW + D_CORE_W, 0, 4.4) },
+  { id: '15', no: '15', type: 'stairs', door: 'N', outline: boxD(DW - 0.45, DW + D_CORE_W, 4.4, D_CORE_L) },
+];
+
 export const podiumFloors: PodiumFloor[] = [
+  {
+    floor: 0,
+    z0: -3.9,
+    z1: 0,
+    below: 0,
+    outline: basementOutline,
+    spaces: basement,
+  },
   {
     floor: 1,
     z0: 0,
@@ -267,5 +378,7 @@ export const podiumFloors: PodiumFloor[] = [
 ];
 
 export const getPodiumFloor = (floor: number) => podiumFloors.find((f) => f.floor === floor);
-/** Spaces listed beside the plan: numbered rooms and the towers. */
-export const listedSpaces = (f: PodiumFloor) => f.spaces.filter((s) => s.no || s.tower);
+/** Spaces listed beside the plan: numbered rooms, the towers and the ramps. */
+export const listedSpaces = (f: PodiumFloor) => f.spaces.filter((s) => s.no || s.tower || s.type === 'ramp');
+/** A podium floor's name on buttons and in links: B1 for the basement. */
+export const floorName = (floor: number) => (floor === 0 ? 'B1' : String(floor));
