@@ -1,4 +1,4 @@
-# Tenger Residence — apartment sales site (mock)
+# Sebotse — apartment sales site (mock)
 
 Next.js 16 (App Router) + React 19 + three.js (`@react-three/fiber`).
 

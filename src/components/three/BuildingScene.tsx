@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { Suspense, useEffect, useMemo } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { useGLTF, useProgress } from '@react-three/drei';
 import { ExtrudeGeometry, Shape, type Mesh, type MeshStandardMaterial } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -11,6 +11,7 @@ import type { BlockId, TowerId } from '@/data/types';
 import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { CameraRig, type Tour } from './Tour';
+import { Sun, type SunSettings } from './Sun';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -36,6 +37,12 @@ interface Props {
   layer: LabelLayer;
   /** The 360° tour: overview orbit or an eye-level viewpoint (see Tour.tsx). */
   tour: Tour;
+  /** Sun position and brightness (see Sun.tsx). */
+  sun: SunSettings;
+  /** Called once the models are loaded, their shaders compiled and the first frames drawn. */
+  onReady?: () => void;
+  /** Loading progress of the models, 0-100. */
+  onProgress?: (percent: number) => void;
 }
 
 const MODEL_URL = '/models/complex.glb';
@@ -63,6 +70,7 @@ function Model() {
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
+      if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
     });
   }, [scene]);
   return <primitive object={scene} />;
@@ -94,6 +102,7 @@ function Environment() {
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
+      mesh.castShadow = mesh.receiveShadow = true;
       for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
         const color = GROUND_COLORS[m.name.replace(/\.\d{3}$/, '')];
         if (color && 'color' in m) (m as MeshStandardMaterial).color.set(color);
@@ -103,6 +112,48 @@ function Environment() {
   return <primitive object={scene} />;
 }
 useGLTF.preload(ENV_URL, DRACO_URL);
+
+/** Reports download progress of the models to the page's loader. */
+function Progress({ onProgress }: { onProgress?: (percent: number) => void }) {
+  const { progress } = useProgress();
+  useEffect(() => {
+    onProgress?.(progress);
+  }, [progress, onProgress]);
+  return null;
+}
+
+/**
+ * Mounted after the models (inside the same Suspense), so it runs once they are in the scene:
+ * compiles every material's shaders up front, then lets a few frames render (the first
+ * shadow-map passes) before telling the page the view is ready. Without this the first seconds
+ * stutter while the GPU compiles on the fly.
+ */
+function WhenReady({ onReady }: { onReady?: () => void }) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    let cancelled = false;
+    let frame = 0;
+    (async () => {
+      try {
+        await gl.compileAsync(scene, camera);
+      } catch {
+        // older drivers: fall through and let the frames below compile
+      }
+      let n = 0;
+      const step = () => {
+        if (cancelled) return;
+        if (++n < 6) frame = requestAnimationFrame(step);
+        else onReady?.();
+      };
+      frame = requestAnimationFrame(step);
+    })();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [gl, scene, camera, onReady]);
+  return null;
+}
 
 /**
  * One see-through, clickable band per floor, wrapped around the tower in the model.
@@ -238,27 +289,33 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
 }
 
 
-export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour }: Props) {
+export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress }: Props) {
   const anchors = useMemo<Anchor[]>(
     () =>
       towers.map((id) => {
         const t = towerPlate(id);
-        return { id: `tower:${id}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] };
-      }),
+        return { id: `tower:${id}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] } as Anchor;
+      }).concat(
+        // Block A, the podium: tag floats over the roof playground between the towers
+        (() => {
+          const b = bounds(terraceOutline);
+          return { id: 'tower:A', position: [(b.u0 + b.u1) / 2, PODIUM_HEIGHT + 9, -(b.v0 + b.v1) / 2] } as Anchor;
+        })(),
+      ),
     [],
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
-      <ambientLight intensity={1.25} />
-      <hemisphereLight args={['#ffffff', '#c3ccd6', 0.7]} />
-      <directionalLight position={[-60, 90, 40]} intensity={2.0} />
+    <Canvas flat shadows dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+      <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       <Suspense fallback={null}>
         <Environment />
         <Model />
+        <WhenReady onReady={onReady} />
       </Suspense>
+      <Progress onProgress={onProgress} />
 
       {tour.kind === 'overview' && towers.map((tower) => (
         <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
