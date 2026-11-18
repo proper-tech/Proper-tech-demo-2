@@ -1464,6 +1464,65 @@ button {
   color: #dbe7fb;
 }
 
+/* 360° tour controls over the 3D stage */
+
+.tour-bar {
+  position: absolute;
+  top: 1rem;
+  bottom: auto;
+  left: auto;
+  height: auto;
+  align-content: start;
+  right: clamp(1rem, 3vw, 2.5rem);
+  z-index: 10;
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  max-width: calc(100% - 2rem);
+}
+
+.tour-modes,
+.tour-spots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.tour-bar button {
+  height: auto;
+  width: auto;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  color: var(--ink);
+  font: 600 0.8125rem/1.2 var(--display);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(20 35 59 / 0.12);
+}
+
+.tour-bar button:hover {
+  border-color: var(--sky);
+}
+
+.tour-bar button[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.tour-bar .tour-step {
+  padding: 0.4rem 0.7rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.label-layer.is-hidden {
+  display: none;
+}
+
 /* Block D walk-through: where you are, floor buttons, a small plan with your position */
 .label-layer.is-hidden { display: none; }
 .walk-hud {

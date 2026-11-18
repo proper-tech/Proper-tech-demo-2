@@ -714,7 +714,8 @@ function PitWell({ r }: { r: Rect }) {
 /** The rest of the complex (towers B and C, the podium, the parked cars), from the site model,
  *  placed round block D so it shows through the windows. Block D's own shell is left out. */
 function Surroundings({ z0 }: { z0: number }) {
-  const { scene } = useGLTF('/models/complex.glb');
+  // the complex model is Draco-compressed; the decoder is served from public/draco
+  const { scene } = useGLTF('/models/complex.glb', '/draco/');
   const model = useMemo(() => {
     const m = scene.clone(true);
     m.traverse((o) => {

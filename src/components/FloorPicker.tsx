@@ -13,6 +13,7 @@ import type { BlockId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { FloorKey } from './three/BuildingScene';
+import { SPOTS, type SpotId, type Tour } from './three/Tour';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
   ssr: false,
@@ -30,6 +31,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [hovered, setHovered] = useState<FloorKey | null>(null);
   const [touched, setTouched] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
+  const [tour, setTour] = useState<Tour>({ kind: 'overview' });
 
   useEffect(() => {
     setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -195,16 +197,52 @@ export function FloorPicker({ children }: { children: ReactNode }) {
           onOpen={(key) => router.push(`/${locale}/floors/${key.tower}/${key.floor}`)}
           autoRotate={!touched && !reducedMotion && hovered === null}
           layer={layer}
+          tour={tour}
         />
-        <div className="label-layer" ref={layer}>
+        <div className={`label-layer${tour.kind === 'spot' ? ' is-hidden' : ''}`} ref={layer}>
           {([...towers, 'D'] as BlockId[]).map((id) => (
             <div key={id} className={`tower-tag${tower === id ? ' is-selected' : ''}`} data-anchor={`tower:${id}`}>
               {fmt(t.home.towerN, { t: id })}
             </div>
           ))}
         </div>
-        <p className="stage-hint">{t.home.towerHint}</p>
+        <TourBar tour={tour} setTour={setTour} />
+        <p className="stage-hint">{tour.kind === 'spot' ? t.tour.lookHint : tour.kind === 'drone' ? t.tour.droneHint : t.home.towerHint}</p>
       </div>
+    </div>
+  );
+}
+
+/** Controls of the 360° tour, over the 3D stage: drone flight, eye-level viewpoints, back. */
+function TourBar({ tour, setTour }: { tour: Tour; setTour: (t: Tour) => void }) {
+  const { t } = useI18n();
+  const spotIndex = tour.kind === 'spot' ? SPOTS.findIndex((s) => s.id === tour.id) : -1;
+  const go = (i: number) => setTour({ kind: 'spot', id: SPOTS[(i + SPOTS.length) % SPOTS.length].id });
+  return (
+    <div className="tour-bar">
+      <div className="tour-modes" role="group" aria-label={t.tour.label}>
+        <button type="button" aria-pressed={tour.kind === 'drone'} onClick={() => setTour(tour.kind === 'drone' ? { kind: 'overview' } : { kind: 'drone' })}>
+          {tour.kind === 'drone' ? t.tour.stop : t.tour.drone}
+        </button>
+        <button type="button" aria-pressed={tour.kind === 'spot'} onClick={() => (tour.kind === 'spot' ? setTour({ kind: 'overview' }) : go(0))}>
+          {tour.kind === 'spot' ? t.tour.exit : t.tour.street}
+        </button>
+      </div>
+      {tour.kind === 'spot' && (
+        <div className="tour-spots">
+          <button type="button" className="tour-step" aria-label={t.tour.prev} onClick={() => go(spotIndex - 1)}>
+            ‹
+          </button>
+          {SPOTS.map((s) => (
+            <button key={s.id} type="button" aria-pressed={s.id === tour.id} onClick={() => setTour({ kind: 'spot', id: s.id })}>
+              {t.tour.spots[s.id as SpotId]}
+            </button>
+          ))}
+          <button type="button" className="tour-step" aria-label={t.tour.next} onClick={() => go(spotIndex + 1)}>
+            ›
+          </button>
+        </div>
+      )}
     </div>
   );
 }

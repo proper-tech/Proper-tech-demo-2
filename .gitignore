@@ -6,3 +6,7 @@ next-env.d.ts
 # Blender source files (too large for GitHub; ship .glb exports instead)
 *.blend
 *.blend1
+
+# local backups of replaced models and old scripts
+*.bak
+scripts/_*.py
