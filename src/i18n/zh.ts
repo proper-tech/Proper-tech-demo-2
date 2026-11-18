@@ -26,13 +26,10 @@ const zh: Dict = {
   },
   tour: {
     label: '360° 游览',
-    drone: '360° 航拍游览',
-    stop: '停止游览',
     street: '360° 街景',
     exit: '返回建筑',
     prev: '上一个视点',
     next: '下一个视点',
-    droneHint: '正在环绕建筑群飞行',
     lookHint: '拖动以环顾四周,点击箭头或地面即可前进',
     spots: {
       plaza: '入口广场',
@@ -42,6 +39,8 @@ const zh: Dict = {
       playground: '屋顶游乐场',
       towerRoof: 'B 座屋顶',
       'playground-swing': '秋千',
+      roofBridge: '攀爬桥',
+      roofExit: '楼梯出口',
     },
   },
   home: {

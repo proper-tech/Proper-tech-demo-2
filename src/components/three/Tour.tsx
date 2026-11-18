@@ -18,14 +18,13 @@ import {
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-// 360° tour of the complex: a drone flight around the buildings and eye-level viewpoints you
+// 360° tour of the complex: eye-level viewpoints you
 // can look around from and walk on from, like Google Street View: arrows on the ground take a
 // step that way, and clicking a free spot on the ground walks there.
 // Scene coordinates: x = u, y = up, z = -v (site plan, metres).
 
 export type Tour =
   | { kind: "overview" }
-  | { kind: "drone" }
   | { kind: "spot"; id: SpotId };
 
 export type SpotId =
@@ -35,7 +34,9 @@ export type SpotId =
   | "eastStreet"
   | "playground"
   | "towerRoof"
-  | "playground-swing";
+  | "playground-swing"
+  | "roofBridge"
+  | "roofExit";
 
 const EYE = 1.65;
 /** One click on an arrow moves this far (metres). */
@@ -43,12 +44,15 @@ const STEP = 3.5;
 /** Clicking the ground walks at most this far (metres). */
 const MAX_WALK = 35;
 
-/** Eye-level viewpoints: where you stand (u, v, ground height) and the point you first look at. */
-export const SPOTS: {
+/** An eye-level viewpoint: where you stand (u, v, ground height) and the point you first look at. */
+export type SpotDef = {
   id: SpotId;
   at: [number, number, number];
   look: [number, number, number];
-}[] = [
+};
+
+/** Viewpoints around the whole complex (home page). */
+export const SPOTS: SpotDef[] = [
   { id: "plaza", at: [-23, 35, 0.15], look: [-5, 18, 5] }, // entrance plaza, from the sidewalk corner
   { id: "mainRoad", at: [2, 62, 0.15], look: [2, 18, 14] }, // far sidewalk across the main road
   { id: "parking", at: [-25, -14, 0.0], look: [-8, -4, 4] }, // parking aisle, west side
@@ -58,19 +62,21 @@ export const SPOTS: {
   { id: "towerRoof", at: [15, 13, 51.6], look: [-2, -24, 48] }, // roof of block B (viewing deck), towards block C
 ];
 
-const toScene = ([u, v, h]: [number, number, number]) => new Vector3(u, h, -v);
+/** Viewpoints on the roof playground of block A (podium floor 4). */
+export const ROOF_SPOTS: SpotDef[] = [
+  { id: "playground", at: [3, 6.5, 11.71], look: [-5, 2, 13.5] }, // by the pavilion
+  { id: "roofBridge", at: [13, -6.5, 11.71], look: [7, 1, 12.6] }, // the climbing bridge
+  { id: "playground-swing", at: [-8, 9, 11.71], look: [-13, 18, 12.6] }, // facing the swings
+  { id: "roofExit", at: [0, -5.5, 11.71], look: [-2, 10, 13] }, // from the stair exit by block C
+];
+
+export type Pt3 = [number, number, number];
+const toScene = ([u, v, h]: Pt3) => new Vector3(u, h, -v);
 
 export const HOME = {
   position: new Vector3(-175, 95, 95),
   target: new Vector3(0, 0, 16),
   fov: 30,
-};
-const DRONE = {
-  centre: new Vector3(3, 18, 4),
-  radius: 135,
-  low: 35,
-  high: 105,
-  speed: 0.11,
 };
 
 /** Things you cannot stand on: plants, people, cars, lamps, furniture and play equipment. */
@@ -104,6 +110,14 @@ interface Props {
   autoRotate: boolean;
   /** Overview orbit target height (half the tower height). */
   targetY: number;
+  /** Viewpoints this scene offers (default: around the complex). */
+  spots?: SpotDef[];
+  /** Site-plan point (u, v, height) to scene coordinates (default x = u, y = height, z = -v). */
+  frame?: (p: Pt3) => Vector3;
+  /** Overview camera, where "back" flies to (default: the whole complex). */
+  home?: { position: Vector3; target: Vector3; fov: number; near?: number };
+  /** Orbit limits in the overview (default: fixed distance, as on the home page). */
+  overview?: { enableZoom?: boolean; minDistance?: number; maxDistance?: number; minPolarAngle?: number; maxPolarAngle?: number };
 }
 
 type Flight = {
@@ -117,16 +131,18 @@ type Flight = {
   dur: number;
 };
 
-/** Owns the camera: the usual orbit view, the drone flight and the walkable look-around
+/** Owns the camera: the usual orbit view and the walkable look-around
  *  viewpoints, with a smooth flight between them. */
-export function CameraRig({ tour, autoRotate, targetY }: Props) {
+export function CameraRig({ tour, autoRotate, targetY, spots = SPOTS, frame = toScene, home: homeView, overview = {} }: Props) {
   const controls = useRef<OrbitControlsImpl>(null);
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const scene = useThree((s) => s.scene);
   const gl = useThree((s) => s.gl);
   const flight = useRef<Flight | null>(null);
-  const droneAngle = useRef(0);
-  const home = useRef(HOME.target.clone().setY(targetY));
+  const home = useRef(homeView ? homeView.target.clone() : HOME.target.clone().setY(targetY));
+  const homePos = homeView?.position ?? HOME.position;
+  const homeFov = homeView?.fov ?? HOME.fov;
+  const homeNear = homeView?.near ?? 1;
   const started = useRef(false);
 
   const walking = tour.kind === "spot";
@@ -235,22 +251,17 @@ export function CameraRig({ tour, autoRotate, targetY }: Props) {
     }
     let p1: Vector3, t1: Vector3, f1: number;
     if (tour.kind === "spot") {
-      const s = SPOTS.find((x) => x.id === tour.id)!;
-      ground.current = s.at[2];
-      p1 = toScene(s.at).add(new Vector3(0, EYE, 0));
-      const look = toScene(s.look);
+      const s = spots.find((x) => x.id === tour.id) ?? spots[0];
+      p1 = frame(s.at);
+      ground.current = p1.y;
+      p1.add(new Vector3(0, EYE, 0));
+      const look = frame(s.look);
       t1 = p1.clone().add(look.sub(p1).normalize().multiplyScalar(0.1));
       f1 = 62;
-    } else if (tour.kind === "drone") {
-      const d = camera.position.clone().sub(DRONE.centre);
-      droneAngle.current = Math.atan2(d.z, d.x);
-      p1 = droneAt(droneAngle.current);
-      t1 = DRONE.centre.clone();
-      f1 = 38;
     } else {
-      p1 = HOME.position.clone();
+      p1 = homePos.clone();
       t1 = home.current.clone();
-      f1 = HOME.fov;
+      f1 = homeFov;
     }
     flight.current = {
       p0: camera.position.clone(),
@@ -353,7 +364,7 @@ export function CameraRig({ tour, autoRotate, targetY }: Props) {
       c.target.lerpVectors(f.t0, f.t1, e);
       camera.fov = MathUtils.lerp(f.f0, f.f1, e);
       // close-up views need a closer near plane; the overview keeps 1 m for depth precision
-      camera.near = walking ? 0.25 : 1;
+      camera.near = walking ? 0.25 : homeNear;
       camera.updateProjectionMatrix();
       c.update();
       if (f.k >= 1) {
@@ -361,12 +372,6 @@ export function CameraRig({ tour, autoRotate, targetY }: Props) {
         lastCheck.current = 0;
       }
       return;
-    }
-    if (tour.kind === "drone") {
-      droneAngle.current += dt * DRONE.speed;
-      camera.position.copy(droneAt(droneAngle.current));
-      c.target.copy(DRONE.centre);
-      c.update();
     }
     if (walking && g) {
       // the arrows sit on the floor around you and turn with your view
@@ -393,15 +398,16 @@ export function CameraRig({ tour, autoRotate, targetY }: Props) {
       <OrbitControls
         ref={controls}
         makeDefault
-        enabled={tour.kind !== "drone"}
         enablePan={false}
-        enableZoom={false}
+        enableZoom={!walking && !!overview.enableZoom}
+        minDistance={walking ? 0 : overview.minDistance ?? 0}
+        maxDistance={walking ? Infinity : overview.maxDistance ?? Infinity}
         // in a viewpoint the camera turns on the spot: dragging moves the view like a panorama
         rotateSpeed={walking ? -0.35 : 1}
         autoRotate={autoRotate && tour.kind === "overview"}
         autoRotateSpeed={0.5}
-        minPolarAngle={walking ? 0.2 : 0.7}
-        maxPolarAngle={walking ? Math.PI - 0.35 : 1.5}
+        minPolarAngle={walking ? 0.2 : overview.minPolarAngle ?? 0.7}
+        maxPolarAngle={walking ? Math.PI - 0.35 : overview.maxPolarAngle ?? 1.5}
       />
       {/* walk controls, Street View style: four arrows on the floor and a ring under the pointer */}
       <group ref={arrows} name="WalkUi" visible={false}>
@@ -426,15 +432,5 @@ export function CameraRig({ tour, autoRotate, targetY }: Props) {
         <meshBasicMaterial color="#ffffff" transparent opacity={0.85} depthTest={false} side={DoubleSide} />
       </mesh>
     </>
-  );
-}
-
-function droneAt(angle: number) {
-  // circle the complex, rising and falling twice per lap
-  const h = MathUtils.lerp(DRONE.low, DRONE.high, 0.5 + 0.5 * Math.sin(angle * 2));
-  return new Vector3(
-    DRONE.centre.x + DRONE.radius * Math.cos(angle),
-    h,
-    DRONE.centre.z + DRONE.radius * Math.sin(angle),
   );
 }

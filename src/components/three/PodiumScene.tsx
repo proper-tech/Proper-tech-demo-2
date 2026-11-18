@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { Suspense, useCallback, useMemo, type ReactNode } from 'react';
 import { Canvas, type ThreeEvent } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, Path, Shape } from 'three';
+import { OrbitControls, useGLTF } from '@react-three/drei';
+import { ExtrudeGeometry, Group, Path, Shape, Vector3, type Mesh } from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import type { Rect } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
 import { listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType, type WallOpening } from '@/data/podium';
@@ -12,6 +13,7 @@ import { Lights } from './ApartmentScene';
 import { Escalators, Lifts, Rail, Ramp, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type RampRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { CameraRig, ROOF_SPOTS, type Pt3, type Tour } from './Tour';
 
 // One podium floor (block A) in 3D: every space is a coloured floor tile, small rooms get
 // cut-away walls, stairs, lifts and escalators are modelled (three/Cores.tsx), the towers on the
@@ -27,6 +29,8 @@ interface Props {
   hovered: string | null;
   onHover: (id: string | null) => void;
   onOpen: (space: PodiumSpace) => void;
+  /** 360° view of the roof playground (floor 4 only): overview or an eye-level viewpoint. */
+  tour?: Tour;
 }
 
 const COLOR: Record<PodiumSpaceType, string> = {
@@ -44,7 +48,7 @@ const COLOR: Record<PodiumSpaceType, string> = {
   corridor: '#EEF1F4',
   covered: '#D7DDE3',
   playground: '#BFD7AE',
-  tower: '#CDD3DA',
+  tower: '#EEF0F1',
   technical: '#DDE2E8',
   roof: '#D5DBE1',
   parts: '#F2E8D2',
@@ -187,7 +191,31 @@ function SpaceMesh({ space, at, holes, hovered, onHover, onOpen }: { space: Podi
   );
 }
 
-/** Playground furniture on the roof (floor 4). */
+/** The roof playground as modelled in Blender from the drawing (sheet 17): paving, planting and
+ *  shrubs, rubber surfacing, climbing bridge, spring riders, swings, pavilion, lamps, benches and
+ *  people. It ships inside block A's model (public/models/blocks/A.glb, objects named RG_*), in
+ *  site-plan coordinates (x = u, y = height, z = -v), so it is shifted onto this floor's frame. */
+const BLOCK_A_URL = '/models/blocks/A.glb';
+const DRACO_URL = '/draco/';
+
+function RoofGarden({ cu, cv, z0 }: { cu: number; cv: number; z0: number }) {
+  const { scene } = useGLTF(BLOCK_A_URL, DRACO_URL);
+  const garden = useMemo(() => {
+    const g = new Group();
+    for (const o of scene.children) if (o.name.startsWith('RG_')) g.add(SkeletonUtils.clone(o));
+    g.traverse((o) => {
+      const m = o as Mesh & { isSkinnedMesh?: boolean };
+      if (!m.isMesh) return;
+      m.raycast = noRay; // the floor tile underneath keeps the hover and the click
+      if (m.isSkinnedMesh) m.frustumCulled = false;
+    });
+    return g;
+  }, [scene]);
+  // lifted onto the playground's floor tile (3 cm) so the paving is not hidden under it
+  return <primitive object={garden} position={[-cu, -z0 + 0.03, cv]} />;
+}
+
+/** Simple playground furniture on the roof (floor 4), shown while the detailed model loads. */
 function DecorMesh({ d, at }: { d: Decor; at: Frame }) {
   if (d.kind === 'pad') {
     const [x, y] = at(d.c);
@@ -277,7 +305,7 @@ function CoreMesh({ space, r, hovered, onHover, onOpen, children }: { space: Pod
   );
 }
 
-export default function PodiumScene({ floor, lower, layer, hovered, onHover, onOpen }: Props) {
+export default function PodiumScene({ floor, lower, layer, hovered, onHover, onOpen, tour = { kind: 'overview' } }: Props) {
   const b = bounds(floor.outline);
   const cu = (b.u0 + b.u1) / 2;
   const cv = (b.v0 + b.v1) / 2;
@@ -295,6 +323,9 @@ export default function PodiumScene({ floor, lower, layer, hovered, onHover, onO
   const isRoof = floor.spaces.some((s) => s.type === 'roof');
   // the camera stands back in proportion to the floor: the whole podium, or one tower roof
   const k = Math.max(0.4, Math.max(b.u1 - b.u0, b.v1 - b.v0) / 63);
+  // the roof playground can be walked through at eye level (Tour.tsx); site plan -> this floor
+  const frame = useCallback(([u, v, h]: Pt3) => new Vector3(u - cu, h - floor.z0 + 0.03, -(v - cv)), [cu, cv, floor.z0]);
+  const home = useMemo(() => ({ position: new Vector3(48 * k, 70 * k, 62 * k), target: new Vector3(0, 0, 0), fov: 38, near: 0.5 }), [k]);
 
   // Stairs climb half this storey to their half landing and go down half the one below. The
   // escalators rise southwards: the pair up from this floor (floors 1 and 2) is cut at the wall
@@ -348,7 +379,19 @@ export default function PodiumScene({ floor, lower, layer, hovered, onHover, onO
   return (
     <Canvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.5, far: 600, position: [48 * k, 70 * k, 62 * k] }}>
       <Lights />
-      <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={12} maxDistance={170} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
+      {terrace ? (
+        <CameraRig
+          tour={tour}
+          autoRotate={false}
+          targetY={0}
+          spots={ROOF_SPOTS}
+          frame={frame}
+          home={home}
+          overview={{ enableZoom: true, minDistance: 12, maxDistance: 170, minPolarAngle: 0.1, maxPolarAngle: Math.PI / 2.3 }}
+        />
+      ) : (
+        <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={12} maxDistance={170} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
+      )}
 
       <Prism pts={floor.outline} at={at} y={-0.3} h={0.3} color="#C5CDD6" holes={cores.holes} />
       {floor.spaces.map((s) =>
@@ -385,9 +428,9 @@ export default function PodiumScene({ floor, lower, layer, hovered, onHover, onO
 
       {terrace && planting ? (
         <>
-          {/* paving inside the planted border, and the parapet */}
-          <Prism pts={planting} at={at} y={0.03} h={0.04} color={hovered === terrace.id ? '#DCE7F8' : '#E6E1D8'} />
+          {/* the parapet, and a blue tint over the playground when it is pointed at */}
           <Walls pts={terrace.outline} at={at} h={1.1} color="#F4F5F7" />
+          {hovered === terrace.id && <Prism pts={planting} at={at} y={0.45} h={0.02} color="#2F6FDE" opacity={0.25} />}
         </>
       ) : isRoof ? (
         // the parapet round the tower roof
@@ -396,9 +439,19 @@ export default function PodiumScene({ floor, lower, layer, hovered, onHover, onO
         // the facade, cut away low so the rooms stay visible
         <Walls pts={floor.outline} at={at} h={1.2} color="#8FB0C8" opacity={0.45} gaps={floor.openings} />
       )}
-      {floor.decor?.map((d, i) => (
-        <DecorMesh key={i} d={d} at={at} />
-      ))}
+      {/* the towers standing on the roof: white tops, blue glazing on their sides as in the renders */}
+      {floor.spaces
+        .filter((s) => s.type === 'tower')
+        .map((s) => (
+          <Walls key={`glass-${s.id}`} pts={offsetPolygon(s.outline, 0.04)} at={at} h={(SOLID.tower ?? 4.5) - 0.25} color="#4A78B0" opacity={0.92} />
+        ))}
+      {terrace ? (
+        <Suspense fallback={floor.decor?.map((d, i) => <DecorMesh key={i} d={d} at={at} />)}>
+          <RoofGarden cu={cu} cv={cv} z0={floor.z0} />
+        </Suspense>
+      ) : (
+        floor.decor?.map((d, i) => <DecorMesh key={i} d={d} at={at} />)
+      )}
 
       <Projector anchors={anchors} layer={layer} />
     </Canvas>

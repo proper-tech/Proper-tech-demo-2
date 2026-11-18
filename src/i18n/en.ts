@@ -31,13 +31,10 @@ const en = {
   },
   tour: {
     label: '360° tour',
-    drone: '360° drone tour',
-    stop: 'Stop the tour',
     street: '360° street view',
     exit: 'Back to the building',
     prev: 'Previous viewpoint',
     next: 'Next viewpoint',
-    droneHint: 'Flying around the complex',
     lookHint: 'Drag to look around. Click an arrow or the ground to walk',
     spots: {
       plaza: 'Entrance plaza',
@@ -47,6 +44,8 @@ const en = {
       playground: 'Roof playground',
       towerRoof: 'Block B roof',
       'playground-swing': 'Swings',
+      roofBridge: 'Climbing bridge',
+      roofExit: 'Stair exit',
     },
   },
   home: {
