@@ -1,0 +1,68 @@
+{
+  "removed": [
+    "Bathroom door sign D2",
+    "Bathroom door sign D5",
+    "Detail_DoorHead",
+    "Detail_DoorHead.001",
+    "Detail_DoorHead.002",
+    "Detail_DoorHinge",
+    "Detail_DoorHinge.001",
+    "Detail_DoorHinge.002",
+    "Detail_DoorHinge.003",
+    "Detail_DoorHinge.004",
+    "Detail_DoorHinge.005",
+    "Detail_DoorHinge.006",
+    "Detail_DoorHinge.007",
+    "Detail_DoorHinge.008",
+    "Detail_DoorJamb",
+    "Detail_DoorJamb.001",
+    "Detail_DoorJamb.002",
+    "Detail_DoorJamb.003",
+    "Detail_DoorJamb.004",
+    "Detail_DoorJamb.005",
+    "Detail_DoorLever",
+    "Detail_DoorLever.001",
+    "Detail_DoorLever.002",
+    "Door",
+    "Door.001",
+    "Entry_Door"
+  ],
+  "portals": [
+    [
+      "D2",
+      15.4,
+      16.625,
+      0.8,
+      0
+    ],
+    [
+      "D5",
+      17.05,
+      16.625,
+      0.8,
+      0
+    ],
+    [
+      "Entry",
+      11.425,
+      11.3,
+      0.95,
+      0
+    ],
+    [
+      "D4",
+      17.975,
+      17.175,
+      0.85,
+      90
+    ],
+    [
+      "D3",
+      16.4,
+      17.825,
+      0.8,
+      0
+    ]
+  ],
+  "new_objects": 316
+}
