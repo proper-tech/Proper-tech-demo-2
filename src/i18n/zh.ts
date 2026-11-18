@@ -177,7 +177,6 @@ const zh: Dict = {
     total: '合计',
     openTour: '打开{room}的 360° 视图',
     hintModel: '拖动旋转,滚轮缩放。点击房间可在表格中查看。',
-    photoNote: '室内设计概念渲染图(示意),墙体和门的位置为近似。',
     hintTour: '拖动环顾四周,滚轮缩放。点击门上的标签走进下一个房间。',
     reset: '恢复默认搭配',
     prevApt: '上一套在售公寓',

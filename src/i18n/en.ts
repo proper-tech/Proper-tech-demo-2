@@ -182,7 +182,6 @@ const en = {
     total: 'Total',
     openTour: 'Open 360° view of {room}',
     hintModel: 'Drag to rotate, scroll to zoom. Select a room to see it in the table.',
-    photoNote: 'Rendered interior concept (illustrative). Wall and door positions are approximate.',
     hintTour: 'Drag to look around, scroll to zoom. Select a door label to walk into the next room.',
     reset: 'Reset finishes',
     prevApt: 'Previous apartment for sale',

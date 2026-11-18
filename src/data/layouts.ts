@@ -1,4 +1,3 @@
-import { photoTourD } from './photoTour';
 import type { FurnitureItem, FurnitureType, Layout, LayoutId, Opening, PlanId, Room, RoomType } from './types';
 
 // The apartments of the typical floor (floors 5 to 16), traced from the architect's schematic
@@ -295,15 +294,12 @@ const C: Spec = {
   ],
 };
 
-const D = build(mirror(C, 'D', 'D'));
-D.photoTour = photoTourD(D);
-
 export const layouts: Record<LayoutId, Layout> = {
   A: build(A),
   A4: build(A4),
   B: build(B),
   C: build(C),
-  D,
+  D: build(mirror(C, 'D', 'D')),
   E: build(mirror(B, 'E', 'E')),
   F: build(mirror(A, 'F', 'F')),
 };

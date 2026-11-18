@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import { BackSide, Euler, MathUtils, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
-import type { Finish, Layout, PhotoStop } from '@/data/types';
+import type { Finish, Layout } from '@/data/types';
 import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -25,8 +25,6 @@ interface Props {
   layer: LabelLayer;
   /** A room was picked in the 3D model. */
   onSelectRoom: (id: string) => void;
-  /** In the tour: a stop of the layout's rendered photo tour, shown instead of the room's own view. */
-  stop?: PhotoStop | null;
 }
 
 export function Lights() {
@@ -72,8 +70,7 @@ function OrbitRig({ layout }: { layout: Layout }) {
 const EYE_HEIGHT = 1.6;
 
 /** Inside view: the camera stands in a room and only turns. Drag to look, wheel to zoom. */
-/** `face`: on arriving at a new eye point, turn to this point instead of the way we walked (photo stops). */
-function TourRig({ eye, look, face }: { eye: [number, number]; look: [number, number] | null; face?: [number, number] | null }) {
+function TourRig({ eye, look }: { eye: [number, number]; look: [number, number] | null }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const dom = useThree((s) => s.gl.domElement);
   // Start facing the room's window.
@@ -91,7 +88,7 @@ function TourRig({ eye, look, face }: { eye: [number, number]; look: [number, nu
       const dx = eye[0] - prev.current[0];
       const dz = eye[1] - prev.current[1];
       if (Math.hypot(dx, dz) > 0.1) {
-        yaw.current = face ? Math.atan2(-(face[0] - eye[0]), -(face[1] - eye[1])) : Math.atan2(-dx, -dz);
+        yaw.current = Math.atan2(-dx, -dz);
         pitch.current = 0;
       }
     }
@@ -168,10 +165,9 @@ function Panorama({ url, eye }: { url: string; eye: [number, number] }) {
   );
 }
 
-export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom, stop }: Props) {
+export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom }: Props) {
   const room = layout.rooms.find((r) => r.id === roomId) ?? layout.rooms[0];
-  const photoStop = mode === 'tour' ? stop ?? null : null;
-  const eye = useMemo<[number, number]>(() => photoStop?.eye ?? roomEye(room), [photoStop, room]);
+  const eye = useMemo(() => roomEye(room), [room]);
   const links = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
   // The middle of the room's widest window, for the first view of the tour.
   const look = useMemo<[number, number] | null>(() => {
@@ -185,15 +181,13 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
         }
     return best;
   }, [layout, room]);
-  const photo = mode === 'tour' ? photoStop?.panorama ?? room.panorama : undefined;
+  const photo = mode === 'tour' ? room.panorama : undefined;
   const anchors = useMemo<Anchor[]>(
     () =>
       mode === 'model'
         ? layout.rooms.filter((r) => !r.partOf).map((r) => ({ id: `room:${r.id}`, position: [r.x + r.w / 2, 1.2, r.z + r.d / 2] }))
-        : photoStop
-          ? photoStop.links.map((l) => ({ id: `stop:${l.to}`, position: l.at }))
-          : links.map((l) => ({ id: `door:${l.to.id}`, position: [l.opening.x, 1.15, l.opening.z] })),
-    [mode, layout, links, photoStop],
+        : links.map((l) => ({ id: `door:${l.to.id}`, position: [l.opening.x, 1.15, l.opening.z] })),
+    [mode, layout, links],
   );
 
   return (
@@ -224,7 +218,7 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
           </mesh>
         </>
       ) : (
-        <TourRig eye={eye} look={photoStop?.look ?? look} face={photoStop?.look ?? null} />
+        <TourRig eye={eye} look={look} />
       )}
       <Projector anchors={anchors} layer={layer} />
     </Canvas>
