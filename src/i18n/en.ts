@@ -111,6 +111,7 @@ const en = {
     hint: 'Drag to rotate, scroll to zoom',
     corridor: 'Corridor',
     core: { corridor: 'Lift lobby', stair: 'Stairs', lifts: 'Lifts', shafts: '', hoa: 'Homeowners\' association', trash: 'Refuse' },
+    hoaNote: 'A room for the residents, in place of an apartment. Not for sale.',
   },
   podium: {
     name: 'Podium (block A)',

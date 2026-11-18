@@ -106,6 +106,7 @@ const zh: Dict = {
     hint: '拖动旋转,滚轮缩放',
     corridor: '走廊',
     core: { corridor: '电梯厅', stair: '楼梯', lifts: '电梯', shafts: '', hoa: '业主委员会', trash: '垃圾间' },
+    hoaNote: '在此位置设住户用房，代替一套住宅，不出售。',
   },
   podium: {
     name: '裙房（A座）',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useMemo, useRef, useState, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -37,6 +37,9 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   const [hovered, setHovered] = useState<string | null>(null);
   const summary = getFloor(tower, floor)!;
   const core = coreFor(tower, floor);
+  // block B, floor 4: the homeowners' association room takes apartment 02's place (floor-4 plan),
+  // so it is listed there under that number instead of leaving a gap
+  const hoa = core.some((c) => c.id === 'hoa') ? `${tower}${floor}02` : null;
   const layer = useRef<HTMLDivElement>(null);
   const open = (id: string) => router.push(`/${locale}/apartments/${id}`);
 
@@ -64,6 +67,12 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 <span>{tags[u.id].detail}</span>
               </div>
             ))}
+            {hoa && (
+              <div className={`unit-tag${hovered === 'hoa' ? ' is-hovered' : ''}`} data-anchor="core:hoa">
+                <b>{hoa}</b>
+                <span>{t.floor.core.hoa}</span>
+              </div>
+            )}
           </div>
         </div>
         {view === '2d' && (
@@ -158,20 +167,32 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
               </>
             );
             return (
-              <li
-                key={u.id}
-                className={hovered === u.id ? 'is-hovered' : undefined}
-                onMouseEnter={() => setHovered(u.id)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                {available ? (
-                  <Link href={`/${locale}/apartments/${u.id}`} aria-label={fmt(t.floor.apartmentN, { id: u.id })}>
-                    {body}
-                  </Link>
-                ) : (
-                  <div className="is-off">{body}</div>
+              <Fragment key={u.id}>
+                <li
+                  className={hovered === u.id ? 'is-hovered' : undefined}
+                  onMouseEnter={() => setHovered(u.id)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {available ? (
+                    <Link href={`/${locale}/apartments/${u.id}`} aria-label={fmt(t.floor.apartmentN, { id: u.id })}>
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className="is-off">{body}</div>
+                  )}
+                </li>
+                {hoa && u.pos === 1 && (
+                  <li className={hovered === 'hoa' ? 'is-hovered' : undefined} onMouseEnter={() => setHovered('hoa')} onMouseLeave={() => setHovered(null)}>
+                    <div className="is-off">
+                      <span className="unit-id">{hoa}</span>
+                      <span className="unit-info">
+                        <b>{t.floor.core.hoa}</b>
+                        {t.floor.hoaNote}
+                      </span>
+                    </div>
+                  </li>
                 )}
-              </li>
+              </Fragment>
             );
           })}
         </ul>
