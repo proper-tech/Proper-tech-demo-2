@@ -1,5 +1,5 @@
 import { bounds, inPolygon, type Pt } from '@/lib/geometry';
-import { siteTower, towerPlate } from './building';
+import { PLATE, siteTower, towerPlate } from './building';
 import site from './site.json';
 import type { FurnitureItem, TowerId } from './types';
 
@@ -93,11 +93,16 @@ export const podiumOutline = outlineTo(C.v0);
 /** The roof playground: the podium between the towers. */
 export const terraceOutline = uniq(P);
 
-/** A tower's outline with its chamfered (glazed) corners, as in the 3D model. */
-export const towerOutline = (t: { u0: number; u1: number; v0: number; v1: number }, c = 2.4): Pt[] => [
-  [t.u0 + c, t.v0], [t.u1 - c, t.v0], [t.u1, t.v0 + c], [t.u1, t.v1 - c],
-  [t.u1 - c, t.v1], [t.u0 + c, t.v1], [t.u0, t.v1 - c], [t.u0, t.v0 + c],
-];
+/** A tower's outline with its rounded (glazed) corners, as on the roof plan and in the 3D model
+ *  (radius PLATE.corner); each corner is a quarter circle in 6 straight steps. */
+export const towerOutline = (t: { u0: number; u1: number; v0: number; v1: number }, r = PLATE.corner): Pt[] =>
+  // corner centres counter-clockwise from the south-east, each with the angle its arc starts at
+  ([[t.u1 - r, t.v0 + r, -90], [t.u1 - r, t.v1 - r, 0], [t.u0 + r, t.v1 - r, 90], [t.u0 + r, t.v0 + r, 180]] as const).flatMap(([cu, cv, a0]) =>
+    Array.from({ length: 7 }, (_, k): Pt => {
+      const a = ((a0 + 15 * k) * Math.PI) / 180;
+      return [cu + r * Math.cos(a), cv + r * Math.sin(a)];
+    }),
+  );
 
 // cores that run through floors 1-3. stairs-c and lifts-c are tower C's core (stair 602, lifts) on
 // its way down, stairs-b and lifts-b tower B's, mirrored like it. Door sides aren't on the podium
