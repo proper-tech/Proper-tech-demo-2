@@ -1403,6 +1403,27 @@ button {
 .podium-tower { fill: #d0d6dd; }
 .podium-technical { fill: #e1e6ec; }
 .podium-roof { fill: #eef1f4; }
+.podium-parts { fill: #f5ecd8; }
+.podium-workshop { fill: #e9e7e1; }
+.podium-parking { fill: #e2e7ec; }
+.podium-ramp { fill: #cdd4dc; }
+.podium-waiting { fill: #efe6da; }
+.podium-changing { fill: #e4e8ee; }
+/* block D: gaps in the outside wall (garage doors), arrows up the ramps */
+.plan-gap {
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+.plan-ramp line { stroke-dasharray: 0.5 0.35; }
+.plan-ramp line,
+.plan-ramp path {
+  fill: none;
+  stroke: #5b6672;
+  stroke-width: 0.18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .podium-parking { fill: #e3e7ec; }
 .podium-ramp { fill: #cdd4dc; }
 .podium-lobby { fill: #e3eee7; }
@@ -1548,430 +1569,74 @@ button {
   display: none;
 }
 
-/* Sun and brightness panel over the 3D stage */
-.sun-panel {
+/* Block D walk-through: where you are, floor buttons, a small plan with your position */
+.label-layer.is-hidden { display: none; }
+.walk-hud {
   position: absolute;
-  right: clamp(1rem, 3vw, 2.5rem);
-  bottom: 1rem;
-  z-index: 11;
+  left: clamp(1rem, 3vw, 2.5rem);
+  bottom: 2.6rem;
+  z-index: 10;
   display: grid;
-  justify-items: end;
-  gap: 0.4rem;
-}
-
-.sun-panel button {
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.92);
-  color: var(--ink);
-  font: 600 0.8125rem/1.2 var(--display);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgb(20 35 59 / 0.12);
-}
-
-.sun-panel button:hover {
-  border-color: var(--sky);
-}
-
-.sun-toggle[aria-expanded='true'] {
-  background: var(--ink) !important;
-  border-color: var(--ink) !important;
-  color: var(--paper) !important;
-}
-
-.sun-controls {
-  order: -1;
-  display: grid;
-  gap: 0.7rem;
-  width: min(15rem, calc(100vw - 2rem));
-  padding: 0.85rem 0.95rem;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 0.95);
-  box-shadow: 0 4px 16px rgb(20 35 59 / 0.15);
-}
-
-.sun-controls label {
-  display: grid;
-  gap: 0.25rem;
-  font-size: 0.8125rem;
-  color: var(--stone);
-}
-
-.sun-controls label span {
-  display: flex;
-  justify-content: space-between;
-}
-
-.sun-controls b {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.sun-controls input[type='range'] {
-  width: 100%;
-  accent-color: #e8a33d;
-}
-
-.sun-controls .sun-reset {
-  justify-self: start;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.75rem;
-  box-shadow: none;
-}
-
-.sun-controls {
-  width: min(17.5rem, calc(100vw - 2rem));
-  max-height: calc(100% - 4rem);
-  overflow-y: auto;
-}
-
-.sun-modes,
-.sun-seasons,
-.sun-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.sun-study {
-  display: flex;
-  gap: 0.3rem;
-}
-
-.sun-study button,
-.sun-modes button,
-.sun-seasons button {
-  flex: 1;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.75rem;
-  box-shadow: none;
-}
-
-.sun-study button[aria-pressed='true'],
-.sun-modes button[aria-pressed='true'],
-.sun-seasons button[aria-pressed='true'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
-.sun-seasons button[aria-pressed='true'] {
-  background: #e8a33d;
-  border-color: #e8a33d;
-  color: #1c2433;
-}
-
-.sun-date {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-}
-
-.sun-date input {
-  justify-self: end;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font: inherit;
-  color: var(--ink);
-  background: #fff;
-}
-
-.sun-time-row {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
+  justify-items: start;
 }
-
-.sun-panel .sun-play {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border-color: #e8a33d;
-  background: #e8a33d;
-  color: #1c2433;
-  font-size: 0.7rem;
-  line-height: 1;
-}
-
-.sun-facts {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--stone);
-}
-
-.sun-actions button {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.75rem;
-  box-shadow: none;
-}
-
-
-/* Loader over the 3D view until the models are loaded and drawn */
-.stage-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
+.walk-room {
   display: grid;
-  place-items: center;
-  background: var(--board);
-  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
-}
-
-.stage-loader.is-done {
-  opacity: 0;
-  visibility: hidden;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(20, 35, 59, 0.82);
+  color: #fff;
+  backdrop-filter: blur(6px);
   pointer-events: none;
 }
-
-.stage-loader-box {
-  display: grid;
-  justify-items: center;
-  gap: 0.9rem;
-  color: var(--stone);
-  font-size: 0.875rem;
+.walk-room span {
+  font-size: 0.75rem;
+  opacity: 0.75;
 }
-
-.stage-loader-box p {
-  margin: 0;
+.walk-floors {
+  display: flex;
+  gap: 0.4rem;
 }
-
-.stage-loader-spinner {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 50%;
-  border: 3px solid rgb(20 35 59 / 0.12);
-  border-top-color: #e8a33d;
-  animation: stage-spin 0.9s linear infinite;
-}
-
-.stage-loader-bar {
-  width: 11rem;
-  height: 4px;
+.walk-floors a {
+  padding: 0.45rem 0.8rem;
   border-radius: 999px;
-  background: rgb(20 35 59 / 0.1);
-  overflow: hidden;
-}
-
-.stage-loader-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #e8a33d;
-  transition: width 0.4s ease;
-}
-
-@keyframes stage-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stage-loader-spinner {
-    animation-duration: 3s;
-  }
-}
-
-/* Home: the site plan framed as the architect's drawing sheet */
-
-.sheet {
-  margin: 0;
-  padding: 0.6rem;
-  background: var(--paper);
-  border: 1px solid var(--ink);
-}
-
-.sheet-drawing {
-  display: grid;
-  place-items: center;
-  padding: clamp(0.75rem, 2vw, 1.75rem);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
-}
-
-.title-block dl {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin: 0.6rem 0 0;
-  border: 1px solid var(--ink);
-}
-
-.title-block dl > div {
-  padding: 0.45rem 0.7rem;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.title-block dl > div:nth-child(even) {
-  border-right: 0;
-}
-
-.title-block .title-block-wide {
-  grid-column: 1 / -1;
-  border-right: 0;
-}
-
-.title-block dl > div:last-child {
-  border-bottom: 0;
-}
-
-.title-block dt {
-  color: var(--stone);
-  font-size: 0.75rem;
-}
-
-.title-block dd {
-  margin: 0.05rem 0 0;
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.title-block .title-block-wide:first-child dd {
-  font-family: var(--display);
-  font-size: 1.0625rem;
-  font-weight: 600;
-}
-
-/* Home: the three apartment types, each with its own plan */
-
-.types {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.75rem, 1.6vw, 1.5rem);
-  list-style: none;
-  margin: 2.25rem 0 0;
-  padding: 0;
-  max-width: 78rem;
-}
-
-.type {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.type-plan {
-  display: grid;
-  place-items: center;
-  height: clamp(13rem, 20vw, 17rem);
-  padding: 1.25rem;
-  /* faint one-metre-ish drafting grid behind the plan */
-  background-color: #f4f6f8;
-  background-image:
-    linear-gradient(rgb(20 35 59 / 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(20 35 59 / 0.05) 1px, transparent 1px);
-  background-size: 18px 18px;
-  border-bottom: 1px solid var(--line);
-}
-
-.type-plan .plan-svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* rooms in the plan's own colour, as on the floor pages; bathrooms and balconies stay light */
-.type-plan .plan-room:not(.plan-wet):not(.plan-balcony) {
-  fill: color-mix(in srgb, var(--flat) 60%, white);
-}
-
-.type-body {
-  display: grid;
-  align-content: start;
-  gap: 0.35rem;
-  padding: 1.1rem 1.2rem 1.25rem;
-}
-
-.type-body h3 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 1.1875rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-}
-
-.type-plans {
-  color: var(--stone);
+  color: var(--ink);
   font-size: 0.875rem;
-}
-
-.type-facts {
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  justify-content: start;
-  gap: 1.5rem;
-  margin: 0.75rem 0 1rem;
-}
-
-.type-facts dt {
-  color: var(--stone);
-  font-size: 0.75rem;
-}
-
-.type-facts dd {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 1.125rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  text-decoration: none;
 }
-
-.type .button {
-  justify-self: start;
+.walk-floors a:hover { background: #fff; border-color: var(--ink); }
+.walk-map {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  width: clamp(8rem, 18vw, 13rem);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 18px rgba(20, 35, 59, 0.18);
 }
-
-/* Home: footer */
-
-.site-footer {
-  display: grid;
-  gap: 2rem;
-  padding: clamp(2.5rem, 5vw, 4rem) clamp(1rem, 3vw, 2.5rem) 2rem;
-  background: var(--ink);
-  color: #c8d2df;
-  font-size: 0.9375rem;
+.walk-map .podium-space { pointer-events: none; }
+.walk-spot { fill: #fff; stroke: #2f6fde; stroke-width: 0.18; }
+.walk-map:hover .walk-spot { fill: #dce7fb; }
+.walk-map .podium-space.is-here { fill: #bcd3f7; }
+.walk-cone { fill: rgba(47, 111, 222, 0.28); }
+.walk-dot { fill: #2f6fde; stroke: #fff; stroke-width: 0.3; pointer-events: none; }
+.walk-cone { pointer-events: none; }
+.floor-stage.is-walk .apt-head {
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(20, 35, 59, 0.15);
+  pointer-events: auto;
 }
-
-.footer-main {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 28rem));
-  gap: 1.5rem clamp(2rem, 6vw, 6rem);
+.floor-stage.is-walk .stage-hint {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
-
-.footer-main > div {
-  display: grid;
-  gap: 0.2rem;
-  align-content: start;
-}
-
-.footer-name {
-  margin-bottom: 0.4rem;
-  color: var(--paper);
-  font-family: var(--display);
-  font-size: 1.6rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.footer-phone {
-  margin-bottom: 0.4rem;
-  color: var(--amber);
-  font-family: var(--display);
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.footer-note {
-  max-width: 48rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgb(200 210 223 / 0.18);
-  color: #8e9bab;
-  font-size: 0.8125rem;
-}
+.floor-stage.is-walk .stage-hint { max-width: calc(100% - 17rem); }

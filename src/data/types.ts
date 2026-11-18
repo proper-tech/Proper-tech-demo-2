@@ -73,7 +73,16 @@ export type FurnitureType =
   | 'checkout'
   | 'chiller'
   | 'rack'
-  | 'bench';
+  | 'bench'
+  // block D: parked cars, the repair shop's two-post lifts and inspection pit
+  | 'car'
+  | 'carLift'
+  | 'pit'
+  | 'workbench'
+  | 'toolChest'
+  | 'tyres'
+  | 'drum'
+  | 'extinguisher';
 
 export interface FurnitureItem {
   type: FurnitureType;
@@ -115,8 +124,9 @@ export interface Layout {
 /** The two residential towers, named as on the architect's drawings (Block A is the podium,
  *  Block D the service and parking building). */
 export type TowerId = 'B' | 'C';
-/** A block with floor pages: A the podium, B and C the towers. */
-export type BlockId = 'A' | TowerId;
+/** A block with floor pages: A the podium, B and C the towers, D the service and parking
+ *  building (floor 0 is its basement). */
+export type BlockId = 'A' | TowerId | 'D';
 
 export type UnitStatus = 'available' | 'reserved' | 'sold';
 

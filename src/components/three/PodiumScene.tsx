@@ -52,6 +52,11 @@ const COLOR: Record<PodiumSpaceType, string> = {
   parking: '#D3D8DE',
   ramp: '#BCC4CD',
   lobby: '#DDE9E1',
+  // block D
+  parts: '#F2E8D2',
+  workshop: '#E2E0DA',
+  waiting: '#EADFD0',
+  changing: '#E1E5EC',
 };
 /** The towers on the roof stand as solid blocks of this height (m). */
 const SOLID: Partial<Record<PodiumSpaceType, number>> = { tower: 4.5 };

@@ -5,6 +5,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { useGLTF, useProgress } from '@react-three/drei';
 import { ExtrudeGeometry, Shape, type Mesh, type MeshStandardMaterial } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
+import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
 import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
 import type { BlockId, TowerId } from '@/data/types';
@@ -22,7 +23,7 @@ import { Sun, type SunSettings } from './Sun';
 // (public/models/blocks, see scripts/merge-blocks.py).
 
 export interface FloorKey {
-  /** 'A' is the podium; B and C are the towers. */
+  /** 'A' is the podium; B and C are the towers; D the service and parking building. */
   tower: BlockId;
   floor: number;
 }
@@ -288,22 +289,61 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
   );
 }
 
+/** Block D: a band per floor above ground (1-3) round the building and its stair core, invisible
+ *  until pointed at. Its basement is only on the lift panel. */
+const D_ABOVE = blockDFloors.filter((f) => f.z0 >= 0);
+
+function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
+  const above = D_ABOVE;
+  const geometries = useMemo(() => {
+    const outline = offsetPolygon(blockDOutline.map(blockDToSite), 0.4);
+    return above.map((f) => extrude(outline, f.z1 - f.z0 - 0.12));
+  }, [above]);
+
+  return (
+    <>
+      {above.map((f, i) => {
+        const isHovered = hovered?.tower === 'D' && hovered.floor === f.floor;
+        return (
+          <mesh
+            key={f.floor}
+            geometry={geometries[i]}
+            position={[0, f.z0 + 0.06, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              onHover({ tower: 'D', floor: f.floor });
+            }}
+            onPointerOut={() => onHover(null)}
+            onClick={(e) => {
+              if (e.delta > 4) return;
+              e.stopPropagation();
+              onOpen({ tower: 'D', floor: f.floor });
+            }}
+          >
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.5 : 0} depthWrite={false} />
+          </mesh>
+        );
+      })}
+    </>
+  );
+}
 
 export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress }: Props) {
-  const anchors = useMemo<Anchor[]>(
-    () =>
-      towers.map((id) => {
+  const anchors = useMemo<Anchor[]>(() => {
+    // Block A, the podium: tag floats over the roof playground between the towers
+    const a = bounds(terraceOutline);
+    // Block D: tag sits just above its parapet
+    const [du, dv] = blockDToSite([9, 15]);
+    return [
+      ...towers.map((id): Anchor => {
         const t = towerPlate(id);
-        return { id: `tower:${id}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] } as Anchor;
-      }).concat(
-        // Block A, the podium: tag floats over the roof playground between the towers
-        (() => {
-          const b = bounds(terraceOutline);
-          return { id: 'tower:A', position: [(b.u0 + b.u1) / 2, PODIUM_HEIGHT + 9, -(b.v0 + b.v1) / 2] } as Anchor;
-        })(),
-      ),
-    [],
-  );
+        return { id: `tower:${id}`, position: [(t.u0 + t.u1) / 2, TOP + 10, -(t.v0 + t.v1) / 2] };
+      }),
+      { id: 'tower:A', position: [(a.u0 + a.u1) / 2, PODIUM_HEIGHT + 9, -(a.v0 + a.v1) / 2] },
+      { id: 'tower:D', position: [du, D_PARAPET + 6, -dv] },
+    ];
+  }, []);
 
   return (
     <Canvas flat shadows dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
@@ -324,6 +364,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         <>
           <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
           <RoofZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
+          <BlockDZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
         </>
       )}
 
