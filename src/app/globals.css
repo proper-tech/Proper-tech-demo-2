@@ -210,8 +210,10 @@ button {
   justify-content: center;
 }
 
-/* the roof button gets the top row to itself, so the floor pairs below stay in step */
-.lift-buttons .lift-roof {
+/* the roof button gets the top row to itself, so the floor pairs below stay in step; the basement
+   button the bottom row */
+.lift-buttons .lift-roof,
+.lift-buttons .lift-basement {
   grid-column: 1 / -1;
 }
 
@@ -1369,6 +1371,17 @@ button {
 .podium-tower { fill: #d0d6dd; }
 .podium-technical { fill: #e1e6ec; }
 .podium-roof { fill: #eef1f4; }
+.podium-parking { fill: #e3e7ec; }
+.podium-ramp { fill: #cdd4dc; }
+.podium-lobby { fill: #e3eee7; }
+
+/* parking spaces on the basement plan */
+.podium-stall {
+  fill: #f7f8fa;
+  stroke: #aeb8c3;
+  stroke-width: 0.08;
+  pointer-events: none;
+}
 
 .podium-space.is-clickable {
   cursor: pointer;

@@ -122,6 +122,8 @@ const zh: Dict = {
     towerApartments: '本层以上为住宅',
     playgroundFacts: '三套游乐设施、八台健身器材和110平方米橡胶地面。',
     source: '根据建筑师的平面图描绘，面积取自房间明细表。',
+    rampUp: '通往地面',
+    stallsN: '{n} 个车位',
     space: {
       hall: '入口大堂',
       supermarket: '超市',
@@ -140,7 +142,16 @@ const zh: Dict = {
       tower: '塔楼',
       technical: '设备间',
       roof: '屋顶',
+      parking: '停车场',
+      ramp: '坡道',
+      lobby: '电梯厅',
     },
+  },
+  basement: {
+    title: '地下停车库，B1',
+    name: '地下停车库',
+    lead: '裙楼和两座塔楼下方的室内供暖停车库，经车道与 D 座下方的车库相连。两条坡道通往街道，B 座和 C 座的电梯与楼梯直达此层。',
+    use: '停车场，电梯通往两座塔楼',
   },
   roof: {
     title: '{t} 座屋顶',

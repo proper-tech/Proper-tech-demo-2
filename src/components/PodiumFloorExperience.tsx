@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FLOOR_MAX, FLOOR_MIN } from '@/data/building';
-import { getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumSpace } from '@/data/podium';
+import { floorName, getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumSpace } from '@/data/podium';
 import { getRoofFloor } from '@/data/roof';
 import type { TowerId } from '@/data/types';
 import { fmt, type Dict } from '@/i18n/config';
@@ -75,14 +75,21 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
   const towerHref = (s: PodiumSpace) => `/${locale}/floors/${s.tower}/${FLOOR_MIN}`;
   const open = (s: PodiumSpace) => s.tower && router.push(towerHref(s));
   const detail = (s: PodiumSpace) =>
-    s.tower ? t.podium.towerApartments : s.area !== undefined ? `${m(s.area)} m²` : s.type === 'playground' ? t.podium.playgroundFacts : '';
-  // every space always shows its number; big spaces, the towers and the space pointed at also
-  // show name and area (small rooms would cover each other otherwise)
-  const full = (s: PodiumSpace) => s.tower || (s.area ?? 0) >= 100 || s.type === 'playground' || hovered === s.id;
+    s.tower
+      ? t.podium.towerApartments
+      : s.type === 'playground'
+        ? t.podium.playgroundFacts
+        : s.type === 'ramp'
+          ? t.podium.rampUp
+          : [s.area !== undefined && `${m(s.area)} m²`, s.stalls && fmt(t.podium.stallsN, { n: s.stalls.length })].filter(Boolean).join(', ');
+  // every space always shows its number; big spaces, car parks, the towers and the space pointed
+  // at also show name and area (small rooms would cover each other otherwise)
+  const full = (s: PodiumSpace) => s.tower || (s.area ?? 0) >= 100 || !!s.stalls || s.type === 'playground' || hovered === s.id;
 
   // fit the plan to everything drawn, including the covered walkway outside the 1st-floor walls
   const b = bounds([...pf.outline, ...pf.spaces.flatMap((s) => s.outline)]);
-  const last = podiumFloors[podiumFloors.length - 1].floor;
+  const [first, last] = [podiumFloors[0].floor, podiumFloors[podiumFloors.length - 1].floor];
+  const basement = !tower && floor === 0;
 
   return (
     <div className="floor">
@@ -104,7 +111,7 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
                 data-anchor={`space:${s.id}`}
               >
                 <b>{s.no ?? spaceName(t, s)}</b>
-                {full(s) && <span>{s.no ? [spaceName(t, s), s.area !== undefined ? `${m(s.area)} m²` : ''].filter(Boolean).join(', ') : detail(s)}</span>}
+                {full(s) && <span>{s.no ? [spaceName(t, s), detail(s)].filter(Boolean).join(', ') : detail(s)}</span>}
               </div>
             ))}
           </div>
@@ -123,6 +130,11 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
                   onClick={s.tower ? () => open(s) : undefined}
                 />
               ))}
+              {pf.spaces
+                .flatMap((s) => s.stalls ?? [])
+                .map((stall, i) => (
+                  <path key={`stall-${i}`} className="podium-stall" d={path(stall)} />
+                ))}
               {pf.decor?.map((d, i) => <PlanDecor key={i} d={d} />)}
               {listed.map((s) => (
                 <PlanLabel key={s.id} space={s} name={spaceName(t, s)} />
@@ -135,8 +147,8 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
           <Link className="back" href={`/${locale}#floors`}>
             {t.floor.back}
           </Link>
-          <h1>{tower ? fmt(t.roof.title, { t: tower }) : fmt(t.podium.title, { n: floor })}</h1>
-          <p>{tower ? t.roof.lead : t.podium.lead[pf.floor as 1 | 2 | 3 | 4]}</p>
+          <h1>{tower ? fmt(t.roof.title, { t: tower }) : basement ? t.basement.title : fmt(t.podium.title, { n: floor })}</h1>
+          <p>{tower ? t.roof.lead : basement ? t.basement.lead : t.podium.lead[pf.floor as 1 | 2 | 3 | 4]}</p>
           <div className="segmented" role="group">
             <button type="button" aria-pressed={view === '3d'} onClick={() => setView('3d')}>
               {t.floor.view3d}
@@ -162,7 +174,7 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
           {listed.map((s) => {
             const body = (
               <>
-                <span className="unit-id">{s.no ?? s.tower}</span>
+                <span className="unit-id">{s.no ?? s.tower ?? '↑'}</span>
                 <span className="unit-info">
                   <b>{spaceName(t, s)}</b>
                   {detail(s)}
@@ -189,18 +201,18 @@ export function PodiumFloorExperience({ floor, tower }: { floor: number; tower?:
               <span>{t.floor.prev}</span>
               {FLOOR_MAX}
             </Link>
-          ) : floor > 1 ? (
-            <Link href={`/${locale}/floors/A/${floor - 1}`}>
+          ) : floor > first ? (
+            <Link href={`/${locale}/floors/A/${floorName(floor - 1)}`}>
               <span>{t.floor.prev}</span>
-              {floor - 1}
+              {floorName(floor - 1)}
             </Link>
           ) : (
             <span />
           )}
           {!tower && floor < last ? (
-            <Link href={`/${locale}/floors/A/${floor + 1}`}>
+            <Link href={`/${locale}/floors/A/${floorName(floor + 1)}`}>
               <span>{t.floor.next}</span>
-              {floor + 1}
+              {floorName(floor + 1)}
             </Link>
           ) : (
             <span />

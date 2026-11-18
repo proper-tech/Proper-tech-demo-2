@@ -127,6 +127,8 @@ const en = {
     towerApartments: 'Apartments from this floor up',
     playgroundFacts: 'Three play sets, eight exercise machines and 110 m² of rubber surfacing.',
     source: 'Traced from the architect\'s floor plans. Areas are from the room schedule.',
+    rampUp: 'Up to street level',
+    stallsN: '{n} parking spaces',
     space: {
       hall: 'Entrance hall',
       supermarket: 'Supermarket',
@@ -145,7 +147,16 @@ const en = {
       tower: 'Tower',
       technical: 'Technical room',
       roof: 'Roof',
+      parking: 'Car park',
+      ramp: 'Ramp',
+      lobby: 'Lift lobby',
     },
+  },
+  basement: {
+    title: 'Basement car park, B1',
+    name: 'Basement car park',
+    lead: 'Heated parking under the podium and both towers, joined by a driveway to the garage under Block D. Two ramps lead up to the street, and the lifts and stairs of Blocks B and C come down to it.',
+    use: 'Parking, lifts to both towers',
   },
   roof: {
     title: 'Block {t}, roof',
