@@ -1,0 +1,219 @@
+00:00.038  color_management | Using config from OCIO: "/Applications/Blender.app/Contents/Resources/5.4/datafiles/colormanagement/config.ocio"
+bl_ext.blender_org.CAD_Sketcher:{INFO}: Logging into: /var/folders/c9/jhg34_9d70q5ltw3kh042cdr0000gn/T/bl_ext.blender_org.CAD_Sketcher-badral.log
+18:08:15 CLIENT INFO     Logging into: /var/folders/c9/jhg34_9d70q5ltw3kh042cdr0000gn/T/bl_ext.blender_org.CAD_Sketcher-badral.log
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <save_pre> builtin handlers: 
+  - write_addon_version
+18:08:15 CLIENT DEBUG    Append <save_pre> builtin handlers: 
+  - write_addon_version
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <load_post> builtin handlers: 
+  - on_load_post
+18:08:15 CLIENT DEBUG    Append <load_post> builtin handlers: 
+  - on_load_post
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <depsgraph_update_post> builtin handlers: 
+  - on_depsgraph_update
+18:08:15 CLIENT DEBUG    Append <depsgraph_update_post> builtin handlers: 
+  - on_depsgraph_update
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <frame_change_post> builtin handlers: 
+  - on_frame_change
+18:08:15 CLIENT DEBUG    Append <frame_change_post> builtin handlers: 
+  - on_frame_change
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <undo_post> builtin handlers: 
+  - on_undo_redo
+18:08:15 CLIENT DEBUG    Append <undo_post> builtin handlers: 
+  - on_undo_redo
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <redo_post> builtin handlers: 
+  - on_undo_redo
+18:08:15 CLIENT DEBUG    Append <redo_post> builtin handlers: 
+  - on_undo_redo
+Traceback (most recent call last):
+  File "/Applications/Blender.app/Contents/Resources/5.4/scripts/modules/addon_utils.py", line 464, in enable
+    mod = importlib.import_module(module_name)
+  File "/Applications/Blender.app/Contents/Resources/5.4/python/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/__init__.py", line 25, in <module>
+    from .properties import BookGenProperties, BookGenGroupingProperties, BookGenAddonProperties
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/properties.py", line 49, in <module>
+    class BookGenAddonProperties(bpy.types.PropertyGroup):
+    ...<68 lines>...
+        )
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/properties.py", line 55, in BookGenAddonProperties
+    outline = BookGenShelfOutline()
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/ui_outline.py", line 26, in __init__
+    self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                  ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+SystemError: GPU functions for drawing requires the gpu module to be initialized. See gpu.init.
+BlenderMCP addon registered
+[INFO ] services.locationservice ...............: Not adding link to MakeHuman user data, since neither explicit path nor auto-discovery is set in preferences.
+[INFO ] mpfb.init ..............................: Build info 20261010
+[INFO ] mpfb.init ..............................: MPFB initialization has finished.
+ℹ️  blendkit: Verbose is enabled [18:08:17.103, addon_updater.py:158]
+ℹ️  blendkit: Read in JSON settings from file [18:08:17.104, addon_updater.py:158]
+ℹ️  blendkit: Ports reordered so first port is now 62485 (previous index was 0) [18:08:17.105, client_lib.py:163]
+Created history step 6ca9131f-0ea0-433b-a8d1-142aec61ba78
+ℹ️  blendkit: Created new search history step [18:08:17.145, search.py:2744]
+ℹ️  blendkit: No temporarily enabled addons to clean up [18:08:17.145, download.py:440]
+00:02.629  blend            | Read blend: "/Users/badral/Desktop/tenger-residence 2/interior/A1.blend"
+ℹ️  blendkit: No temporarily enabled addons to clean up [18:08:17.237, download.py:440]
+arch ok 30 columns
+fit ok
+plants ok
+18:08:27 | INFO: Data are loaded, start creating Blender stuff
+18:08:27 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:27 | INFO: Blender create Mesh node Circle
+18:08:27 CLIENT INFO     Blender create Mesh node Circle
+18:08:27 | INFO: Blender create Mesh node Circle.005
+18:08:27 CLIENT INFO     Blender create Mesh node Circle.005
+18:08:27 | INFO: Blender create Mesh node Circle.008
+18:08:27 CLIENT INFO     Blender create Mesh node Circle.008
+18:08:27 | INFO: Blender create Mesh node Circle.012
+18:08:27 CLIENT INFO     Blender create Mesh node Circle.012
+18:08:27 | INFO: glTF import finished in 0.08s
+18:08:27 CLIENT INFO     glTF import finished in 0.08s
+18:08:27 | INFO: Data are loaded, start creating Blender stuff
+18:08:27 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:27 | INFO: Blender create Mesh node Cube.003
+18:08:27 CLIENT INFO     Blender create Mesh node Cube.003
+18:08:27 | INFO: Blender create Mesh node Cylinder.002
+18:08:27 CLIENT INFO     Blender create Mesh node Cylinder.002
+18:08:27 | INFO: Blender create Mesh node Cylinder.004
+18:08:27 CLIENT INFO     Blender create Mesh node Cylinder.004
+18:08:27 | INFO: Blender create Mesh node Cube.006
+18:08:27 CLIENT INFO     Blender create Mesh node Cube.006
+18:08:27 | INFO: glTF import finished in 0.03s
+18:08:27 CLIENT INFO     glTF import finished in 0.03s
+18:08:27 | INFO: Data are loaded, start creating Blender stuff
+18:08:27 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:27 | INFO: Blender create Mesh node Cylinder.005
+18:08:27 CLIENT INFO     Blender create Mesh node Cylinder.005
+18:08:27 | INFO: Blender create Mesh node Cylinder.006
+18:08:27 CLIENT INFO     Blender create Mesh node Cylinder.006
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node Cylinder
+18:08:28 CLIENT INFO     Blender create Mesh node Cylinder
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node Cube
+18:08:28 CLIENT INFO     Blender create Mesh node Cube
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node plastic_gallon_01
+18:08:28 CLIENT INFO     Blender create Mesh node plastic_gallon_01
+18:08:28 | INFO: glTF import finished in 0.05s
+18:08:28 CLIENT INFO     glTF import finished in 0.05s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node mesh.024
+18:08:28 CLIENT INFO     Blender create Mesh node mesh.024
+18:08:28 | INFO: Blender create Mesh node mesh.023
+18:08:28 CLIENT INFO     Blender create Mesh node mesh.023
+18:08:28 | INFO: Blender create Mesh node mesh.022
+18:08:28 CLIENT INFO     Blender create Mesh node mesh.022
+18:08:28 | INFO: glTF import finished in 0.04s
+18:08:28 CLIENT INFO     glTF import finished in 0.04s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node Croissant_croissant_10M_textured.001
+18:08:28 CLIENT INFO     Blender create Mesh node Croissant_croissant_10M_textured.001
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node apple_50k_uv.001
+18:08:28 CLIENT INFO     Blender create Mesh node apple_50k_uv.001
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node avocado_50k_uv.001
+18:08:28 CLIENT INFO     Blender create Mesh node avocado_50k_uv.001
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node kiwi_lores.001
+18:08:28 CLIENT INFO     Blender create Mesh node kiwi_lores.001
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node lime_50k_uv.001
+18:08:28 CLIENT INFO     Blender create Mesh node lime_50k_uv.001
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node lemon_01
+18:08:28 CLIENT INFO     Blender create Mesh node lemon_01
+18:08:28 | INFO: glTF import finished in 0.03s
+18:08:28 CLIENT INFO     glTF import finished in 0.03s
+18:08:28 | INFO: Data are loaded, start creating Blender stuff
+18:08:28 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:28 | INFO: Blender create Mesh node food_pears_asian_01b
+18:08:28 CLIENT INFO     Blender create Mesh node food_pears_asian_01b
+18:08:28 | INFO: Blender create Mesh node food_pears_asian_01c
+18:08:28 CLIENT INFO     Blender create Mesh node food_pears_asian_01c
+18:08:28 | INFO: Blender create Mesh node food_pears_asian_01e
+18:08:28 CLIENT INFO     Blender create Mesh node food_pears_asian_01e
+18:08:28 | INFO: Blender create Mesh node food_pears_asian_01d
+18:08:28 CLIENT INFO     Blender create Mesh node food_pears_asian_01d
+18:08:28 | INFO: Blender create Mesh node food_pears_asian_01a
+18:08:28 CLIENT INFO     Blender create Mesh node food_pears_asian_01a
+18:08:29 | INFO: glTF import finished in 0.04s
+18:08:29 CLIENT INFO     glTF import finished in 0.04s
+18:08:29 | INFO: Data are loaded, start creating Blender stuff
+18:08:29 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:29 | INFO: Blender create Mesh node pomegranate_50k_uv.001
+18:08:29 CLIENT INFO     Blender create Mesh node pomegranate_50k_uv.001
+18:08:29 | INFO: glTF import finished in 0.03s
+18:08:29 CLIENT INFO     glTF import finished in 0.03s
+18:08:29 | INFO: Data are loaded, start creating Blender stuff
+18:08:29 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:29 | INFO: Blender create Mesh node mesh.012
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.012
+18:08:29 | INFO: Blender create Mesh node mesh.007
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.007
+18:08:29 | INFO: Blender create Mesh node mesh.010
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.010
+18:08:29 | INFO: Blender create Mesh node mesh.009
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.009
+18:08:29 | INFO: Blender create Mesh node mesh.011
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.011
+18:08:29 | INFO: glTF import finished in 0.07s
+18:08:29 CLIENT INFO     glTF import finished in 0.07s
+18:08:29 | INFO: Data are loaded, start creating Blender stuff
+18:08:29 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:29 | INFO: Blender create Mesh node mesh.001
+18:08:29 CLIENT INFO     Blender create Mesh node mesh.001
+18:08:29 | INFO: glTF import finished in 0.03s
+18:08:29 CLIENT INFO     glTF import finished in 0.03s
+18:08:29 | INFO: Data are loaded, start creating Blender stuff
+18:08:29 CLIENT INFO     Data are loaded, start creating Blender stuff
+18:08:29 | INFO: Blender create Mesh node sweet_potato
+18:08:29 CLIENT INFO     Blender create Mesh node sweet_potato
+18:08:29 | INFO: glTF import finished in 0.03s
+18:08:29 CLIENT INFO     glTF import finished in 0.03s
+products 38 fruit 18
+stock ok
+MeasureIt: Cleaning data
+Info: Saved "A1.blend"
+SAVED
+BlenderMCP addon unregistered
+ℹ️  blendkit: Unregistering Blendkit add-on [18:08:30.927, __init__.py:3089]
+ℹ️  blendkit: No temporarily enabled addons to clean up [18:08:30.927, download.py:440]
+Blender 5.4.0 Alpha (hash 8306860f963f built 2026-11-04 01:49:38)
+
+Blender quit
