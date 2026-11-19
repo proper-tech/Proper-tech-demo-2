@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useProgress } from '@react-three/drei';
-import { ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
+import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -13,7 +13,7 @@ import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
-import { fixPeople } from './people';
+import { fixPeople, usePeopleMotion } from './people';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -67,7 +67,8 @@ function extrude(outline: Pt[], height: number) {
 
 
 function Model() {
-  const { scene } = useGLTF(MODEL_URL, DRACO_URL);
+  const { scene, animations } = useGLTF(MODEL_URL, DRACO_URL);
+  usePeopleMotion(scene, animations);
   // The parked cars now come with the environment model, so the complex's own set is hidden.
   useMemo(() => {
     const cars = scene.getObjectByName('Cars');
@@ -101,7 +102,8 @@ const GROUND_COLORS: Record<string, string> = {
 };
 
 function Environment() {
-  const { scene } = useGLTF(ENV_URL, DRACO_URL);
+  const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
+  usePeopleMotion(scene, animations);
   useMemo(() => {
     fixPeople(scene);
     scene.traverse((o) => {
@@ -414,11 +416,14 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   }, []);
 
   return (
-    <Canvas flat shadows dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+    <Canvas shadows dpr={[1, 2]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       <Suspense fallback={null}>
+        {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
+            see stays the Sun component's dome */}
+        <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
         <Environment />
         <Model />
         <WhenReady onReady={onReady} />

@@ -134,6 +134,9 @@ export function sunDirection({ azimuth, elevation }: Pick<SunSettings, 'azimuth'
  * the sunlight warmer as the sun drops towards the horizon; below the horizon the sunlight
  * fades out and the sky turns to night.
  */
+/** Fill lights are halved: the sky HDRI in BuildingScene supplies the rest. */
+const FILL = 0.55;
+
 export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: boolean }) {
   const light = useRef<DirectionalLight>(null);
   const target = useMemo(() => {
@@ -224,8 +227,8 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
         {/* behind the buildings, so a tower hides it when it passes; constant size on screen */}
         <spriteMaterial map={domeTexture} transparent depthWrite={false} toneMapped={false} fog={false} sizeAttenuation={false} />
       </sprite>
-      <ambientLight color={day < 1 ? '#c9d4ee' : '#ffffff'} intensity={(0.28 + (0.27 + 0.35 * (1 - low)) * day) * b} />
-      <hemisphereLight args={['#ffffff', '#c3ccd6', (0.18 + (0.27 + 0.25 * (1 - low)) * day) * b]} />
+      <ambientLight color={day < 1 ? '#c9d4ee' : '#ffffff'} intensity={(0.28 + (0.27 + 0.35 * (1 - low)) * day) * b * FILL} />
+      <hemisphereLight args={['#ffffff', '#c3ccd6', (0.18 + (0.27 + 0.25 * (1 - low)) * day) * b * FILL]} />
       <directionalLight
         ref={light}
         castShadow

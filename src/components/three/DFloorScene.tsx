@@ -24,7 +24,8 @@ import type { FurnitureItem } from '@/data/types';
 import { bounds, inPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import type { WalkGrid } from '@/lib/walk';
 import { Lifts, Rail, Stairs, stairOpening, type StairSpec } from './Cores';
-import { fixPeople } from './people';
+import { fixPeople, usePeopleMotion } from './people';
+import { SkeletonUtils } from 'three-stdlib';
 import { Furniture } from './Furniture';
 import { PART_T, capturePoints, partitionRuns, walkGridFor } from './walkGrid';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -716,16 +717,18 @@ function PitWell({ r }: { r: Rect }) {
  *  placed round block D so it shows through the windows. Block D's own shell is left out. */
 function Surroundings({ z0 }: { z0: number }) {
   // the complex model is Draco-compressed; the decoder is served from public/draco
-  const { scene } = useGLTF('/models/complex.glb', '/draco/');
+  const { scene, animations } = useGLTF('/models/complex.glb', '/draco/');
   const model = useMemo(() => {
     fixPeople(scene);
-    const m = scene.clone(true);
+    // a skeleton-aware copy, so the people walk on their own bones
+    const m = SkeletonUtils.clone(scene);
     m.traverse((o) => {
       if (o.name === 'Annex' || o.name.startsWith('Annex')) o.visible = false;
       o.raycast = () => null;
     });
     return m;
   }, [scene]);
+  usePeopleMotion(model, animations);
   const { origin, angle } = blockDFrame;
   return (
     <group position={[0, -z0, 0]} rotation={[0, -angle, 0]}>
