@@ -64,7 +64,12 @@ else:
     c.location = (left + w / 2, -(north + h / 2), 20); sc.camera = c
     r.resolution_x, r.resolution_y, r.resolution_percentage = round(w * ppm), round(h * ppm), 100
     hide_ceiling()
+    cx_, cy_ = sum(o.location.x for o in walls) / len(walls), sum(o.location.y for o in walls) / len(walls)
     for o in bpy.data.objects:
+        if o.type == 'LIGHT' and o.name.startswith('WinFill'):  # window fills point into the flat
+            d = Vector((cx_ - o.location.x, cy_ - o.location.y, 0))
+            d = Vector((1, 0, 0)) * (1 if d.x > 0 else -1) if abs(d.x) > abs(d.y) else Vector((0, 1, 0)) * (1 if d.y > 0 else -1)
+            o.rotation_euler = d.to_track_quat('-Z', 'Z').to_euler()
         if o.type == 'LIGHT': o.visible_camera = False
         if o.type == 'LIGHT' and o.data.type == 'SPOT': o.hide_render = True  # no downlight pools on the floor
     json.dump({'viewBox': [left, north, w, h]}, open(f'{out}/top.json', 'w'))

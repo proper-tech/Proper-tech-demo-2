@@ -1337,6 +1337,32 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: #d9e6fb;
 }
 
+.plan-photo-room {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 0.05px;
+  transition: fill 0.15s ease;
+}
+
+.plan-photo-room.is-clickable {
+  cursor: pointer;
+}
+
+.plan-photo-room.is-clickable:hover {
+  fill: rgba(255, 255, 255, 0.22);
+}
+
+.plan-photo-room.is-selected,
+.plan-photo-room.is-selected:hover {
+  fill: rgba(59, 111, 214, 0.14);
+  stroke: #3b6fd6;
+}
+
+.plan-photo-label rect {
+  fill: rgba(255, 255, 255, 0.86);
+  pointer-events: none;
+}
+
 .plan-wall {
   stroke: var(--ink);
   stroke-width: 0.12;
