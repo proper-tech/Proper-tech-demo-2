@@ -53,9 +53,9 @@ npm run build && npm start
   on a room. The tour then shows the photo for that room instead of the 3D model.
 - **Rendered 360° tours**: one self-contained file per plan (panoramas, plan and scripts inside) in
   `public/tour/<plan>/index.html`, served at `/tour/<plan>` (`/tour` is plan D). They replace the 3D
-  tour on apartment pages of the plans listed in `PHOTO_TOURS` (`ApartmentExperience.tsx`). Plan C's
-  is plan D's mirrored (`interior/tools/mirror_tour.py`): photos flipped and turned half a turn, plan
-  points mirrored about the middle of the top view. They do not use the site's code or data.
+  tour on apartment pages of the plans listed in `PHOTO_TOURS` (`ApartmentExperience.tsx`); A4 uses A's.
+  D, F and E are rendered from the Blender scenes; C, A and B are D, F and E mirrored. How they are made:
+  `interior/README.md`. They do not use the site's code or data.
 - **Film**: `public/media/film.mp4` and `film-poster.jpg` are rendered in Blender (EEVEE) from the site's
   own model by `scripts/build-film.py` (six shots, about 1.5-2 hours for 912 frames on a 2019 MacBook Pro):
 
