@@ -11,6 +11,8 @@ import { getPodiumFloor } from '@/data/podium';
 import type { Layout, Unit } from '@/data/types';
 import { maxCeiling } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
+import { PhotoApartment } from './PhotoApartment';
+import { photoModels } from '@/data/photoModels';
 import { Lights } from './ApartmentScene';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -132,6 +134,8 @@ function FitCamera() {
 function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: boolean; onHover: Props['onHover']; onOpen: Props['onOpen'] }) {
   const layout = layouts[unit.layout];
   const available = unit.status === 'available';
+  // for-sale apartments show their rendered interior (the furnished top view of the 360° tour)
+  const photo = available ? photoModels[layout.plan] : undefined;
 
   return (
     <group
@@ -147,22 +151,28 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
         onOpen(unit.id);
       }}
     >
-      {/* furnished like the apartment page, the floor painted in the apartment's own colour */}
-      <ApartmentModel
-        layout={layout}
-        finish={available ? defaultFinish : mutedFinish}
-        muted={!available}
-        floorColor={available ? flatColors[unit.plan] : undefined}
-      />
-      {/* tint room by room: the apartments interlock, so their bounding boxes overlap */}
-      {hovered &&
-        available &&
-        layout.rooms.map((r) => (
-          <mesh key={r.id} position={[r.x + r.w / 2, 0.03, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[r.w, r.d]} />
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={0.4} depthWrite={false} />
-          </mesh>
-        ))}
+      {photo ? (
+        <PhotoApartment layout={layout} model={photo} tint={hovered ? '#2F6FDE' : undefined} />
+      ) : (
+        <>
+          {/* furnished like the apartment page, the floor painted in the apartment's own colour */}
+          <ApartmentModel
+            layout={layout}
+            finish={available ? defaultFinish : mutedFinish}
+            muted={!available}
+            floorColor={available ? flatColors[unit.plan] : undefined}
+          />
+          {/* tint room by room: the apartments interlock, so their bounding boxes overlap */}
+          {hovered &&
+            available &&
+            layout.rooms.map((r) => (
+              <mesh key={r.id} position={[r.x + r.w / 2, 0.03, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[r.w, r.d]} />
+                <meshBasicMaterial color="#2F6FDE" transparent opacity={0.4} depthWrite={false} />
+              </mesh>
+            ))}
+        </>
+      )}
     </group>
   );
 }
