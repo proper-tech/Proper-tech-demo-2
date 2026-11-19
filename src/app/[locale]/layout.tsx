@@ -22,7 +22,19 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={htmlLang[locale]}>
+    <html lang={htmlLang[locale]} suppressHydrationWarning>
+      <head>
+        {/* Before the first paint: html.js-motion turns on the home page's reveal styles (Motion.tsx) unless
+            the visitor asked for reduced motion. Failsafe: if Motion.tsx hasn't started within 4 s (script
+            error, blocked JS, a page without it), the class goes again so nothing stays hidden. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'var h=document.documentElement;if(!matchMedia("(prefers-reduced-motion: reduce)").matches){h.classList.add("js-motion");' +
+              'setTimeout(function(){if(!h.classList.contains("motion-ok"))h.classList.remove("js-motion")},4000)}',
+          }}
+        />
+      </head>
       <body>
         <I18nProvider locale={locale} dict={getDict(locale)}>
           <Header />

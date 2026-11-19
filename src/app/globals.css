@@ -8,6 +8,7 @@
   --amber: #f2b632;
   --amber-soft: #fdf1cf;
   --header: 60px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* motion: quick start, long settle */
   --display:
     "Geologica Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
     sans-serif;
@@ -75,7 +76,9 @@ button {
   font-size: 0.875rem;
 }
 
-/* Header */
+/* Header: the name on the left; languages, "Choose your floor" and a menu on the right. On the home page
+   (.is-over) it floats over the film; with the motion layer it stays fixed and turns solid once the film's
+   chapters have scrolled past (html[data-scrolled], Motion.tsx); without it it scrolls away with the page. */
 
 .site-header {
   position: sticky;
@@ -84,33 +87,46 @@ button {
   height: var(--header);
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0 clamp(1rem, 3vw, 2.5rem);
   background: var(--board);
   border-bottom: 1px solid var(--line);
+  transition: background-color 300ms, border-color 300ms, color 300ms;
+}
+
+.site-header.is-over {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: transparent;
+  border-bottom-color: transparent;
+  color: var(--paper);
+}
+
+html.js-motion .site-header.is-over {
+  position: fixed;
+}
+
+html[data-scrolled] .site-header.is-over {
+  background: var(--board);
+  border-bottom-color: var(--line);
+  color: var(--ink);
 }
 
 .brand {
   font-family: var(--display);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.site-header nav {
+.header-end {
   display: flex;
-  gap: 1.5rem;
-  margin-right: auto;
-}
-
-.site-header nav a {
-  text-decoration: none;
-  color: var(--stone);
-}
-
-.site-header nav a:hover {
-  color: var(--ink);
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .languages {
@@ -120,6 +136,18 @@ button {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.site-header.is-over .languages {
+  border-color: rgb(255 255 255 / 0.35);
+  background: rgb(255 255 255 / 0.1);
+  color: inherit;
+}
+
+html[data-scrolled] .site-header.is-over .languages {
+  border-color: var(--line);
   background: var(--paper);
 }
 
@@ -135,6 +163,123 @@ button {
 .languages a[aria-current] {
   background: var(--ink);
   color: var(--paper);
+}
+
+.site-header.is-over .languages a[aria-current] {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+html[data-scrolled] .site-header.is-over .languages a[aria-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.header-cta {
+  min-height: 38px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+}
+
+/* the menu: every section of the home page */
+.header-menu {
+  position: relative;
+}
+
+.header-menu summary {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  list-style: none;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.header-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.header-menu summary span,
+.header-menu summary span::before,
+.header-menu summary span::after {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.header-menu summary span {
+  position: relative;
+}
+
+.header-menu summary span::before,
+.header-menu summary span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  transition: transform 220ms var(--ease-out);
+}
+
+.header-menu summary span::before {
+  transform: translateY(-5px);
+}
+
+.header-menu summary span::after {
+  transform: translateY(5px);
+}
+
+.header-menu[open] summary span {
+  background: transparent;
+}
+
+.header-menu[open] summary span::before {
+  transform: rotate(45deg);
+}
+
+.header-menu[open] summary span::after {
+  transform: rotate(-45deg);
+}
+
+.header-sheet {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  display: grid;
+  min-width: 14rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 48px -16px rgb(20 35 59 / 0.35);
+}
+
+.header-sheet a {
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.header-sheet a:hover {
+  background: var(--board);
+}
+
+/* phones: the button gives way to the menu and the language switch tightens up (".header-end" so this
+   wins over .pill further down) */
+@media (max-width: 40rem) {
+  .header-end .header-cta {
+    display: none;
+  }
+
+  .header-end {
+    gap: 0.5rem;
+  }
+
+  .languages a {
+    padding: 0.2rem 0.5rem;
+  }
 }
 
 /* Home: floor picker */
@@ -156,7 +301,7 @@ button {
   padding: clamp(2rem, 4vh, 3.25rem) 0 2.5rem clamp(1rem, 3vw, 2.5rem);
 }
 
-.picker-side h1 {
+.picker-side h2 {
   font-size: clamp(2rem, 3.1vw, 3rem);
   line-height: 1.04;
   letter-spacing: -0.035em;
@@ -1313,14 +1458,6 @@ button {
     gap: 1rem;
   }
 
-  .site-header nav {
-    display: none;
-  }
-
-  .brand {
-    margin-right: auto;
-  }
-
   .picker {
     grid-template-columns: 1fr;
     min-height: 0;
@@ -1337,10 +1474,6 @@ button {
   }
 
   .types {
-    grid-template-columns: 1fr;
-  }
-
-  .footer-main {
     grid-template-columns: 1fr;
   }
 
@@ -2118,40 +2251,38 @@ button {
 
 .site-footer {
   display: grid;
-  gap: 2rem;
-  padding: clamp(2.5rem, 5vw, 4rem) clamp(1rem, 3vw, 2.5rem) 2rem;
+  justify-items: center;
+  gap: 1rem;
+  padding: clamp(3rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem) 2rem;
   background: var(--ink);
   color: #c8d2df;
   font-size: 0.9375rem;
-}
-
-.footer-main {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 28rem));
-  gap: 1.5rem clamp(2rem, 6vw, 6rem);
-}
-
-.footer-main > div {
-  display: grid;
-  gap: 0.2rem;
-  align-content: start;
+  text-align: center;
 }
 
 .footer-name {
-  margin-bottom: 0.4rem;
   color: var(--paper);
   font-family: var(--display);
-  font-size: 1.6rem;
+  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
-.footer-phone {
-  margin-bottom: 0.4rem;
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.footer-links a {
+  color: var(--paper);
+  text-decoration: none;
+}
+
+.footer-links a:hover {
   color: var(--amber);
-  font-family: var(--display);
-  font-size: 1.125rem;
-  font-weight: 600;
 }
 
 .footer-note {
@@ -2190,5 +2321,448 @@ button {
   }
   100% {
     opacity: 1;
+  }
+}
+
+/* ==== Home: the film in chapters (story), photo cards, bands, pill buttons ==== */
+
+/* pill buttons */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 200ms, transform 250ms var(--ease-out), box-shadow 250ms;
+}
+
+.pill:hover {
+  transform: translateY(-2px);
+}
+
+.pill-primary {
+  background: var(--amber);
+  color: var(--ink);
+  box-shadow: 0 12px 26px -14px rgb(242 182 50 / 0.9);
+}
+
+.pill-primary:hover {
+  background: #f5c24f;
+}
+
+.pill-ghost {
+  border-color: rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.pill-ghost:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+
+/* the story: the film is pinned (sticky) while the intro and the four chapters, one screen each, scroll
+   over it. The intro is pulled up over the film by a negative margin (on the film itself, the margin would
+   let it stay pinned a screen past the end of the story, over the next section); the film lets go as the
+   last chapter scrolls out. */
+.story {
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.story-stage {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--ink) url('/media/film-poster.jpg') center / cover; /* the film's first frame */
+}
+
+.story-film {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgb(10 20 38 / 0.1) 0%, rgb(10 20 38 / 0.5) 100%),
+    linear-gradient(to bottom, rgb(10 20 38 / 0.45), transparent 22%, transparent 65%, rgb(10 20 38 / 0.7));
+}
+
+.story-chapter {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 6rem clamp(1rem, 3vw, 2.5rem);
+  text-align: center;
+}
+
+.story-intro {
+  margin-top: -100svh;
+  align-content: end;
+  gap: 1rem;
+  padding-bottom: clamp(2.5rem, 7vh, 4.5rem);
+  text-shadow: 0 2px 22px rgb(0 0 0 / 0.35);
+}
+
+.story-kicker {
+  font-size: 0.9375rem;
+  color: #c3cedc;
+}
+
+.story-intro h1 {
+  font-size: clamp(4rem, 13vw, 11rem);
+  line-height: 0.88;
+  letter-spacing: -0.05em;
+}
+
+.story-lead {
+  max-width: 36rem;
+  font-size: clamp(1.05rem, 0.4vw + 1rem, 1.3rem);
+  color: #e3e9f1;
+}
+
+.story-scroll {
+  margin-top: 1.25rem;
+  font-size: 0.8125rem;
+  color: #c3cedc;
+}
+
+.story-scroll::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 40px;
+  margin: 0.5rem auto 0;
+  background: linear-gradient(currentColor, transparent);
+  transform-origin: top;
+  animation: drip 2s ease-in-out infinite;
+}
+
+@keyframes drip {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+/* each chapter: a frosted card over the film */
+.chapter-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  max-width: 44rem;
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 28px;
+  background: rgb(14 26 46 / 0.55);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.chapter-n {
+  font: 600 0.875rem / 1 var(--display);
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+
+.chapter-card h2 {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.chapter-card p {
+  max-width: 34rem;
+  font-size: 1.125rem;
+  color: #dbe3ee;
+}
+
+.chapter-figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem clamp(1.5rem, 5vw, 3.5rem);
+  margin: 0.75rem 0 0;
+}
+
+.chapter-figures dd {
+  margin: 0;
+  font: 600 clamp(2.25rem, 5vw, 3.75rem) / 1 var(--display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.chapter-figures dt {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  color: #c3cedc;
+}
+
+/* which chapter you are in: a dot per chapter on the right of the film */
+.story-dots {
+  position: absolute;
+  right: clamp(1rem, 3vw, 2.5rem);
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateY(-50%);
+}
+
+.story-dots li {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.35);
+  transition: transform 300ms var(--ease-out), background-color 300ms;
+}
+
+.story[data-at='intro'] [data-dot='intro'],
+.story[data-at='location'] [data-dot='location'],
+.story[data-at='towers'] [data-dot='towers'],
+.story[data-at='podium'] [data-dot='podium'],
+.story[data-at='homes'] [data-dot='homes'] {
+  background: var(--amber);
+  transform: scale(1.5);
+}
+
+/* the floor picker: its side column is a dark panel beside the 3D building */
+.home .picker-side {
+  align-self: stretch;
+  padding-right: clamp(1rem, 2vw, 2rem);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.home .picker-side .lead {
+  color: #c3cedc;
+}
+
+/* the lift panel is a white card on that panel: its own dark text, not the panel's */
+.home .picker-side .lift {
+  color: var(--ink);
+}
+
+/* centred section heads */
+.centre-head {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  margin: 0 auto clamp(2rem, 4vw, 3.5rem);
+  text-align: center;
+}
+
+.centre-head h2 {
+  margin: 0;
+  font-size: clamp(2.25rem, 4.5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.centre-head .lead {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+/* four ways to explore: tall photo cards, the text over the picture */
+.explore {
+  padding: clamp(4rem, 9vw, 8rem) clamp(1rem, 3vw, 2.5rem);
+}
+
+.explore-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explore-card {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 24px;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 22px 44px -26px rgb(20 35 59 / 0.55);
+}
+
+.explore-card img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease-out);
+}
+
+.explore-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(10 20 38 / 0.9) 0%, rgb(10 20 38 / 0.35) 50%, transparent 75%);
+}
+
+.explore-card:hover img {
+  transform: scale(1.06);
+}
+
+.explore-n {
+  position: absolute;
+  top: 1rem;
+  left: 1.1rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(6px);
+  font: 600 0.8125rem / 1 var(--display);
+}
+
+.explore-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem;
+}
+
+.explore-body b {
+  font: 600 1.4rem / 1.1 var(--display);
+  letter-spacing: -0.02em;
+}
+
+.explore-body span {
+  font-size: 0.9375rem;
+  color: #dbe3ee;
+}
+
+.explore-body .explore-go {
+  color: var(--amber);
+  font-weight: 500;
+}
+
+/* apartment types: centred, and a sideways row on narrow screens */
+.home .types {
+  margin-inline: auto;
+}
+
+.centre-note {
+  max-width: 48rem;
+  margin: 1.5rem auto 0;
+  text-align: center;
+}
+
+/* the site plan on an amber band */
+.home .site {
+  border-top: 0;
+  background: var(--amber-soft);
+}
+
+/* contact: the close, centred */
+.contact {
+  display: grid;
+  justify-items: center;
+  padding: clamp(4rem, 9vw, 8rem) clamp(1rem, 3vw, 2.5rem);
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.contact > div {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.contact h2 {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.contact-lines {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 1.125rem;
+}
+
+/* on phones the chapter cards fill the width, so the dots would sit on them */
+@media (max-width: 40rem) {
+  .story-dots {
+    display: none;
+  }
+}
+
+@media (max-width: 60rem) {
+  .explore-cards,
+  .home .types {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.5rem;
+  }
+
+  .explore-cards > li {
+    flex: 0 0 min(78vw, 20rem);
+    scroll-snap-align: start;
+  }
+
+  .home .types > li {
+    flex: 0 0 min(84vw, 22rem);
+    scroll-snap-align: center;
+  }
+}
+
+/* ---- motion (Motion.tsx): only under html.js-motion, which the layout sets when motion is fine */
+html.js-motion .fx.rv {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(32px) scale(0.98);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out), filter 0.9s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 100ms);
+}
+
+html.js-motion .fx.rv.is-in {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-scroll::after {
+    animation: none;
   }
 }
