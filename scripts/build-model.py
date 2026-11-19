@@ -846,19 +846,9 @@ def build_annex():
 
 
 def build_annex_site():
-    """Planting in front of block D's east face and its core, and two street lamps (the render)."""
-    b = Builder("D Landscape", ["hedge", "leaf", "dark", "lamp"])
-    W = D_WALL
-    doors = ((2.1, 3.5), (12.1, 14.5), (25.9, 27.9))
-    def bush_row(x, y0, y1):
-        y = y0
-        while y <= y1:
-            if not any(d0 < y < d1 for d0, d1 in doors):
-                cx, cy = D_AT(x, y)
-                b.blob((cx, cy, 0.42), random.uniform(0.42, 0.55), "hedge", sz=0.85, jitter=0.15, sub=2)
-            y += 1.45
-    bush_row(18 + W + 1.0, 0.6, 19.0)
-    bush_row(D_CORE_E + 0.9, 20.3, 30.0)
+    """Two street lamps in front of block D (the render). The hedges along its east face and core
+    are the surroundings' leafy hedge shrub, planted by scripts/d-shrubs.mjs after this runs."""
+    b = Builder("D Landscape", ["dark", "lamp"])
     for x, y, flip in ((25.5, 6.5, 1), (25.5, 25.5, -1)):
         cx, cy = D_AT(x, y)
         b.cyl((cx, cy, 3.9), 0.075, 7.8, "dark", seg=12)

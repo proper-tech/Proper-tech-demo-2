@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { clock, siteNow, sunPosition, sunTimes } from '@/lib/solar';
 import type { SunSettings } from './three/Sun';
@@ -63,36 +63,54 @@ export function SunPanel({ setSun }: { setSun: (s: SunSettings) => void }) {
         : 0.5
       : Math.min(1, Math.max(0, (manual.azimuth - 90) / 180));
 
-  useEffect(() => {
-    setSun({ azimuth, elevation, brightness, dayFraction });
-  }, [azimuth, elevation, brightness, dayFraction, setSun]);
+  // Hand the sun to the 3D scene, skipping repeats: while playing, each frame sends it from the
+  // animation loop below, so the effect has nothing new to send and doesn't set state again
+  // (setting state from an effect on every frame trips React's update-loop guard).
+  const sent = useRef<SunSettings | null>(null);
+  const send = useCallback(
+    (next: SunSettings) => {
+      const prev = sent.current;
+      if (
+        prev &&
+        prev.azimuth === next.azimuth &&
+        prev.elevation === next.elevation &&
+        prev.brightness === next.brightness &&
+        prev.dayFraction === next.dayFraction
+      )
+        return;
+      sent.current = next;
+      setSun(next);
+    },
+    [setSun],
+  );
 
-  // play: run the clock from sunrise to sunset, then stop
-  const last = useRef(0);
   useEffect(() => {
-    if (!playing) return;
+    send({ azimuth, elevation, brightness, dayFraction });
+  }, [azimuth, elevation, brightness, dayFraction, send]);
+
+  // play: run the clock from sunrise (or where it is now) to sunset, then stop
+  const minutesNow = useRef(minutes);
+  minutesNow.current = minutes;
+  useEffect(() => {
+    if (!playing || mode !== 'time') return;
     const rise = times.rise ?? 0;
     const set = times.set ?? 1440;
     let frame = 0;
-    last.current = performance.now();
+    let m = minutesNow.current < rise || minutesNow.current >= set ? rise : minutesNow.current;
+    let last = performance.now();
     const tick = (now: number) => {
-      const dt = (now - last.current) / 1000;
-      last.current = now;
-      let stop = false;
-      setMinutes((m) => {
-        let next = m < rise || m >= set ? rise : m + ((set - rise) / DAY_SECONDS) * dt;
-        if (next >= set) {
-          next = set;
-          stop = true;
-        }
-        return next;
-      });
-      if (stop) setPlaying(false);
+      const dt = Math.min(0.25, (now - last) / 1000);
+      last = now;
+      m = Math.min(set, m + ((set - rise) / DAY_SECONDS) * dt);
+      const p = sunPosition(date, m);
+      send({ azimuth: p.azimuth, elevation: p.elevation, brightness, dayFraction: (m - rise) / (set - rise) });
+      setMinutes(m);
+      if (m >= set) setPlaying(false);
       else frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, times]);
+  }, [playing, mode, times, date, brightness, send]);
 
   const now = () => {
     const n = siteNow();

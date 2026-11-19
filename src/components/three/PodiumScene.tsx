@@ -10,6 +10,7 @@ import { defaultFinish } from '@/data/finishes';
 import { getPodiumFloor, listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType } from '@/data/podium';
 import { bounds, inPolygon, offsetPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import { Lights } from './ApartmentScene';
+import { fixPeople } from './people';
 import { Escalators, Lifts, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -229,6 +230,7 @@ const DRACO_URL = '/draco/';
 function RoofGarden({ cu, cv, z0 }: { cu: number; cv: number; z0: number }) {
   const { scene } = useGLTF(BLOCK_A_URL, DRACO_URL);
   const garden = useMemo(() => {
+    fixPeople(scene);
     const g = new Group();
     for (const o of scene.children) if (o.name.startsWith('RG_')) g.add(SkeletonUtils.clone(o));
     g.traverse((o) => {

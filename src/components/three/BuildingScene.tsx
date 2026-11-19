@@ -13,6 +13,7 @@ import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
+import { fixPeople } from './people';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -68,6 +69,7 @@ function Model() {
   useMemo(() => {
     const cars = scene.getObjectByName('Cars');
     if (cars) cars.visible = false;
+    fixPeople(scene);
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
@@ -98,6 +100,7 @@ const GROUND_COLORS: Record<string, string> = {
 function Environment() {
   const { scene } = useGLTF(ENV_URL, DRACO_URL);
   useMemo(() => {
+    fixPeople(scene);
     scene.traverse((o) => {
       // skinned people must not be culled by their rest-pose bounds
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;

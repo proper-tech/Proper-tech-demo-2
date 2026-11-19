@@ -24,6 +24,7 @@ import type { FurnitureItem } from '@/data/types';
 import { bounds, inPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import type { WalkGrid } from '@/lib/walk';
 import { Lifts, Rail, Stairs, stairOpening, type StairSpec } from './Cores';
+import { fixPeople } from './people';
 import { Furniture } from './Furniture';
 import { PART_T, capturePoints, partitionRuns, walkGridFor } from './walkGrid';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -717,6 +718,7 @@ function Surroundings({ z0 }: { z0: number }) {
   // the complex model is Draco-compressed; the decoder is served from public/draco
   const { scene } = useGLTF('/models/complex.glb', '/draco/');
   const model = useMemo(() => {
+    fixPeople(scene);
     const m = scene.clone(true);
     m.traverse((o) => {
       if (o.name === 'Annex' || o.name.startsWith('Annex')) o.visible = false;
@@ -740,6 +742,11 @@ function Surroundings({ z0 }: { z0: number }) {
 const JUMP = 0.6;
 /** Spots further than this are not offered as places to jump to. */
 const REACH = 12;
+/** Rings are drawn on the floor only for spots this close, one for each way you can go, like a 360°
+ *  camera tour; the rest are still reached by clicking the floor, the arrow keys or the small plan. */
+const RING_REACH = 6.5;
+/** Two rings closer together in direction than this (radians) show only the nearer one. */
+const RING_SPREAD = 0.5;
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 /**
@@ -769,6 +776,20 @@ function TourRig({ floor, walk, grid, hud }: { floor: PodiumFloor; walk: WalkDat
     () => points.filter((p) => p !== here && Math.hypot(p[0] - here[0], p[1] - here[1]) < REACH && grid.clear(here, p)),
     [points, here, grid],
   );
+
+  /** The rings on the floor: the nearest visible spot in each direction, within a few metres. */
+  const rings = useMemo(() => {
+    const near = visible
+      .map((p) => ({ p, d: Math.hypot(p[0] - here[0], p[1] - here[1]), a: Math.atan2(p[0] - here[0], p[1] - here[1]) }))
+      .filter((c) => c.d < RING_REACH)
+      .sort((x, y) => x.d - y.d);
+    const kept: typeof near = [];
+    for (const c of near) {
+      const apart = (k: (typeof near)[number]) => Math.abs(MathUtils.euclideanModulo(c.a - k.a + Math.PI, 2 * Math.PI) - Math.PI);
+      if (kept.every((k) => apart(k) > RING_SPREAD)) kept.push(c);
+    }
+    return kept.map((c) => c.p);
+  }, [visible, here]);
 
   const jump = (to: Pt) => {
     if (move.current || to === pos.current) return;
@@ -927,9 +948,9 @@ function TourRig({ floor, walk, grid, hud }: { floor: PodiumFloor; walk: WalkDat
       </mesh>
       {/* the spots you can go to from here */}
       {!moving &&
-        visible.map((p, i) => {
+        rings.map((p, i) => {
           const d = Math.hypot(p[0] - here[0], p[1] - here[1]);
-          const fade = MathUtils.clamp(1.2 - d / REACH, 0.35, 1);
+          const fade = MathUtils.clamp(1.25 - d / RING_REACH, 0.45, 1);
           return (
             <group key={`${p[0]},${p[1]}`} position={[p[0], 0.025, -p[1]]} rotation={[-Math.PI / 2, 0, 0]}>
               <mesh
