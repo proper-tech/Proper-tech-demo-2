@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useLoader, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls, Sky, useGLTF } from '@react-three/drei';
-import { DoubleSide, Euler, ExtrudeGeometry, MathUtils, Object3D, Path, Shape, type Mesh, type PerspectiveCamera, type Texture } from 'three';
+import { DoubleSide, Euler, ExtrudeGeometry, MathUtils, Object3D, Path, SRGBColorSpace, Shape, TextureLoader, type Mesh, type PerspectiveCamera, type Texture } from 'three';
 import type { Rect } from '@/data/building';
 import {
   blockDFrame,
@@ -71,6 +71,25 @@ interface Props {
   hovered: string | null;
   onHover: (id: string | null) => void;
   hud?: WalkHud;
+  /** The furnished top view rendered in Blender (blockDTour.ts): laid on the floor in the orbit view in place
+   *  of the drawn floors and furniture, with the walls cut low so all of it shows. */
+  photo?: { src: string; rect: [number, number, number, number] };
+}
+
+/** Walls in the orbit view over a rendered top view: cut low, like the apartments' photo models. */
+const PHOTO_CUT = 1.25;
+
+function PhotoFloor({ src, rect }: { src: string; rect: [number, number, number, number] }) {
+  const map = useLoader(TextureLoader, src);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  const [u0, v0, u1, v1] = rect;
+  return (
+    <mesh position={[(u0 + u1) / 2, 0.012, -(v0 + v1) / 2]} rotation={[-Math.PI / 2, 0, 0]} raycast={noRay}>
+      <planeGeometry args={[u1 - u0, v1 - v0]} />
+      <meshBasicMaterial map={map} alphaTest={0.5} toneMapped={false} />
+    </mesh>
+  );
 }
 
 const CUT = 2.4;
@@ -393,8 +412,8 @@ function PartitionWall({ p, h, ramps, leaves }: { p: Partition; h: number; ramps
             {[d0, d1].map((s) => {
               const [u, v] = pt(s);
               return (
-                <mesh key={s} position={[u, 1.05, -v]} rotation={[0, angle, 0]} raycast={noRay}>
-                  <boxGeometry args={[0.06, 2.1, PART_T + 0.04]} />
+                <mesh key={s} position={[u, Math.min(2.1, h) / 2, -v]} rotation={[0, angle, 0]} raycast={noRay}>
+                  <boxGeometry args={[0.06, Math.min(2.1, h), PART_T + 0.04]} />
                   <meshStandardMaterial color="#5B6672" roughness={0.5} />
                 </mesh>
               );
@@ -998,11 +1017,13 @@ function SpaceFloor({ space, hovered, holes }: { space: PodiumSpace; hovered: bo
 /** Does a scene rectangle fall inside a room's outline? */
 const holeIn = (r: Rect, s: PodiumSpace) => inPolygon([r.x + r.w / 2, -(r.z + r.d / 2)], s.outline);
 
-export default function DFloorScene({ floor, lower, upper, walk, view, label, layer, hovered, onHover, hud }: Props) {
+export default function DFloorScene({ floor, lower, upper, walk, view, label, layer, hovered, onHover, hud, photo }: Props) {
   const storey = floor.z1 - floor.z0;
   const isWalk = view === 'walk';
-  const h = isWalk ? storey : Math.min(CUT, storey);
-  const inner = isWalk ? storey - D_SLAB : Math.min(CUT, storey);
+  const usePhoto = !!photo && !isWalk;
+  const cut = usePhoto ? PHOTO_CUT : CUT;
+  const h = isWalk ? storey : Math.min(cut, storey);
+  const inner = isWalk ? storey - D_SLAB : Math.min(cut, storey);
   const parking = floor.spaces.some((s) => PARKING.has(s.type));
   const below = floor.below ?? (lower ? lower.z1 - lower.z0 : 0);
   const grid = useMemo(() => walkGridFor(floor, walk), [floor, walk]);
@@ -1120,14 +1141,31 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
         </>
       )}
 
-      {floor.spaces
-        .filter((s) => !s.void && s.type !== 'stairs' && s.type !== 'lifts')
-        .map((s) => (
-          <SpaceFloor key={s.id} space={s} hovered={!isWalk && hovered === s.id} holes={pits.filter((r) => holeIn(r, s))} />
-        ))}
-      {pits.map((r, i) => (
-        <PitWell key={i} r={r} />
-      ))}
+      {usePhoto ? (
+        <>
+          <Suspense fallback={null}>
+            <PhotoFloor src={photo!.src} rect={photo!.rect} />
+          </Suspense>
+          {floor.spaces
+            .filter((s) => s.id === hovered)
+            .map((s) => (
+              <Slab key={s.id} pts={s.outline} y={0.02} h={0.005} shadow={false}>
+                <meshBasicMaterial color="#3D7BF5" transparent opacity={0.28} depthWrite={false} />
+              </Slab>
+            ))}
+        </>
+      ) : (
+        <>
+          {floor.spaces
+            .filter((s) => !s.void && s.type !== 'stairs' && s.type !== 'lifts')
+            .map((s) => (
+              <SpaceFloor key={s.id} space={s} hovered={!isWalk && hovered === s.id} holes={pits.filter((r) => holeIn(r, s))} />
+            ))}
+          {pits.map((r, i) => (
+            <PitWell key={i} r={r} />
+          ))}
+        </>
+      )}
       {!isWalk && <HoverTargets floor={floor} onHover={onHover} />}
 
       {(['S', 'N', 'W', 'E'] as FacadeSide[]).map((side) => (
@@ -1152,8 +1190,8 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
         <PartitionWall key={i} p={p} h={inner} ramps={floor.ramps} leaves={isWalk} />
       ))}
       <Columns h={inner} parking={parking} label={label} voids={voids} />
-      {parking && <Bays cars={cars} label={label} />}
-      {(walk.arrows ?? []).map((a, i) => (
+      {parking && !usePhoto && <Bays cars={cars} label={label} />}
+      {(usePhoto ? [] : walk.arrows ?? []).map((a, i) => (
         <Arrow key={i} c={a.c} dir={a.dir} />
       ))}
       {/* EXIT signs over the doors into the stair */}
@@ -1171,7 +1209,7 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
           <Lifts key={s.id} r={rectOf(s.outline)} doors={s.doors} wallH={inner} />
         ))}
       {(floor.ramps ?? []).map((r, i) => (
-        <RampD key={i} r={r} cut={isWalk ? 99 : CUT} />
+        <RampD key={i} r={r} cut={isWalk ? 99 : cut} />
       ))}
       {/* through the opening: the ramp on up from the floor above */}
       {isWalk &&
@@ -1205,7 +1243,7 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
             )),
           ];
         })}
-      <Furniture items={[...furniture, ...fire]} finish={defaultFinish} />
+      {!usePhoto && <Furniture items={[...furniture, ...fire]} finish={defaultFinish} />}
 
       {isWalk && <Ceiling h={storey} holes={ceilingHoles} upper={upper ? upper.z1 - upper.z0 : undefined} duct={parking && storey >= 3.2} />}
 

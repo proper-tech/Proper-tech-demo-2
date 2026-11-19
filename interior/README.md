@@ -33,3 +33,20 @@ Only some stops, or another sample count: `render_all.bat 128` or
 
 `tools/build_unit.py F|E <outdir>` (Blender's Python module `bpy`, needs the plan-D scene) rebuilds a scene;
 `tools/preview.py` renders a quick top view or low-resolution panoramas to check it.
+
+## Block D, floor 1 (car parts shop and repair shop) — Монгол заавар
+
+`D1.blend` is block D's first floor, furnished (shop shelves, counter, office, waiting room, two car lifts, the
+inspection pit, cars), built from the site's block D data by `tools/build_blockd.py` with F's materials and the
+site's car. `D1_cams.json` holds its 9 tour stops (block metres: x = u east, y = -v, height).
+
+1. Рендер эхлүүлнэ (давхар товшиж болно, эсвэл PowerShell-д `.\interior\render_blockd.bat`):
+   ```
+   interior\render_blockd.bat
+   ```
+   9 панорам (4096×2048) болон дээрээс харсан зураг `interior\renders\D1` хавтсанд гарна.
+   Хурдан болгох бол: `interior\render_blockd.bat 64` (sample цөөн).
+2. Сайтад тавина: `python3 -I interior/tools/publish_blockd.py . 1` → `public/tour-d/1` (4K, жижиг хувилбар, top.webp).
+
+Rebuild the scene: `python3 -I interior/tools/build_blockd.py interior/F.blend <car.glb> interior` (bpy as a module;
+car.glb is `Env_Car_01` cut out of `public/models/blocks/environment.glb`).

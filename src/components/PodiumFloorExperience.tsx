@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FLOOR_MAX, FLOOR_MIN } from '@/data/building';
 import { blockDFloors, blockDLabel, blockDOutline, blockDWalk, getBlockDFloor } from '@/data/blockD';
+import { blockDTours } from '@/data/blockDTour';
 import { floorName, getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumFloor, type PodiumSpace } from '@/data/podium';
 import { getRoofFloor } from '@/data/roof';
 import type { TowerId } from '@/data/types';
@@ -20,6 +21,10 @@ const PodiumScene = dynamic(() => import('./three/PodiumScene'), {
   loading: () => <div className="stage-loading" />,
 });
 const DFloorScene = dynamic(() => import('./three/DFloorScene'), {
+  ssr: false,
+  loading: () => <div className="stage-loading" />,
+});
+const PanoTour = dynamic(() => import('./PanoTour'), {
   ssr: false,
   loading: () => <div className="stage-loading" />,
 });
@@ -141,6 +146,9 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
   const [hovered, setHovered] = useState<string | null>(null);
   const layer = useRef<HTMLDivElement>(null);
   const isD = block === 'D';
+  // block D floors rendered in Blender: a 360° tour of photos and the furnished top view
+  const pano = isD ? blockDTours[floor] : undefined;
+  const photoTour = !!pano && view === 'walk';
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   const pf = tower ? getRoofFloor(tower) : isD ? getBlockDFloor(floor)! : getPodiumFloor(floor)!;
   const lower = isD ? getBlockDFloor(floor - 1) : undefined;
@@ -189,10 +197,12 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
 
   return (
     <div className="floor">
-      <section className={isD && view === 'walk' ? 'floor-stage is-walk' : 'floor-stage'}>
-        <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
+      <section className={photoTour ? 'floor-stage is-tour' : isD && view === 'walk' ? 'floor-stage is-walk' : 'floor-stage'}>
+        {pano && photoTour && <PanoTour tour={pano} floorLabel={blockDLabel(floor)} />}
+        <div className={view === '2d' || photoTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
           {isD ? (
-            view !== '2d' && (
+            view !== '2d' &&
+            !photoTour && (
               <DFloorScene
                 key={view}
                 floor={pf}
@@ -205,6 +215,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
                 hovered={hovered}
                 onHover={setHovered}
                 hud={hud}
+                photo={pano?.top}
               />
             )
           ) : (
@@ -232,8 +243,18 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
         </div>
         {view === '2d' && (
           <div className="floor-plan">
-            <svg className="plan-svg" viewBox={`${b.u0 - 2} ${-b.v1 - 2} ${b.u1 - b.u0 + 4} ${b.v1 - b.v0 + 4}`} role="img">
+            <svg className={pano ? 'plan-svg has-photo' : 'plan-svg'} viewBox={`${b.u0 - 2} ${-b.v1 - 2} ${b.u1 - b.u0 + 4} ${b.v1 - b.v0 + 4}`} role="img">
               <path className="podium-slab" d={path(pf.outline)} />
+              {pano && (
+                <image
+                  href={pano.top.src}
+                  x={pano.top.rect[0]}
+                  y={-pano.top.rect[3]}
+                  width={pano.top.rect[2] - pano.top.rect[0]}
+                  height={pano.top.rect[3] - pano.top.rect[1]}
+                  preserveAspectRatio="none"
+                />
+              )}
               {pf.spaces.map((s) => (
                 <path
                   key={s.id}
@@ -287,7 +308,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
         </div>
         {view === '3d' && walkable && <TourBar tour={tour} setTour={setTour} spots={ROOF_SPOTS} label={t.tour.label} />}
         {view === '3d' && <p className="stage-hint">{walking ? t.tour.lookHint : t.podium.hint}</p>}
-        {isD && view === 'walk' && (
+        {isD && view === 'walk' && !photoTour && (
           <>
             <div className="walk-hud">
               <div className="walk-room" aria-live="polite">
