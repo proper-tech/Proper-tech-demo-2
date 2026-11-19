@@ -6,14 +6,15 @@ The plan-D scene (d4k/scene.blend) supplies every material, light set-up and pie
 - rebuilds the walls, floor, ceiling, windows, curtains, doors and window light for the new plan,
 - deletes everything of D, adds one panorama camera per stop and saves <unit>.blend + <unit>_cams.json.
 Plan coordinates as in the D scene: x east, y south (as drawn), metres; Blender X = x, Y = -y.
-Run: python3 -I build_unit.py F|E outdir
+Run: python3 -I build_unit.py F|E outdir [plan-D scene] [fixes.py]
 """
 import sys, json, math, re
 import bpy
 from mathutils import Matrix, Vector
 
 UNIT, OUT = sys.argv[1], sys.argv[2]
-bpy.ops.wm.open_mainfile(filepath='/home/claude/d4k/scene.blend')
+SRC = sys.argv[3] if len(sys.argv) > 3 else '/home/claude/units/out/D.blend'  # the cleaned-up plan-D scene (interior/D.blend)
+bpy.ops.wm.open_mainfile(filepath=SRC)
 ORIG = list(bpy.data.objects)
 OBJ = bpy.data.objects
 MAT = bpy.data.materials
@@ -303,6 +304,11 @@ def clear_doorways():
                 print('cleared from doorway', o.name); OBJ.remove(o, do_unlink=True)
 
 clear_doorways()
+exec(open(sys.argv[4] if len(sys.argv) > 4 else '/home/claude/units/fixes.py').read())
+PLANT_ROOMS = dict(F={'living': (13.95, 3.3, 21.85, 7.0), 'bed4': (13.95, 0.0, 17.25, 3.15), 'bed5': (17.4, 0.0, 20.3, 3.15),
+                      'hall': (13.0, 7.15, 15.4, 9.6), 'balcony': (20.45, 0.0, 21.85, 3.15)},
+                   E={'living': (13.0, 9.85, 21.85, 13.9), 'bed2': (17.45, 7.15, 20.2, 9.7), 'balcony': (20.35, 7.15, 21.85, 9.7)})
+fit_plants(PLANT_ROOMS[UNIT], small=('balcony',))
 window_dressing()
 skirting(rooms.values(), DOORWAYS)
 for i, (x0, y0, x1, y1) in enumerate(FLOORS):
