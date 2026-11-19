@@ -8,7 +8,7 @@ Next.js 16 (App Router) + React 19 + three.js (`@react-three/fiber`).
 | --- | --- |
 | Site plan: tower, podium and annex footprints, kerbs, parking bays, trees (`src/data/site.json`, extracted from `ET_coordinattai.dwg`) | Which apartments are sold: all are for sale (`status` in `src/data/building.ts`) |
 | Blocks A-D, storeys and levels: apartments on floors 4-16 at 3.0 m from +11.7 m, roof +54.7 m (`src/data/building.ts`, from sections 1-1 and 2-2 of the schematic design) | Ceiling heights in `src/data/layouts.ts` (estimated from the 3.0 m storey height) |
-| The six apartments on each floor, their rooms and areas, the lift and stair core (`src/data/layouts.ts`, traced from floor plans sheets 17-20) | Intro video (`public/media/intro.mp4`), project name, phone number |
+| The six apartments on each floor, their rooms and areas, the lift and stair core (`src/data/layouts.ts`, traced from floor plans sheets 17-20) | The buildings around the site in the film (only indicated), phone number |
 | 155 apartments, including floor 4 of Block B, where the homeowners' association room replaces apartment B | Furniture (only there to show scale), including the fit-out of podium floor 1 (`furnish()` in `src/data/podium.ts`) |
 | Capacity figures on the home page (general plan, sheet 7) | Door sides of the podium stairs and the roof stair, and the escalator direction (not on the drawings) |
 | Block A (podium) floors 1-4: rooms, numbers and areas from the room schedules (`src/data/podium.ts`), facade from the elevations (`scripts/build-model.py`) | Blocks B, C and D have a simplified facade in the 3D model |
@@ -41,7 +41,7 @@ npm run build && npm start
 | 360° view in every room, walking between rooms | Same page, "360° tour" (`three/ApartmentScene`); add `?view=tour` to link straight to it |
 | Change floor, wall, furniture colours | "Finishes" panel (`data/finishes.ts`) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
-| Intro video | Home page (`VideoSection`) |
+| Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
 | Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn` |
 
 ## Replacing the mock content
@@ -56,7 +56,18 @@ npm run build && npm start
   tour on apartment pages of the plans listed in `PHOTO_TOURS` (`ApartmentExperience.tsx`). Plan C's
   is plan D's mirrored (`interior/tools/mirror_tour.py`): photos flipped and turned half a turn, plan
   points mirrored about the middle of the top view. They do not use the site's code or data.
-- **Video**: replace `public/media/intro.mp4`.
+- **Film**: `public/media/film.mp4` and `film-poster.jpg` are rendered in Blender (EEVEE) from the site's
+  own model by `scripts/build-film.py` (six shots, about 1.5-2 hours for 912 frames on a 2019 MacBook Pro):
+
+  ```bash
+  B=/Applications/Blender.app/Contents/MacOS/Blender
+  $B -b -P scripts/build-film.py -- --render --out film_frames --res 1920 --samples 32 --sky SKY.hdr
+  $B -b -P scripts/build-film.py -- --encode --out film_frames --mp4 public/media/film.mp4 --crf LOW --width 1600
+  ```
+
+  `SKY.hdr` is optional (without it Blender's own sky is used); the film used Poly Haven's
+  `kloofendal_48d_partly_cloudy_puresky_2k.hdr` (CC0). The Sun Position add-on, if installed, places the sun over
+  Ulaanbaatar. The poster is frame 0000 resized to 1600 px. `public/media/intro.mp4` is no longer used.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the
   north tower on the main road, `C.glb` the south tower (both floors 4-16, standing on A, with the

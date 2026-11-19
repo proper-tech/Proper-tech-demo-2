@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useI18n } from '@/i18n/I18nProvider';
 
-// The film is still a generated placeholder: replace public/media/intro.mp4 with the real
-// one. The poster is one of the architect's renders.
-const VIDEO_SRC = '/media/intro.mp4';
-const POSTER_SRC = '/media/renders/podium.jpg';
+// The 38-second flight round the complex, rendered from the site's own 3D model (scripts/build-film.py);
+// the same file loops silently behind the home page's hero.
+const VIDEO_SRC = '/media/film.mp4';
+const POSTER_SRC = '/media/film-poster.jpg';
 
 export function VideoSection() {
   const { t } = useI18n();
