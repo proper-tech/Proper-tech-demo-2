@@ -1,10 +1,10 @@
 'use client';
 
-import { Fragment, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FLOOR_MAX, FLOOR_MIN, PLATE, coreFor, getFloor } from '@/data/building';
+import { FLOOR_MAX, FLOOR_MIN, PLATE, coreFor, getFloor, type CoreSpace } from '@/data/building';
 import { flatColors, layouts } from '@/data/layouts';
 import { ROOF_FLOOR } from '@/data/roof';
 import type { Layout, PlanId, TowerId } from '@/data/types';
@@ -25,6 +25,77 @@ const PX = (X: number) => X - PLATE.x0;
 const PY = (Y: number) => PLATE.y1 - Y;
 const PLAN_W = PLATE.x1 - PLATE.x0;
 const PLAN_H = PLATE.y1 - PLATE.y0;
+
+/** C and D are mirror images that meet on the plate's mirror line; their pictures stop there. */
+const MIRROR_X = 10.8;
+
+/** A core space in the 2D floor plan, drawn like the architect's plan: stone floor, lift cars, stair treads. */
+function CorePlan({ space: c, label }: { space: CoreSpace; label: string | null }) {
+  const x = PX(c.x0);
+  const y = PY(c.y1);
+  const w = c.x1 - c.x0;
+  const h = c.y1 - c.y0;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  let body: ReactNode;
+  if (c.id === 'corridor') body = <rect className="plan-corridor" x={x} y={y} width={w} height={h} fill="url(#plan-stone)" />;
+  else if (c.id === 'shafts' || c.id === 'trash') body = <rect className="plan-core" x={x} y={y} width={w} height={h} fill="url(#plan-hatch)" />;
+  else if (c.id === 'lifts') {
+    // cars about 1.9 m apart, doors to the south onto the lobby
+    const n = Math.max(1, Math.round(w / 1.9));
+    const step = w / n;
+    body = (
+      <g>
+        <rect className="plan-corridor" x={x} y={y} width={w} height={h} fill="url(#plan-stone)" />
+        {Array.from({ length: n }, (_, i) => {
+          const sx0 = x + i * step + 0.15;
+          const sw = step - 0.3;
+          const sy0 = y + 0.15;
+          const sh = h - 0.75;
+          return (
+            <g key={i} className="plan-lift">
+              <rect x={sx0} y={sy0} width={sw} height={sh} />
+              <path d={`M${sx0 + 0.2} ${sy0 + 0.2} L${sx0 + sw - 0.2} ${sy0 + sh - 0.2} M${sx0 + sw - 0.2} ${sy0 + 0.2} L${sx0 + 0.2} ${sy0 + sh - 0.2}`} />
+              <line className="plan-lift-door" x1={sx0 + sw / 2 - 0.5} y1={sy0 + sh} x2={sx0 + sw / 2 + 0.5} y2={sy0 + sh} />
+            </g>
+          );
+        })}
+      </g>
+    );
+  } else if (c.id === 'stair') {
+    // two flights side by side, half landing to the north
+    const tread = 0.28;
+    const top = y + 1.3;
+    const bottom = y + h - 1.2;
+    const lines: number[] = [];
+    for (let ty = top; ty <= bottom + 1e-6; ty += tread) lines.push(ty);
+    body = (
+      <g className="plan-stair">
+        <rect x={x} y={y} width={w} height={h} />
+        {lines.map((ty) => (
+          <line key={ty} x1={x + 0.12} y1={ty} x2={x + w - 0.12} y2={ty} />
+        ))}
+        <line className="plan-stair-well" x1={cx} y1={top} x2={cx} y2={bottom} />
+        <path className="plan-stair-arrow" d={`M${x + w * 0.75} ${bottom} V${top + 0.3} M${x + w * 0.75 - 0.18} ${top + 0.55} L${x + w * 0.75} ${top + 0.3} L${x + w * 0.75 + 0.18} ${top + 0.55}`} />
+      </g>
+    );
+  } else body = <rect className="plan-core" x={x} y={y} width={w} height={h} />;
+  return (
+    <g>
+      {body}
+      {label && (
+        <text
+          className="plan-name plan-core-name"
+          x={cx}
+          y={c.id === 'lifts' ? y + h - 0.25 : cy + 0.1}
+          transform={c.id === 'stair' ? `rotate(-90 ${cx} ${cy})` : undefined}
+        >
+          {label}
+        </text>
+      )}
+    </g>
+  );
+}
 
 const planTx = (layout: Layout): PlanTx => ({ ox: PX(layout.origin[0]), sx: 1, oz: PY(layout.origin[1]), sz: 1 });
 
@@ -86,20 +157,25 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
               {PLATE.grid.y.map((Y) => (
                 <line key={`gy${Y}`} className="plan-grid" x1={-0.5} y1={PY(Y)} x2={PLAN_W + 0.5} y2={PY(Y)} />
               ))}
+              <defs>
+                {/* 60 cm stone tiles (corridor, lift lobby) and hatching (service shafts) */}
+                <pattern id="plan-stone" width={0.6} height={0.6} patternUnits="userSpaceOnUse">
+                  <rect width={0.6} height={0.6} fill="#ebe6dd" />
+                  <path d="M0 0 H0.6 M0 0 V0.6" stroke="#cfc6b8" strokeWidth={0.025} />
+                </pattern>
+                <pattern id="plan-hatch" width={0.3} height={0.3} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <rect width={0.3} height={0.3} fill="#e7e5e0" />
+                  <path d="M0 0 V0.3" stroke="#a9a59c" strokeWidth={0.04} />
+                </pattern>
+                <clipPath id="plan-west-of-mirror">
+                  <rect x={-1} y={-1} width={PX(MIRROR_X) + 1} height={PLAN_H + 2} />
+                </clipPath>
+                <clipPath id="plan-east-of-mirror">
+                  <rect x={PX(MIRROR_X)} y={-1} width={PLAN_W} height={PLAN_H + 2} />
+                </clipPath>
+              </defs>
               {core.map((c) => (
-                <g key={c.id}>
-                  <rect className={c.id === 'corridor' ? 'plan-corridor' : 'plan-core'} x={PX(c.x0)} y={PY(c.y1)} width={c.x1 - c.x0} height={c.y1 - c.y0} />
-                  {c.id !== 'shafts' && (
-                    <text
-                      className="plan-name"
-                      x={PX((c.x0 + c.x1) / 2)}
-                      y={PY((c.y0 + c.y1) / 2) + 0.1}
-                      transform={c.id === 'stair' ? `rotate(-90 ${PX((c.x0 + c.x1) / 2)} ${PY((c.y0 + c.y1) / 2)})` : undefined}
-                    >
-                      {t.floor.core[c.id]}
-                    </text>
-                  )}
-                </g>
+                <CorePlan key={c.id} space={c} label={c.id === 'shafts' ? null : t.floor.core[c.id]} />
               ))}
               {summary.units.map((u) => {
                 const layout = layouts[u.layout];
@@ -122,6 +198,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                     {photo ? (
                       <>
                         <image
+                          clipPath={u.plan === 'C' ? 'url(#plan-west-of-mirror)' : u.plan === 'D' ? 'url(#plan-east-of-mirror)' : undefined}
                           href={photo.image.src}
                           x={PX(photo.image.rect[0])}
                           y={PY(photo.image.rect[3])}
