@@ -6,8 +6,11 @@ const config: NextConfig = {
     return [{ source: '/', destination: '/en', permanent: false }];
   },
   async rewrites() {
-    // Stand-alone 360° tour of apartment D (single self-contained file in public/tour).
-    return [{ source: '/tour', destination: '/tour/index.html' }];
+    // Stand-alone rendered 360° tours, one self-contained file per plan in public/tour/<plan>/.
+    return [
+      { source: '/tour', destination: '/tour/D/index.html' },
+      { source: '/tour/:plan([A-F])', destination: '/tour/:plan/index.html' },
+    ];
   },
 };
 

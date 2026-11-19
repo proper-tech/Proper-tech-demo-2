@@ -6,6 +6,8 @@ next-env.d.ts
 # Blender source files (too large for GitHub; ship .glb exports instead)
 *.blend
 *.blend1
+# the interior scenes the panoramas are rendered from
+!interior/*.blend
 
 # local backups of replaced models and old scripts
 *.bak

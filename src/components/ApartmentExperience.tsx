@@ -20,6 +20,12 @@ const ApartmentScene = dynamic(() => import('./three/ApartmentScene'), {
 
 type Mode = 'model' | 'plan' | 'tour';
 
+/**
+ * Plans with a rendered 360° tour in public/tour/<plan>/index.html (self-contained files); these replace the 3D tour.
+ * Keyed by plan letter, so A4 (plan A on floor 4) opens plan A's tour.
+ */
+const PHOTO_TOURS: string[] = ['A', 'B', 'C', 'D', 'E', 'F'];
+
 export function ApartmentExperience({ unit }: { unit: Unit }) {
   const { locale, t } = useI18n();
   const layout = layouts[unit.layout];
@@ -51,7 +57,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
   const next = availableUnits[(index + 1) % availableUnits.length];
   const suffix = mode === 'tour' ? '?view=tour' : '';
   // Plan D has a rendered 360° tour (public/tour, a self-contained file); it replaces the 3D tour.
-  const photoTour = mode === 'tour' && layout.id === 'D';
+  const photoTour = mode === 'tour' && PHOTO_TOURS.includes(layout.plan);
   const modes: [Mode, string][] = [
     ['model', t.apt.modeModel],
     ['plan', t.apt.modePlan],
@@ -89,7 +95,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
         {photoTour && (
           <iframe
             className="apt-tour-frame"
-            src="/tour/index.html"
+            src={`/tour/${layout.plan}/index.html`}
             title={t.apt.modeTour}
             allow="fullscreen"
             onLoad={(e) => fitTourFrame(e.currentTarget)}

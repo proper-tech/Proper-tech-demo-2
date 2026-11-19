@@ -1,4 +1,6 @@
-import type { Material, Mesh, MeshStandardMaterial, Object3D } from 'three';
+import { useEffect, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { AnimationMixer, type AnimationClip, type Material, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 
 /** Hair, eyebrows and eyelashes (gaps between the strands), and the eyes (a clear cornea over the iris). */
 const CUTOUT = /eyebrow|eyelash|high-poly|^Human\.(short|long|bob|ponytail|braid|afro)\d/i;
@@ -27,4 +29,27 @@ export function fixPeople(root: Object3D) {
       m.needsUpdate = true;
     }
   });
+}
+
+/**
+ * Plays the people's motion. The walk cycles and idle poses are keyframed in Blender
+ * (A.blend for the roof garden, environment.blend for the street): one looping clip per
+ * person, all started together. Without this the figures stand in their T-shaped rest pose.
+ * `root` must be the object the clips were loaded with, or a SkeletonUtils clone of it
+ * (a plain clone keeps the original bones, so it would not move).
+ */
+export function usePeopleMotion(root: Object3D | null, clips: AnimationClip[]) {
+  const mixer = useMemo(() => (root ? new AnimationMixer(root) : null), [root]);
+  useEffect(() => {
+    if (!mixer || !root) return;
+    for (const clip of clips) {
+      if (/^(Walk|Idle)_/.test(clip.name)) mixer.clipAction(clip).play();
+    }
+    return () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(root);
+    };
+  }, [mixer, root, clips]);
+  // capped so a background tab coming back does not jump the walkers across the site
+  useFrame((_, dt) => mixer?.update(Math.min(dt, 0.1)));
 }

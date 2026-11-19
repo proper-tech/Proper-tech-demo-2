@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, Path, Shape } from 'three';
+import { ExtrudeGeometry, Path, PlaneGeometry, Shape } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -12,7 +12,10 @@ import type { Layout, Unit } from '@/data/types';
 import { maxCeiling } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
 import { SafeCanvas } from './SafeCanvas';
+import { PhotoApartment } from './PhotoApartment';
+import { photoModels } from '@/data/photoModels';
 import { Lights } from './ApartmentScene';
+import { stoneTexture } from './textures';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 
@@ -35,7 +38,11 @@ const sz = (Y: number) => CY - Y;
 /** A core space as a scene rectangle. */
 const sceneRect = (c: CoreSpace): Rect => ({ x: sx(c.x0), z: sz(c.y1), w: c.x1 - c.x0, d: c.y1 - c.y0 });
 
-const WALL_H = 2.7;
+/** Core walls stand as high as the apartments' cut walls, so the floor reads as one plan. */
+const WALL_H = 1.25;
+/** C and D are mirror images that meet on the plate's mirror line; their pictures stop there. */
+const MIRROR_X = 10.8;
+const PHOTO_CLIP: Partial<Record<string, [number, number]>> = { C: [-99, MIRROR_X], D: [MIRROR_X, 99] };
 /** The podium's top storey, under the first apartment floor (sections). */
 const PODIUM_TOP = getPodiumFloor(PODIUM_FLOORS)!;
 
@@ -90,9 +97,9 @@ function Slab({ hole }: { hole: Rect | null }) {
 /** The stair and lifts are modelled in detail (three/Cores.tsx); the rest of the core is blocks. */
 const CORE_LOOK: Record<Exclude<CoreSpace['id'], 'stair' | 'lifts'>, { h: number; color: string }> = {
   corridor: { h: 0, color: '#DDE2E7' },
-  shafts: { h: 2.7, color: '#B9C2CC' },
-  hoa: { h: 2.7, color: '#C9D0D8' },
-  trash: { h: 2.7, color: '#B9C2CC' },
+  shafts: { h: 1.25, color: '#EDEBE6' },
+  hoa: { h: 1.25, color: '#EDEBE6' },
+  trash: { h: 1.25, color: '#EDEBE6' },
 };
 
 function CoreBlock({ space }: { space: CoreSpace }) {
@@ -103,17 +110,33 @@ function CoreBlock({ space }: { space: CoreSpace }) {
   const x = sx((space.x0 + space.x1) / 2);
   const z = sz((space.y0 + space.y1) / 2);
   if (look.h === 0) {
-    return (
-      <mesh position={[x, 0.004, z]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={look.color} />
-      </mesh>
-    );
+    return <StoneFloor x={x} z={z} w={w} d={d} />;
   }
   return (
-    <mesh position={[x, look.h / 2, z]}>
-      <boxGeometry args={[w - 0.1, look.h, d - 0.1]} />
-      <meshStandardMaterial color={look.color} />
+    <group>
+      <mesh position={[x, look.h / 2, z]}>
+        <boxGeometry args={[w - 0.1, look.h, d - 0.1]} />
+        <meshStandardMaterial color={look.color} />
+      </mesh>
+      <mesh position={[x, look.h + 0.025, z]}>
+        <boxGeometry args={[w - 0.1, 0.05, d - 0.1]} />
+        <meshStandardMaterial color="#14233B" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Corridor and lift lobby floor: large stone tiles at their real size. */
+function StoneFloor({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
+  const geometry = useMemo(() => {
+    const g = new PlaneGeometry(w, d);
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * w) / 2.4, (uv.getY(i) * d) / 2.4);
+    return g;
+  }, [w, d]);
+  return (
+    <mesh geometry={geometry} position={[x, 0.002, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <meshStandardMaterial map={stoneTexture()} roughness={0.55} />
     </mesh>
   );
 }
@@ -133,6 +156,8 @@ function FitCamera() {
 function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: boolean; onHover: Props['onHover']; onOpen: Props['onOpen'] }) {
   const layout = layouts[unit.layout];
   const available = unit.status === 'available';
+  // for-sale apartments show their rendered interior (the furnished top view of the 360° tour)
+  const photo = available ? photoModels[layout.plan] : undefined;
 
   return (
     <group
@@ -148,22 +173,34 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
         onOpen(unit.id);
       }}
     >
-      {/* furnished like the apartment page, the floor painted in the apartment's own colour */}
-      <ApartmentModel
-        layout={layout}
-        finish={available ? defaultFinish : mutedFinish}
-        muted={!available}
-        floorColor={available ? flatColors[unit.plan] : undefined}
-      />
-      {/* tint room by room: the apartments interlock, so their bounding boxes overlap */}
-      {hovered &&
-        available &&
-        layout.rooms.map((r) => (
-          <mesh key={r.id} position={[r.x + r.w / 2, 0.03, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[r.w, r.d]} />
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={0.4} depthWrite={false} />
-          </mesh>
-        ))}
+      {photo ? (
+        <PhotoApartment
+          layout={layout}
+          model={photo}
+          tint={hovered ? '#2F6FDE' : undefined}
+          clipX={PHOTO_CLIP[unit.plan]}
+          lift={'ABCDEF'.indexOf(unit.plan) * 0.006}
+        />
+      ) : (
+        <>
+          {/* furnished like the apartment page, the floor painted in the apartment's own colour */}
+          <ApartmentModel
+            layout={layout}
+            finish={available ? defaultFinish : mutedFinish}
+            muted={!available}
+            floorColor={available ? flatColors[unit.plan] : undefined}
+          />
+          {/* tint room by room: the apartments interlock, so their bounding boxes overlap */}
+          {hovered &&
+            available &&
+            layout.rooms.map((r) => (
+              <mesh key={r.id} position={[r.x + r.w / 2, 0.03, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[r.w, r.d]} />
+                <meshBasicMaterial color="#2F6FDE" transparent opacity={0.4} depthWrite={false} />
+              </mesh>
+            ))}
+        </>
+      )}
     </group>
   );
 }
@@ -205,7 +242,7 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
   const hole = useMemo(() => (stair ? stairOpening(stair) : null), [stair]);
 
   return (
-    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.1, far: 400, position: [4, 40, 22] }}>
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 1, far: 400, position: [4, 40, 22] }}>
       <Lights />
       <FitCamera />
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
@@ -215,7 +252,7 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
         <CoreBlock key={space.id} space={space} />
       ))}
       {stair && <Stairs {...stair} wallH={WALL_H} cap />}
-      {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap />}
+      {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap color="#EDEBE6" />}
       {units.map((unit) => (
         <UnitOnFloor key={unit.id} unit={unit} hovered={hovered === unit.id} onHover={onHover} onOpen={onOpen} />
       ))}

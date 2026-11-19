@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
-import { useGLTF, useProgress } from '@react-three/drei';
-import { ExtrudeGeometry, Shape, type Mesh, type MeshStandardMaterial } from 'three';
-import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
+import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
 import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
@@ -14,7 +14,7 @@ import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
-import { fixPeople } from './people';
+import { fixPeople, usePeopleMotion } from './people';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -46,6 +46,9 @@ interface Props {
   onReady?: () => void;
   /** Loading progress of the models, 0-100. */
   onProgress?: (percent: number) => void;
+  /** A floor that was just picked: the camera flies in to it, then onZoomed is called. */
+  zoomTo?: FloorKey | null;
+  onZoomed?: () => void;
 }
 
 const MODEL_URL = '/models/complex.glb';
@@ -65,7 +68,8 @@ function extrude(outline: Pt[], height: number) {
 
 
 function Model() {
-  const { scene } = useGLTF(MODEL_URL, DRACO_URL);
+  const { scene, animations } = useGLTF(MODEL_URL, DRACO_URL);
+  usePeopleMotion(scene, animations);
   // The parked cars now come with the environment model, so the complex's own set is hidden.
   useMemo(() => {
     const cars = scene.getObjectByName('Cars');
@@ -99,7 +103,8 @@ const GROUND_COLORS: Record<string, string> = {
 };
 
 function Environment() {
-  const { scene } = useGLTF(ENV_URL, DRACO_URL);
+  const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
+  usePeopleMotion(scene, animations);
   useMemo(() => {
     fixPeople(scene);
     scene.traverse((o) => {
@@ -110,7 +115,8 @@ function Environment() {
       mesh.castShadow = mesh.receiveShadow = true;
       for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
         const color = GROUND_COLORS[m.name.replace(/\.\d{3}$/, '')];
-        if (color && 'color' in m) (m as MeshStandardMaterial).color.set(color);
+        // textured ground (photo textures, environment.blend) keeps its own colours
+        if (color && 'color' in m && !(m as MeshStandardMaterial).map) (m as MeshStandardMaterial).color.set(color);
       }
     });
   }, [scene]);
@@ -333,7 +339,68 @@ function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHo
   );
 }
 
-export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress }: Props) {
+/** Middle of a floor in scene coordinates (x = u, y = height, z = -v). */
+function floorPoint({ tower, floor }: FloorKey): Vector3 {
+  if (tower === 'B' || tower === 'C') {
+    const t = towerPlate(tower);
+    const y = floor >= ROOF_FLOOR ? ROOF_LEVEL + TECH_HEIGHT / 2 : floorLevel(floor) + FLOOR_HEIGHT / 2;
+    return new Vector3((t.u0 + t.u1) / 2, y, -(t.v0 + t.v1) / 2);
+  }
+  if (tower === 'D') {
+    const b = bounds(blockDOutline.map(blockDToSite));
+    const f = blockDFloors.find((x) => x.floor === floor);
+    return new Vector3((b.u0 + b.u1) / 2, f ? Math.max(1, (f.z0 + f.z1) / 2) : 2, -(b.v0 + b.v1) / 2);
+  }
+  const b = bounds(podiumOutline);
+  const f = podiumFloors.find((x) => x.floor === floor);
+  return new Vector3((b.u0 + b.u1) / 2, f ? Math.max(1, (f.z0 + f.z1) / 2) : 1, -(b.v0 + b.v1) / 2);
+}
+
+/** Zoom duration (seconds) when a floor is picked. */
+const ZOOM_TIME = 1.15;
+
+/**
+ * Flies the camera from wherever it is towards the picked floor, keeping the direction it was
+ * looking from, and closes in until the floor fills the view; then tells the page to open it.
+ */
+function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
+  const start = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; t1: Vector3; f0: number; k: number; done: boolean } | null>(null);
+  useEffect(() => {
+    const t1 = floorPoint(to);
+    const t0 = controls ? controls.target.clone() : t1.clone();
+    // approach from the side the camera is on, a little above the floor
+    const dir = camera.position.clone().sub(t1);
+    dir.y = Math.max(dir.y, dir.length() * 0.18);
+    const p1 = t1.clone().add(dir.normalize().multiplyScalar(16));
+    start.current = { p0: camera.position.clone(), t0, p1, t1, f0: camera.fov, k: 0, done: false };
+    if (controls) controls.enabled = false;
+    return () => {
+      if (controls) controls.enabled = true;
+    };
+  }, [to, camera, controls]);
+  useFrame((_, dt) => {
+    const z = start.current;
+    if (!z || z.done) return;
+    z.k = Math.min(1, z.k + dt / ZOOM_TIME);
+    // ease in, then accelerate into the building
+    const e = z.k < 0.5 ? 4 * z.k ** 3 : 1 - (-2 * z.k + 2) ** 3 / 2;
+    camera.position.lerpVectors(z.p0, z.p1, e);
+    const target = z.t0.clone().lerp(z.t1, Math.min(1, e * 1.4));
+    if (controls) controls.target.copy(target);
+    camera.lookAt(target);
+    camera.fov = MathUtils.lerp(z.f0, z.f0 * 0.8, e);
+    camera.updateProjectionMatrix();
+    if (z.k >= 1) {
+      z.done = true;
+      onDone?.();
+    }
+  });
+  return null;
+}
+
+export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress, zoomTo, onZoomed }: Props) {
   const anchors = useMemo<Anchor[]>(() => {
     // Block A, the podium: tag floats over the roof playground between the towers
     const a = bounds(terraceOutline);
@@ -350,11 +417,14 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   }, []);
 
   return (
-    <SafeCanvas flat shadows dpr={[1, 1.5]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+    <SafeCanvas shadows dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       <Suspense fallback={null}>
+        {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
+            see stays the Sun component's dome */}
+        <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
         <Environment />
         <Model />
         <WhenReady onReady={onReady} />
@@ -372,6 +442,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         </>
       )}
 
+      {zoomTo && <ZoomIn to={zoomTo} onDone={onZoomed} />}
       <Projector anchors={anchors} layer={layer} />
     </SafeCanvas>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -38,6 +38,28 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [touched, setTouched] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
+  // a picked floor: the 3D view zooms in to it, then the floor page opens
+  const [zoom, setZoom] = useState<{ key: FloorKey; href: string } | null>(null);
+  const open = (key: FloorKey, href: string) => {
+    if (zoom) return;
+    if (reducedMotion || !ready || tour.kind !== 'overview') {
+      router.push(href);
+      return;
+    }
+    router.prefetch(href);
+    setHovered(key);
+    setZoom({ key, href });
+  };
+  /** Lift buttons are links; a plain click zooms first instead of jumping straight there. */
+  const onLiftClick = (e: React.MouseEvent) => {
+    const a = (e.target as HTMLElement).closest('a');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    const m = a.getAttribute('href')?.match(/\/floors\/([A-D])\/([^/?#]+)/);
+    if (!m) return;
+    e.preventDefault();
+    const floor = m[2] === 'B1' ? 0 : Number(m[2]);
+    open({ tower: m[1] as BlockId, floor }, a.getAttribute('href')!);
+  };
   const [sun, setSun] = useState<SunSettings>(DEFAULT_SUN);
   // the 3D view stays under a loader until its models are in and drawn (see BuildingScene)
   const [ready, setReady] = useState(false);
@@ -132,7 +154,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               )}
             </span>
           </div>
-          <ol className="lift-buttons" aria-label={t.home.panelLabel}>
+          <ol className="lift-buttons" aria-label={t.home.panelLabel} onClick={onLiftClick}>
             {tower === 'A' &&
               podiumPanel.map((f) => (
                 <li key={f.floor}>
@@ -226,7 +248,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <div className="tower" onPointerDown={() => setTouched(true)}>
+      <div className={`tower${zoom ? ' is-zooming' : ''}`} onPointerDown={() => setTouched(true)}>
         <BuildingScene
           floors={floors}
           hovered={hovered}
@@ -234,8 +256,10 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             setHovered(key);
             if (key) setTower(key.tower);
           }}
-          onOpen={(key) => router.push(`/${locale}/floors/${key.tower}/${key.floor}`)}
-          autoRotate={ready && !touched && !reducedMotion && hovered === null}
+          onOpen={(key) => open(key, `/${locale}/floors/${key.tower}/${key.tower === 'A' || key.tower === 'D' ? (key.floor === 0 ? 'B1' : key.floor) : key.floor}`)}
+          autoRotate={ready && !touched && !reducedMotion && hovered === null && !zoom}
+          zoomTo={zoom?.key ?? null}
+          onZoomed={() => zoom && router.push(zoom.href)}
           layer={layer}
           tour={tour}
           sun={sun}

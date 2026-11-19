@@ -11,7 +11,7 @@ import { getPodiumFloor, listedSpaces, type Decor, type PodiumFloor, type Podium
 import { bounds, inPolygon, offsetPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import { Lights } from './ApartmentScene';
 import { SafeCanvas } from './SafeCanvas';
-import { fixPeople } from './people';
+import { fixPeople, usePeopleMotion } from './people';
 import { Escalators, Lifts, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -229,7 +229,7 @@ const BLOCK_A_URL = '/models/blocks/A.glb';
 const DRACO_URL = '/draco/';
 
 function RoofGarden({ cu, cv, z0 }: { cu: number; cv: number; z0: number }) {
-  const { scene } = useGLTF(BLOCK_A_URL, DRACO_URL);
+  const { scene, animations } = useGLTF(BLOCK_A_URL, DRACO_URL);
   const garden = useMemo(() => {
     fixPeople(scene);
     const g = new Group();
@@ -242,6 +242,7 @@ function RoofGarden({ cu, cv, z0 }: { cu: number; cv: number; z0: number }) {
     });
     return g;
   }, [scene]);
+  usePeopleMotion(garden, animations);
   // lifted onto the playground's floor tile (3 cm) so the paving is not hidden under it
   return <primitive object={garden} position={[-cu, -z0 + 0.03, cv]} />;
 }

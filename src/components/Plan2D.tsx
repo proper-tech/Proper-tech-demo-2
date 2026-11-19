@@ -1,3 +1,4 @@
+import { planPhotos, type PlanPhoto } from '@/data/planPhotos';
 import type { Layout } from '@/data/types';
 import { hasParts, m, roomArea, roomEdges } from '@/lib/geometry';
 
@@ -96,16 +97,78 @@ export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, mu
 
 /** A single apartment plan, north at the top as on the architect's drawings. */
 export function ApartmentPlan(props: Omit<PlanGroupProps, 'tx'>) {
+  const photo = planPhotos[props.layout.plan];
+  if (photo) return <PhotoPlan {...props} photo={photo} />;
   const { w, d } = props.layout;
   return (
     <svg className="plan-svg" viewBox={`-0.4 -0.4 ${w + 1.5} ${d + 0.8}`} role="img">
       <PlanGroup {...props} tx={{ ox: 0, sx: 1, oz: 0, sz: 1 }} />
-      <g className="plan-north" transform={`translate(${w + 0.6} 0.15)`}>
-        <path d="M0 -0.05 L0.22 0.5 L0 0.38 L-0.22 0.5 Z" />
-        <text x={0} y={0.85}>
-          N
-        </text>
-      </g>
+      <NorthArrow x={w + 0.6} />
+    </svg>
+  );
+}
+
+function NorthArrow({ x }: { x: number }) {
+  return (
+    <g className="plan-north" transform={`translate(${x} 0.15)`}>
+      <path d="M0 -0.05 L0.22 0.5 L0 0.38 L-0.22 0.5 Z" />
+      <text x={0} y={0.85}>
+        N
+      </text>
+    </g>
+  );
+}
+
+/**
+ * The plan as the furnished top view from the rendered 360° tour, with clickable rooms and their names and sizes
+ * (sizes from the layout, as in the room table).
+ */
+function PhotoPlan({ layout, names, showSizes, selected, onSelect, photo }: Omit<PlanGroupProps, 'tx'> & { photo: PlanPhoto }) {
+  const rooms = layout.rooms.filter((r) => !r.partOf && photo.rooms[r.id]);
+  return (
+    <svg className="plan-svg plan-photo" viewBox={`-0.1 -0.1 ${photo.w + 1.2} ${photo.h + 0.2}`} role="img">
+      <image href={photo.src} x={0} y={0} width={photo.w} height={photo.h} preserveAspectRatio="none" />
+      {rooms.map((r) => {
+        const [x, z, w, d] = photo.rooms[r.id];
+        return (
+          <rect
+            key={r.id}
+            className={`plan-photo-room${selected === r.id ? ' is-selected' : ''}${onSelect ? ' is-clickable' : ''}`}
+            x={x}
+            y={z}
+            width={w}
+            height={d}
+            rx={0.06}
+            onClick={onSelect ? () => onSelect(r.id) : undefined}
+          />
+        );
+      })}
+      {names &&
+        rooms.map((r) => {
+          const [x, z, w, d] = photo.rooms[r.id];
+          const name = names[r.id];
+          const roomy = showSizes && w >= 2 && d >= 2;
+          const size = roomy ? (hasParts(layout, r) ? `${m(roomArea(r, layout))} m²` : `${m(r.w)} × ${m(r.d)} m · ${m(roomArea(r, layout))} m²`) : '';
+          const fs = Math.min(0.26, (w - 0.2) / (name.length * 0.56));
+          const bw = Math.max(name.length * fs * 0.56, size.length * 0.2 * 0.5) + 0.36;
+          const bh = roomy ? 0.78 : fs + 0.26;
+          const cx = x + w / 2;
+          const cy = z + d / 2;
+          return (
+            <g key={r.id} className="plan-label plan-photo-label">
+              <rect x={cx - bw / 2} y={cy - bh / 2} width={bw} height={bh} rx={bh / 2 > 0.3 ? 0.18 : bh / 2} />
+              <text x={cx} y={roomy ? cy - 0.06 : cy + fs * 0.36} className="plan-name" style={{ fontSize: `${fs.toFixed(3)}px` }}>
+                {name}
+              </text>
+              {roomy && (
+                <text x={cx} y={cy + 0.26} className="plan-size" style={{ fontSize: '0.2px' }}>
+                  {size}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      <NorthArrow x={photo.w + 0.6} />
     </svg>
   );
 }

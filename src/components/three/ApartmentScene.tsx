@@ -8,6 +8,8 @@ import type { Finish, Layout } from '@/data/types';
 import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
 import { SafeCanvas } from './SafeCanvas';
+import { photoModels } from '@/data/photoModels';
+import { photoRoomCentre } from './PhotoApartment';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 
 export type SceneMode = 'model' | 'tour';
@@ -183,10 +185,18 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
     return best;
   }, [layout, room]);
   const photo = mode === 'tour' ? room.panorama : undefined;
+  // the ground under the drawn model (the rendered interior's picture needs none)
+  const base = photoModels[layout.plan] ? null : { x: layout.w / 2, z: layout.d / 2, w: layout.w + 0.5, d: layout.d + 0.5 };
   const anchors = useMemo<Anchor[]>(
     () =>
       mode === 'model'
-        ? layout.rooms.filter((r) => !r.partOf).map((r) => ({ id: `room:${r.id}`, position: [r.x + r.w / 2, 1.2, r.z + r.d / 2] }))
+        ? layout.rooms
+            .filter((r) => !r.partOf)
+            .map((r) => {
+              // over the room of the rendered interior where there is one
+              const c = (photoModels[layout.plan] && photoRoomCentre(layout, photoModels[layout.plan]!, r.id)) ?? [r.x + r.w / 2, r.z + r.d / 2];
+              return { id: `room:${r.id}`, position: [c[0], 1.2, c[1]] as [number, number, number] };
+            })
         : links.map((l) => ({ id: `door:${l.to.id}`, position: [l.opening.x, 1.15, l.opening.z] })),
     [mode, layout, links],
   );
@@ -213,10 +223,12 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
       {mode === 'model' ? (
         <>
           <OrbitRig layout={layout} />
-          <mesh position={[layout.w / 2, -0.03, layout.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[layout.w + 0.5, layout.d + 0.5]} />
-            <meshBasicMaterial color="#C5CDD6" />
-          </mesh>
+          {base && (
+            <mesh position={[base.x, -0.03, base.z]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[base.w, base.d]} />
+              <meshBasicMaterial color="#C5CDD6" />
+            </mesh>
+          )}
         </>
       ) : (
         <TourRig eye={eye} look={look} />
