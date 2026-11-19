@@ -25,6 +25,15 @@ for P in 'DEF':
     x0, y0, x1, y1 = CROP[P]
     c = im.crop((round((x0 - L) * sx), round((y0 - N) * sy), round((x1 - L) * sx), round((y1 - N) * sy)))
     w, h = x1 - x0, y1 - y0
+    if P == 'D':  # the long entry corridor renders dim; lift it to the rooms' brightness
+        ppm = c.width / w
+        box = (round((10.95 - x0) * ppm), round((11.4 - y0) * ppm), round((11.95 - x0) * ppm), round((13.9 - y0) * ppm))
+        a = np.asarray(c).astype(np.float32) / 255
+        lin = np.where(a <= .04045, a / 12.92, ((a + .055) / 1.055) ** 2.4)
+        sub = lin[box[1]:box[3], box[0]:box[2]] * 2.2
+        lin[box[1]:box[3], box[0]:box[2]] = sub
+        a = np.where(lin <= .0031308, lin * 12.92, 1.055 * np.power(np.clip(lin, 0, 1), 1 / 2.4) - .055)
+        c = Image.fromarray((np.clip(a, 0, 1) * 255 + .5).astype(np.uint8))
     rooms = {k: [round(a - x0, 3), round(b - y0, 3), round(cc - a, 3), round(d - b, 3)] for k, (a, b, cc, d) in ROOMS[P].items()}
     for Q, img, rm in ((P, c, rooms), ({v: k for k, v in MIRROR_OF.items()}[P], c.transpose(Image.FLIP_LEFT_RIGHT),
                        {k: [round(w - (x + ww), 3), y, ww, hh] for k, (x, y, ww, hh) in rooms.items()})):

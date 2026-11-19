@@ -59,3 +59,37 @@ export function tileTexture() {
   }
   return (tile = finish(canvas));
 }
+
+let stone: CanvasTexture | null = null;
+
+/** Large stone tiles for the corridors and lift lobby: 60 cm tiles, one repeat covers 2.4 m x 2.4 m. */
+export function stoneTexture() {
+  if (stone) return stone;
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const n = 4;
+  const t = size / n;
+  let seed = 11;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  ctx.fillStyle = '#cfc7ba';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const v = 232 + Math.round(rand() * 8 - 4);
+      ctx.fillStyle = `rgb(${v}, ${v - 4}, ${v - 11})`;
+      ctx.fillRect(i * t + 1.5, j * t + 1.5, t - 3, t - 3);
+      // faint veining
+      ctx.strokeStyle = 'rgba(160, 150, 135, 0.10)';
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(i * t + rand() * t, j * t + 2);
+        ctx.bezierCurveTo(i * t + rand() * t, j * t + t * 0.4, i * t + rand() * t, j * t + t * 0.6, i * t + rand() * t, j * t + t - 2);
+        ctx.stroke();
+      }
+    }
+  stone = finish(canvas);
+  return stone;
+}

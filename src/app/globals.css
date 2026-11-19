@@ -1404,7 +1404,53 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .plan-corridor {
-  fill: #dde2e7;
+  fill: #ebe6dd;
+  stroke: #b9b2a6;
+  stroke-width: 0.04;
+}
+
+.plan-lift rect {
+  fill: #f4f2ee;
+  stroke: #14233b;
+  stroke-width: 0.12;
+}
+
+.plan-lift path {
+  stroke: #9aa3ad;
+  stroke-width: 0.04;
+}
+
+.plan-lift-door {
+  stroke: #8a929b;
+  stroke-width: 0.14;
+}
+
+.plan-stair rect {
+  fill: #f4f2ee;
+  stroke: #14233b;
+  stroke-width: 0.12;
+}
+
+.plan-stair line {
+  stroke: #a9a59c;
+  stroke-width: 0.03;
+}
+
+.plan-stair .plan-stair-well {
+  stroke: #14233b;
+  stroke-width: 0.06;
+}
+
+.plan-stair-arrow {
+  fill: none;
+  stroke: #14233b;
+  stroke-width: 0.05;
+}
+
+.plan-core-name {
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 0.1px;
 }
 
 /* Floor plan: slab, column grid and the lift and stair core */
