@@ -61,6 +61,10 @@ const SKY_VERTEX = /* glsl */ `
 `;
 
 /** Pale at the horizon, blue overhead, brighter around the sun; warmer when the sun is low. */
+/** The sun itself is not drawn: only its light and the shadows it casts show where it is.
+ *  Set to true to bring the visible sun disc back. */
+const SHOW_SUN_DISC = false;
+
 const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 sunDir;
   uniform float low;
@@ -74,7 +78,7 @@ const SKY_FRAGMENT = /* glsl */ `
     vec3 zenith = mix(vec3(0.36, 0.56, 0.82), vec3(0.46, 0.56, 0.75), low * 0.5);
     vec3 col = mix(horizon, zenith, pow(h, 0.55));
     float d = max(dot(dir, sunDir), 0.0);
-    col += vec3(1.0, 0.90, 0.72) * (pow(d, 64.0) * 0.12 + pow(d, 8.0) * (0.05 + 0.1 * low));
+    col += vec3(1.0, 0.90, 0.72) * (pow(d, 8.0) * (0.05 + 0.1 * low));
     vec3 nightCol = mix(vec3(0.17, 0.22, 0.34), vec3(0.04, 0.07, 0.16), pow(h, 0.5));
     col = mix(col, nightCol, night);
     col *= mix(0.75, 1.0, clamp(brightness, 0.0, 1.0)) + max(brightness - 1.0, 0.0) * 0.15;
@@ -204,7 +208,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
           <shaderMaterial side={BackSide} depthWrite={false} uniforms={uniforms} vertexShader={SKY_VERTEX} fragmentShader={SKY_FRAGMENT} />
         </mesh>
         {/* the sun itself: a glowing disc that buildings and trees pass in front of */}
-        <sprite visible={!overview && up} position={[dx * DISC_DISTANCE, dy * DISC_DISTANCE, dz * DISC_DISTANCE]} scale={[DISC_SIZE, DISC_SIZE, 1]} renderOrder={-1} frustumCulled={false}>
+        <sprite visible={SHOW_SUN_DISC && !overview && up} position={[dx * DISC_DISTANCE, dy * DISC_DISTANCE, dz * DISC_DISTANCE]} scale={[DISC_SIZE, DISC_SIZE, 1]} renderOrder={-1} frustumCulled={false}>
           <spriteMaterial map={texture} transparent depthWrite={false} toneMapped={false} fog={false} />
         </sprite>
       </group>
@@ -212,7 +216,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
       <sprite
         ref={arcSun}
         name="DomeSun"
-        visible={showArc}
+        visible={SHOW_SUN_DISC && showArc}
         frustumCulled={false}
         scale={[DOME_DISC, DOME_DISC, 1]}
         renderOrder={10}
