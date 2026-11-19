@@ -51,9 +51,11 @@ npm run build && npm start
   entries in `openings`. The 3D model, 2D plan, tour and size table all come from this file.
 - **Real 360° photos**: put an equirectangular JPG in `public/` and set `panorama: '/media/living.jpg'`
   on a room. The tour then shows the photo for that room instead of the 3D model.
-- **360° tour of apartment D**: `public/tour/index.html`, served at `/tour`. It is one
-  self-contained file (panoramas, plan and scripts inside), exported from the interior package;
-  replace the file to update it. It does not use the site's code or data.
+- **Rendered 360° tours**: one self-contained file per plan (panoramas, plan and scripts inside) in
+  `public/tour/<plan>/index.html`, served at `/tour/<plan>` (`/tour` is plan D). They replace the 3D
+  tour on apartment pages of the plans listed in `PHOTO_TOURS` (`ApartmentExperience.tsx`). Plan C's
+  is plan D's mirrored (`interior/tools/mirror_tour.py`): photos flipped and turned half a turn, plan
+  points mirrored about the middle of the top view. They do not use the site's code or data.
 - **Video**: replace `public/media/intro.mp4`.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the
