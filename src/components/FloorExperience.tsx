@@ -12,6 +12,7 @@ import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { layoutArea, m } from '@/lib/geometry';
 import { PlanGroup, type PlanTx } from './Plan2D';
+import { photoModels } from '@/data/photoModels';
 import { unitCentre } from './three/FloorScene';
 
 const FloorScene = dynamic(() => import('./three/FloorScene'), {
@@ -104,6 +105,8 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 const layout = layouts[u.layout];
                 const tx = planTx(layout);
                 const available = u.status === 'available';
+                // for-sale apartments: the furnished top view of the 360° tour
+                const photo = available ? photoModels[layout.plan] : undefined;
                 const [X, Y] = unitCentre(layout);
                 const cx = PX(X);
                 const cy = PY(Y);
@@ -116,7 +119,23 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                     onMouseLeave={() => setHovered(null)}
                     onClick={available ? () => open(u.id) : undefined}
                   >
-                    <PlanGroup layout={layout} tx={tx} muted={!available} />
+                    {photo ? (
+                      <>
+                        <image
+                          href={photo.image.src}
+                          x={PX(photo.image.rect[0])}
+                          y={PY(photo.image.rect[3])}
+                          width={photo.image.rect[2] - photo.image.rect[0]}
+                          height={photo.image.rect[3] - photo.image.rect[1]}
+                          preserveAspectRatio="none"
+                        />
+                        {Object.entries(photo.rooms).map(([id, r]) => (
+                          <rect key={id} className="plan-photo-unit-room" x={PX(r[0])} y={PY(r[3])} width={r[2] - r[0]} height={r[3] - r[1]} />
+                        ))}
+                      </>
+                    ) : (
+                      <PlanGroup layout={layout} tx={tx} muted={!available} />
+                    )}
                     <text className="plan-unit-id" x={cx} y={cy}>
                       {u.id}
                     </text>

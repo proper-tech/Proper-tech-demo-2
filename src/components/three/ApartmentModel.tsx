@@ -6,6 +6,8 @@ import type { ThreeEvent } from '@react-three/fiber';
 import type { Finish, Layout, Room } from '@/data/types';
 import { maxCeiling, roomEdges, type Edge } from '@/lib/geometry';
 import { Furniture } from './Furniture';
+import { photoModels } from '@/data/photoModels';
+import { PhotoApartment } from './PhotoApartment';
 import { tileTexture, woodTexture } from './textures';
 
 // The apartment is generated from the layout data. Walls are single-sided planes that
@@ -154,7 +156,14 @@ export interface ApartmentModelProps {
   onSelectRoom?: (id: string) => void;
 }
 
-export function ApartmentModel({ layout, finish, muted, floorColor, selectedRoom, onSelectRoom }: ApartmentModelProps) {
+/** The rendered interior (photo model) where the plan has one and the apartment is for sale, else the drawn model. */
+export function ApartmentModel(props: ApartmentModelProps) {
+  const photo = props.muted ? undefined : photoModels[props.layout.plan];
+  if (photo) return <PhotoApartment layout={props.layout} model={photo} selectedRoom={props.selectedRoom} onSelectRoom={props.onSelectRoom} />;
+  return <DrawnApartmentModel {...props} />;
+}
+
+function DrawnApartmentModel({ layout, finish, muted, floorColor, selectedRoom, onSelectRoom }: ApartmentModelProps) {
   const H = maxCeiling(layout);
 
   const mats = useMemo<Mats>(() => {
