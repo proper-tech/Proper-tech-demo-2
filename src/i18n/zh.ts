@@ -24,6 +24,13 @@ const zh: Dict = {
     closet: '衣帽间',
     balcony: '阳台',
   },
+  webgl: {
+    title: '无法启动 3D 视图',
+    blocked: '浏览器已为本网站关闭 3D（WebGL），通常是显卡内存不足或无响应所致。请完全关闭浏览器后重新打开并刷新页面。',
+    lostTitle: '3D 视图已中断',
+    lost: '显卡中断了 3D 视图。请刷新页面以恢复。',
+    reload: '刷新',
+  },
   sun: {
     label: '日照',
     direction: '方向',

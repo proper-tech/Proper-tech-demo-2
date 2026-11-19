@@ -29,6 +29,13 @@ const en = {
     closet: 'Walk-in closet',
     balcony: 'Balcony',
   },
+  webgl: {
+    title: 'The 3D view could not start',
+    blocked: 'Your browser has turned off 3D (WebGL) for this site, usually after the graphics card ran out of memory or stopped responding. Close the browser completely, open it again and reload.',
+    lostTitle: 'The 3D view stopped',
+    lost: 'The graphics card dropped the 3D view. Reload the page to bring it back.',
+    reload: 'Reload',
+  },
   sun: {
     label: 'Sun',
     direction: 'Direction',

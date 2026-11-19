@@ -1,12 +1,13 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import { BackSide, Euler, MathUtils, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
 import type { Finish, Layout } from '@/data/types';
 import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
+import { SafeCanvas } from './SafeCanvas';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 
 export type SceneMode = 'model' | 'tour';
@@ -191,7 +192,7 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 40, near: 0.05, far: 300, position: [layout.w / 2, 14, layout.d + 12] }}>
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 40, near: 0.05, far: 300, position: [layout.w / 2, 14, layout.d + 12] }}>
       <color attach="background" args={[mode === 'tour' ? '#D3E3F3' : '#E9EDF0']} />
       <Lights />
 
@@ -221,6 +222,6 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
         <TourRig eye={eye} look={look} />
       )}
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }

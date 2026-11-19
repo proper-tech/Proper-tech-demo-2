@@ -2068,3 +2068,40 @@ button {
   color: #8e9bab;
   font-size: 0.8125rem;
 }
+
+/* In place of a 3D view that could not start or stopped (SafeCanvas) */
+.webgl-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 9; /* under the page heading, so the plan view stays reachable */
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--board, #eef1f4);
+  text-align: center;
+}
+
+.webgl-fallback ~ *,
+:has(.webgl-fallback) .stage-loader {
+  /* the 3D loader would wait for ever */
+  display: none;
+}
+
+.webgl-fallback > div {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  max-width: 28rem;
+}
+
+.webgl-fallback b {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  color: var(--ink);
+}
+
+.webgl-fallback p {
+  margin: 0;
+  color: var(--stone);
+  font-size: 0.9rem;
+}

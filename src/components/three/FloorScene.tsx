@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { ExtrudeGeometry, Path, Shape } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
@@ -11,6 +11,7 @@ import { getPodiumFloor } from '@/data/podium';
 import type { Layout, Unit } from '@/data/types';
 import { maxCeiling } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
+import { SafeCanvas } from './SafeCanvas';
 import { Lights } from './ApartmentScene';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
@@ -204,7 +205,7 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
   const hole = useMemo(() => (stair ? stairOpening(stair) : null), [stair]);
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.1, far: 400, position: [4, 40, 22] }}>
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.1, far: 400, position: [4, 40, 22] }}>
       <Lights />
       <FitCamera />
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
@@ -219,6 +220,6 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
         <UnitOnFloor key={unit.id} unit={unit} hovered={hovered === unit.id} onHover={onHover} onOpen={onOpen} />
       ))}
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }

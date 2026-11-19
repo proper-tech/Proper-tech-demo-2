@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useMemo, type ReactNode } from 'react';
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { ExtrudeGeometry, Group, Path, Shape, Vector3, type Mesh } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -10,6 +10,7 @@ import { defaultFinish } from '@/data/finishes';
 import { getPodiumFloor, listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType } from '@/data/podium';
 import { bounds, inPolygon, offsetPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import { Lights } from './ApartmentScene';
+import { SafeCanvas } from './SafeCanvas';
 import { fixPeople } from './people';
 import { Escalators, Lifts, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
@@ -397,7 +398,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.5, far: 600, position: [48 * k, 70 * k, 62 * k] }}>
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.5, far: 600, position: [48 * k, 70 * k, 62 * k] }}>
       <Lights />
       {terrace ? (
         <CameraRig
@@ -480,6 +481,6 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
       )}
 
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }

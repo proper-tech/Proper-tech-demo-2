@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls, Sky, useGLTF } from '@react-three/drei';
 import { DoubleSide, Euler, ExtrudeGeometry, MathUtils, Object3D, Path, Shape, type Mesh, type PerspectiveCamera, type Texture } from 'three';
 import type { Rect } from '@/data/building';
@@ -24,6 +24,7 @@ import type { FurnitureItem } from '@/data/types';
 import { bounds, inPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import type { WalkGrid } from '@/lib/walk';
 import { Lifts, Rail, Stairs, stairOpening, type StairSpec } from './Cores';
+import { SafeCanvas } from './SafeCanvas';
 import { fixPeople } from './people';
 import { Furniture } from './Furniture';
 import { PART_T, capturePoints, partitionRuns, walkGridFor } from './walkGrid';
@@ -1060,7 +1061,7 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
   );
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ fov: 38, near: 0.3, far: 1200, position: [9 + 26, 36, -15 + 34] }}>
+    <SafeCanvas shadows dpr={[1, 1.5]} camera={{ fov: 38, near: 0.3, far: 1200, position: [9 + 26, 36, -15 + 34] }}>
       {isWalk && floor.z0 >= 0 && <Sky distance={4500} sunPosition={[120, 60, 80]} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />}
       {isWalk && floor.z0 < 0 && <color attach="background" args={['#2A2E33']} />}
       {/* reflections for paint, glass and steel: strip lights and a bright sky, made in the scene
@@ -1206,7 +1207,7 @@ export default function DFloorScene({ floor, lower, upper, walk, view, label, la
       {isWalk && <Ceiling h={storey} holes={ceilingHoles} upper={upper ? upper.z1 - upper.z0 : undefined} duct={parking && storey >= 3.2} />}
 
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }
 

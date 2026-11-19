@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { useGLTF, useProgress } from '@react-three/drei';
 import { ExtrudeGeometry, Shape, type Mesh, type MeshStandardMaterial } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, towerPlate, towers, type FloorSummary } from '@/data/building';
@@ -11,6 +11,7 @@ import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
 import type { BlockId, TowerId } from '@/data/types';
 import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople } from './people';
@@ -349,7 +350,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   }, []);
 
   return (
-    <Canvas flat shadows dpr={[1, 2]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+    <SafeCanvas flat shadows dpr={[1, 1.5]} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
@@ -372,6 +373,6 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       )}
 
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }
