@@ -89,7 +89,7 @@ r.image_settings.color_mode = 'RGBA'
 sc.cycles.samples = samples
 sc.cycles.use_adaptive_sampling = True
 sc.cycles.use_denoising = True
-r.filepath = out + '.png'
+r.filepath = os.path.abspath(out) + '.png'  # absolute: Blender resolves relative render paths its own way
 os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 bpy.ops.render.render(write_still=True)
 json.dump({'rect': RECT}, open(out + '.json', 'w'))
