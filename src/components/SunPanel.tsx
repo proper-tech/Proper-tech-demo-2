@@ -20,7 +20,7 @@ const SEASONS = [
 ] as const;
 
 /** Clock times of the architect's sun study (sheet 11, БНбД 23-04-07 §3.2). */
-const STUDY_TIMES = [9 * 60, 12 * 60, 15 * 60, 17 * 60];
+const STUDY_TIMES = [9 * 60, 12 * 60, 15 * 60, 17 * 60, 21 * 60];
 
 /** A full day plays in this many seconds. */
 const DAY_SECONDS = 16;
