@@ -1,0 +1,81 @@
+00:00.031  color_management | Using config from OCIO: "/Applications/Blender.app/Contents/Resources/5.4/datafiles/colormanagement/config.ocio"
+bl_ext.blender_org.CAD_Sketcher:{INFO}: Logging into: /var/folders/c9/jhg34_9d70q5ltw3kh042cdr0000gn/T/bl_ext.blender_org.CAD_Sketcher-badral.log
+16:49:26 CLIENT INFO     Logging into: /var/folders/c9/jhg34_9d70q5ltw3kh042cdr0000gn/T/bl_ext.blender_org.CAD_Sketcher-badral.log
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <save_pre> builtin handlers: 
+  - write_addon_version
+16:49:26 CLIENT DEBUG    Append <save_pre> builtin handlers: 
+  - write_addon_version
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <load_post> builtin handlers: 
+  - on_load_post
+16:49:26 CLIENT DEBUG    Append <load_post> builtin handlers: 
+  - on_load_post
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <depsgraph_update_post> builtin handlers: 
+  - on_depsgraph_update
+16:49:26 CLIENT DEBUG    Append <depsgraph_update_post> builtin handlers: 
+  - on_depsgraph_update
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <frame_change_post> builtin handlers: 
+  - on_frame_change
+16:49:26 CLIENT DEBUG    Append <frame_change_post> builtin handlers: 
+  - on_frame_change
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <undo_post> builtin handlers: 
+  - on_undo_redo
+16:49:26 CLIENT DEBUG    Append <undo_post> builtin handlers: 
+  - on_undo_redo
+bl_ext.blender_org.CAD_Sketcher.handlers:{DEBUG}: Append <redo_post> builtin handlers: 
+  - on_undo_redo
+16:49:26 CLIENT DEBUG    Append <redo_post> builtin handlers: 
+  - on_undo_redo
+Traceback (most recent call last):
+  File "/Applications/Blender.app/Contents/Resources/5.4/scripts/modules/addon_utils.py", line 464, in enable
+    mod = importlib.import_module(module_name)
+  File "/Applications/Blender.app/Contents/Resources/5.4/python/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/__init__.py", line 25, in <module>
+    from .properties import BookGenProperties, BookGenGroupingProperties, BookGenAddonProperties
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/properties.py", line 49, in <module>
+    class BookGenAddonProperties(bpy.types.PropertyGroup):
+    ...<68 lines>...
+        )
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/properties.py", line 55, in BookGenAddonProperties
+    outline = BookGenShelfOutline()
+  File "/Users/badral/Library/Application Support/Blender/5.4/scripts/addons/bookGen/ui_outline.py", line 26, in __init__
+    self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                  ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+SystemError: GPU functions for drawing requires the gpu module to be initialized. See gpu.init.
+BlenderMCP addon registered
+[INFO ] services.locationservice ...............: Not adding link to MakeHuman user data, since neither explicit path nor auto-discovery is set in preferences.
+[INFO ] mpfb.init ..............................: Build info 20261010
+[INFO ] mpfb.init ..............................: MPFB initialization has finished.
+ℹ️  blendkit: Verbose is enabled [16:49:28.350, addon_updater.py:158]
+ℹ️  blendkit: Read in JSON settings from file [16:49:28.351, addon_updater.py:158]
+ℹ️  blendkit: Ports reordered so first port is now 62485 (previous index was 0) [16:49:28.352, client_lib.py:163]
+Created history step 39dff869-ee1e-4e29-8649-0664627d2dc4
+ℹ️  blendkit: Created new search history step [16:49:28.387, search.py:2744]
+ℹ️  blendkit: No temporarily enabled addons to clean up [16:49:28.387, download.py:440]
+00:05.078  blend            | Read blend: "/Users/badral/Desktop/tenger-residence 2/interior/A1.blend"
+ℹ️  blendkit: No temporarily enabled addons to clean up [16:49:28.475, download.py:440]
+Plan A1: 5 panoramas, 96 samples, device METAL
+03:50.503  render           | Saved: '/Users/badral/Desktop/tenger-residence 2/interior/renders/A1/entry.jpg'
+ok A1 entry 225 s
+07:32.680  render           | Saved: '/Users/badral/Desktop/tenger-residence 2/interior/renders/A1/atrium.jpg'
+ok A1 atrium 222 s
+10:13.836  render           | Saved: '/Users/badral/Desktop/tenger-residence 2/interior/renders/A1/market.jpg'
+ok A1 market 161 s
+13:55.441  render           | Saved: '/Users/badral/Desktop/tenger-residence 2/interior/renders/A1/aisle.jpg'
+ok A1 aisle 222 s
+17:52.815  render           | Saved: '/Users/badral/Desktop/tenger-residence 2/interior/renders/A1/fresh.jpg'
+ok A1 fresh 237 s
+DONE A1
+BlenderMCP addon unregistered
+ℹ️  blendkit: Unregistering Blendkit add-on [17:07:17.604, __init__.py:3089]
+ℹ️  blendkit: No temporarily enabled addons to clean up [17:07:17.623, download.py:440]
+Blender 5.4.0 Alpha (hash 8306860f963f built 2026-11-04 01:49:38)
+
+Blender quit

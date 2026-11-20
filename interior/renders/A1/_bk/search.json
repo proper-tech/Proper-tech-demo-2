@@ -1,0 +1,787 @@
+[
+ {
+  "q": "supermarket gondulas with products",
+  "name": "Supermarket gondulas with products",
+  "id": "39523d5e-fcc4-4e7c-a864-9cf32d77c0a7",
+  "base": "afe0f7a6-d2f4-4c4f-9d47-e6560be2333b",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/39523d5efcc44e7ca8649cf32d77c0a7/files/thumbnail_ec63ec1f-3fab-4822-a460-6f441dee6e65.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/35c51464-18e3-4d68-8fe8-19b91e32bd60/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/c8a9f34a-e768-457d-9e44-56af597470b7/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/b3d9e43a-87e7-4b68-8eb5-d3e10c344aba/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/574eff8d-3919-479d-9ac0-54197d0f8e6d/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/657b4944-b9ea-41b1-94e2-f8166ce82e60/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/ac76234b-6204-45bd-a508-c138e9f9bc37/"
+  },
+  "faces": null
+ },
+ {
+  "q": "canned food",
+  "name": "Rose Dragon (Rigged)",
+  "id": "f61413b8-04f2-4b8a-ab4f-79dc0521571d",
+  "base": "6c1d9e39-4f47-4b63-bbbf-9686a3977716",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/f61413b804f24b8aab4f79dc0521571d/files/thumbnail_dd2251f4-1129-4e2f-b025-7da29cf16fce.png.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/f88e9119-a045-4a82-87c0-12aa992b5567/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/4abf73e6-9bfb-44d3-a34b-e85a8cc7236f/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/9bf7db3f-e182-4fd0-9946-c71f27cbdaff/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/0cf37abf-a99b-4e66-a64a-cba313ae0468/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/3ce52a04-cc00-4a53-b3d9-c19b7638c012/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/502e4dba-9e55-4406-a322-95e4476e442b/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/10da1aa0-ebb3-456d-85cf-91d260e63412/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/91530437-c6fd-45bd-b630-de6db87a1194/"
+  },
+  "faces": 4940
+ },
+ {
+  "q": "canned food",
+  "name": "Russian Food Cans 01",
+  "id": "07f9d158-c231-45c2-b855-5d9979fcdb23",
+  "base": "83beeef4-b5d4-4f46-a8a5-fb4d2f226d7d",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/07f9d158c23145c2b8555d9979fcdb23/files/thumbnail_b652e523-d571-4107-8fa1-4374b596001b.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/2ab0d48d-91dd-44bd-9a20-324f594aad42/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/6ea2a871-f72c-4fce-ae7e-3d5930839f41/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/90b856d9-abe9-4214-9a4b-90e23558c950/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/b325c515-6b44-4f39-9b46-d8e57088aa09/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/e10fc708-db30-42d7-a72f-fc0ba9b65715/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/aa138ea3-5e36-4117-b667-690a0480f5b7/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/ce761a34-df84-4754-b316-0085701a2f55/"
+  },
+  "faces": null
+ },
+ {
+  "q": "canned food",
+  "name": "(JR art luxury Fridge Concept)",
+  "id": "158ff0f5-75a8-4cbe-aac1-d94affb42f9d",
+  "base": "71338bb3-1905-4461-8ce0-e048cd144cd1",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/158ff0f575a84cbeaac1d94affb42f9d/files/thumbnail_4864b250-56e7-43af-8a50-8049d1d6a809.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/7ece6b18-4c5a-4a6a-bd78-6beabd89332f/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/dc36aec6-1360-48b8-ae8e-4cee086c4a5a/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/69b94bf1-cd0f-4a87-9b83-d644419e45e6/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/643cd906-338a-40b5-8ec6-711d79524c07/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/a7252416-d99f-4ae9-96be-7a869ef580b3/"
+  },
+  "faces": 18176
+ },
+ {
+  "q": "glass jar food",
+  "name": "Glass jar",
+  "id": "25347d44-5ed9-4030-aca2-b40dfe932dd4",
+  "base": "fcfa99d5-1694-4d13-8699-d31911ecb83b",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/25347d445ed94030aca2b40dfe932dd4/files/thumbnail_0db7555b-c1a8-4ebd-8dd0-7013b7de0964.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/98504679-eef0-4f84-97a2-379320f945e8/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/691f976a-f41d-453d-8dd1-b74faac1f098/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/72d7c061-5b68-4305-8d58-39b53f31ef2f/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/ada0c619-456b-4e94-b9bb-151c0e85c5ba/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/9473d6c2-ebb2-41e4-a68b-68336e020599/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/6a5624c3-b386-41b9-833c-dc08e0f5fde6/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/0db7555b-c1a8-4ebd-8dd0-7013b7de0964/"
+  },
+  "faces": 2740
+ },
+ {
+  "q": "water bottle plastic",
+  "name": "PetBottle",
+  "id": "a7a975fa-c7b9-42df-8357-4c1765fc00ac",
+  "base": "bd1aae1a-0a0d-4a1c-8840-817fa93ae27f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/a7a975fac7b942df83574c1765fc00ac/files/thumbnail_b512890e-8d7d-4570-91a4-dbf213e794b4.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/bc264902-cda1-435e-a134-4f76130817a5/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/638c7491-6be1-43a9-8d90-24f39938b811/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/288dbad2-7be9-459b-b947-64b8422c4b4e/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/b512890e-8d7d-4570-91a4-dbf213e794b4/"
+  },
+  "faces": 5598
+ },
+ {
+  "q": "water bottle plastic",
+  "name": "Plastic watter bottle",
+  "id": "34279138-326c-4668-81a6-e087e65ab406",
+  "base": "a58d45fd-f351-41e5-a244-fc7b2030a591",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/34279138326c466881a6e087e65ab406/files/thumbnail_437749c9-b0d2-480b-bb7c-fe4f361f592d.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/084171a2-c1b5-4f75-a934-fdc0bb1fcd57/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/93098d16-0637-44bd-b429-7086ee5faac1/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/2af91c6e-fb12-401b-bd6c-c27de1d23c11/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/8d5f57ca-2a74-453a-bbde-874ca5b746a1/"
+  },
+  "faces": 3942
+ },
+ {
+  "q": "water bottle plastic",
+  "name": "Plastic water bottle",
+  "id": "8d143f48-0f76-4d6b-88e5-0185df64b98b",
+  "base": "eda42454-e487-41b4-aa93-9b673c0436f8",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/8d143f480f764d6b88e50185df64b98b/files/thumbnail_88f08b2c-4f18-46a8-9b90-fc25cfa7e018.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/6ab9934f-b47c-4726-ba5e-d860df876765/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/c5a54b7a-5700-4748-81f3-dab3df0ce977/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/75d0c636-93ac-4f7d-80c9-8761b31eceda/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/b760a0a6-fa6a-4045-a350-f3ca6af465f0/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/3a25914b-ed32-438d-b709-dfbe5bcb95f3/"
+  },
+  "faces": 9049
+ },
+ {
+  "q": "liquid detergent bottle",
+  "name": "Tide Detergent",
+  "id": "6599619a-bc32-4088-a852-a31c9646cb5c",
+  "base": "7178d5b9-1183-4c2a-9f3f-fbf4acdaf322",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/6599619abc324088a852a31c9646cb5c/files/thumbnail_9c68070d-2143-4535-8b24-e0d8d0c75508.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/594dd2cb-a51c-4b60-a495-e18373925d17/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/06eec254-27e1-4539-8cab-ae34a5c66c71/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/30f36123-9441-40a2-b63e-5bd624883586/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/948e4d4d-6196-48ba-a7de-ed1130de3ece/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/8fb48345-d7a0-4e7a-880d-91e6b2e70d87/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/fcf627a7-cd43-43c6-8b1d-54e06022a43f/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/384b5d22-b991-4446-81f6-96c07c6898ef/"
+  },
+  "faces": 9752
+ },
+ {
+  "q": "liquid detergent bottle",
+  "name": "Liquid detergent bottle",
+  "id": "9b191b2e-3c54-4033-adef-a2ace8d14d70",
+  "base": "e508d905-82f6-4e93-8dd3-b591067dfa32",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/9b191b2e3c544033adefa2ace8d14d70/files/thumbnail_935e5049-428d-424a-ae3c-dad336a6048b.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/ce2e1b54-cad9-4109-b659-daa3bda09088/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/8043cb1d-2a53-464e-8b84-64af3d7abc01/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/f8e4597d-4d00-4e8a-9205-1be17376a62b/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/1664fc96-d63b-428c-8f70-3b75c70a6726/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/bd1b54cf-af8c-4240-a974-eb663ad7583d/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/2e22c786-8c56-4310-9ef6-8167469eed96/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/43d05b50-0d83-4cfc-be7c-1b3c7fa4f6db/"
+  },
+  "faces": 1384
+ },
+ {
+  "q": "yogurt",
+  "name": "Joghurt Tubs",
+  "id": "32ca4679-ea7d-4732-9c96-9633b0b94ebd",
+  "base": "f7d9fd86-6063-4eee-8019-e6908e51c39e",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/32ca4679ea7d47329c969633b0b94ebd/files/thumbnail_2e04010c-7633-4be6-a2eb-298843e9b9c9.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/839846fd-1bd9-4d12-9db8-0fab328937bb/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/3d2c660e-f1da-485f-a970-d8641a138a83/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/bc6ec89e-4724-427c-bbc5-810c35082c78/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/dce5d160-f949-4f2b-a5d6-9fd87606d2fa/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/91682397-0751-43d8-b4a7-5ac276eccbb1/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/003ccc4a-1512-4160-b154-939972940654/"
+  },
+  "faces": 2112
+ },
+ {
+  "q": "bread loaf",
+  "name": "Sunflower Seed Bread",
+  "id": "a35a0fa5-9fe8-4264-9d84-fb96a2ff8970",
+  "base": "01f59b6e-6cd3-4b27-b90d-c97557652f7f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/a35a0fa59fe842649d84fb96a2ff8970/files/thumbnail_1e6e0c5c-901f-4475-8009-ee3453371552.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/3b031dd0-1c1f-4cce-a479-52fdbe2fd217/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/71039325-64a0-49dd-88e5-6ed37e203cba/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/de109c6a-88fc-44b1-baa9-39196e590c89/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/50262a2c-69bd-4784-8ca4-7a657a903706/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/feb35d0b-721c-4980-8c0e-75c93647ddbe/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/7af64e9f-2153-439b-8141-1d720cc994c6/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/1989b96a-9ca0-4074-b544-827cb1941fc1/"
+  },
+  "faces": 1556
+ },
+ {
+  "q": "bread loaf",
+  "name": "A loaf of bread",
+  "id": "5ed278b4-a9b6-4c1a-893a-9faad244356f",
+  "base": "582c2c7e-911f-4361-8b05-71ac2df28e7c",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/5ed278b4a9b64c1a893a9faad244356f/files/thumbnail_1a540396-30a2-4308-8086-895557696ef8.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/c65d04b7-bf51-4da4-af69-a93cddabae37/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/09378095-4a16-4799-8866-bac3fcbed52d/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/6846d027-4a12-4647-b002-88b6d5181970/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/88031cd5-cb10-4587-aa39-96088a020711/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/a2786e27-8a1f-4ba1-9b52-762531742e4b/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/2dc298fa-53df-4552-ba38-9cba50fc22c1/"
+  },
+  "faces": 832
+ },
+ {
+  "q": "bread loaf",
+  "name": "Bread",
+  "id": "39815648-6a20-4288-a10d-c592ff417e39",
+  "base": "91b36e9a-bc3e-4b6e-b052-444b7f5bc41f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/398156486a204288a10dc592ff417e39/files/thumbnail_e747dc7b-6cae-4413-8b42-2b71e7c78779.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/0e33fd3a-2e2d-4898-ae16-113740ecce1b/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/d969a44b-c6e4-4f69-8367-56e62471d2ae/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/12b304e4-66ae-4f78-b0e8-a046a69512c0/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/11313504-fe10-4fcd-82cd-cbc32e364c7e/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/3ac90632-7092-40f1-864f-085ddc8e9a81/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/3744d70f-0541-45d2-8c0a-c35fa6fc0285/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/fb1f0b35-f3b6-43dc-a962-980aab528e73/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/d771f818-cf59-42a3-8e1f-0b55e31ab570/"
+  },
+  "faces": 74938
+ },
+ {
+  "q": "tea boxes",
+  "name": "Vintage Tea Box",
+  "id": "0c8dd343-9151-449f-9844-7dfe67a28725",
+  "base": "cf660761-9db6-4946-8aa6-c43a13f7c1e3",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/0c8dd3439151449f98447dfe67a28725/files/thumbnail_21888bc4-64e3-4c84-a16e-7400abc52f4d.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/48c5f1d8-045b-425b-87ce-4f0de35c7c0a/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/3484ec86-2718-4a0b-a01e-70e3d823c8d4/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/708f1b65-4310-4d36-8a03-dd03be2f1844/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/e6604ec5-35f2-48b0-a452-788d47cd27ea/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/bf45c4cb-7deb-439d-8ba1-ef28b8d63ed5/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/63ffa713-cb09-47e3-b628-1a649636e802/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/069e4844-5f3a-453c-8cc1-6f54e18bd79c/"
+  },
+  "faces": 328
+ },
+ {
+  "q": "tea boxes",
+  "name": "Nestea Tea Boxes Set",
+  "id": "ea4b40a2-6c8f-4c06-8f3f-4e266d44ac5c",
+  "base": "f4b25620-ce1d-40a8-80f9-31da36e172b5",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/ea4b40a26c8f4c068f3f4e266d44ac5c/files/thumbnail_b991f942-d6c5-43a1-9e71-a425b0188092.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/36afebff-916d-4932-9626-39cb119f018f/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/a3330b19-db67-475f-b1a6-a5f468441eae/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/fceaf456-7b6a-4ce3-98d7-9dba8c9b4cb8/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/b7178f32-1059-455e-be8a-11925ef82208/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/1746b9d4-52f5-49f4-8b01-1eab9b1bd565/"
+  },
+  "faces": 522
+ },
+ {
+  "q": "tea boxes",
+  "name": "Tea boxes",
+  "id": "e9fd6d31-30b2-494f-b610-3a8cc4c890e0",
+  "base": "22413667-5e3f-4f56-81d9-98c2d88e258f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/e9fd6d3130b2494fb6103a8cc4c890e0/files/thumbnail_79664b09-8da0-4b94-9cc2-b3e43e545ba9.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/e144a5b4-2c94-43f5-b0e8-193dcbddb924/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/dc6644c6-edc0-44ae-87ca-a31fb6d94e6d/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/d5f7898a-5867-4bf0-b98b-f29152aef836/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/3bb308a5-cd82-4393-8db3-4e3787bae51f/"
+  },
+  "faces": 522
+ },
+ {
+  "q": "ketchup bottle",
+  "name": "Ketchup bottle",
+  "id": "e77e7ac3-fb33-4064-a706-32aeca9f65fb",
+  "base": "596aeb20-ae1b-4f20-b373-dd59c3268e30",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/e77e7ac3fb334064a70632aeca9f65fb/files/thumbnail_ec8a381b-85db-45bc-9bf1-ebd3407705ae.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/61f5cc7c-8eaf-4153-ab54-184c24b10757/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/c78d1c2a-a65d-41a5-a9c3-70a6c5a0d962/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/3dbc9187-d0d1-4be3-8465-50f960bdda54/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/a49abb46-393f-47aa-a364-d527290b48ba/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/82e6c69a-4ee7-4c83-af94-084bef9a5481/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/26b79ed8-d3a2-4908-b607-49b53de7a9cc/"
+  },
+  "faces": 973
+ },
+ {
+  "q": "ketchup bottle",
+  "name": "IKEA Grilltider Squeeze Bottle",
+  "id": "21f33d0f-0433-4b7a-a12a-a3b5f91d9365",
+  "base": "f618b760-0cf5-4e88-8a9e-7a00c890c91d",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/21f33d0f04334b7aa12aa3b5f91d9365/files/thumbnail_d4d13bff-57ba-4b38-b470-fd8ad2f46bc8.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/78c9aba8-6c74-4004-a48e-8764bbc92411/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/735d2a26-8692-4374-bd9a-89498836db8f/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/d1d312ca-9633-476b-b890-6186c9a683c3/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/32cfd58d-a22a-402e-88bc-9f4137fcd512/"
+  },
+  "faces": 2496
+ },
+ {
+  "q": "ketchup bottle",
+  "name": "Red Squeeze Sauce Bottle",
+  "id": "317cb4df-886e-4686-9bf5-348a51e298b8",
+  "base": "b98d207b-89bf-4ac4-9e08-f015381d5b28",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/317cb4df886e46869bf5348a51e298b8/files/thumbnail_e806fe25-f18e-4073-98a5-caff7347be61.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/4a811a09-7e14-4afa-9155-bef719778591/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/d98af0c0-a55b-4111-bae1-fb7a0540a4db/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/af78fa23-edf8-48f2-a1dd-567c141cab2c/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/889e3d08-60fb-42c4-b65a-8ad3f1a9d446/",
+   "prxc": "https://www.blenderkit.com/api/v1/downloads/862ae653-b0b1-44a0-90c3-ebd6dc99c7dc/"
+  },
+  "faces": 201
+ },
+ {
+  "q": "wine bottle",
+  "name": "Majestic Banquet set for 8 people",
+  "id": "68d67fcf-5554-47cb-935f-ee9c505d74d3",
+  "base": "3d01352c-65c0-42e5-a70d-189af88dc461",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/68d67fcf555447cb935fee9c505d74d3/files/thumbnail_52eab6ef-3d09-459a-b9c9-3ec1978d957c.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/2ea7a459-1183-4ad0-9636-221456701be7/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/1de5f4fc-48b6-4517-8227-1b6bb38e76dd/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/f6b52b8c-4a22-47c6-9621-1075387f554a/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/91bbb9fb-e149-425d-a83d-a8e1f6f126ab/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/df74e367-0bb9-4e27-94ba-2c8e974b2fe8/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/d7982c07-e5df-4d5e-8889-27587e2d0132/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/00eee8eb-7abc-4ee6-b520-460faaba2544/"
+  },
+  "faces": 356578
+ },
+ {
+  "q": "wine bottle",
+  "name": "Rustic Wood Lattice Wine Rack",
+  "id": "aba49845-95b1-4d85-8022-ce24caceb748",
+  "base": "3a0713f3-4645-4e74-b2fb-e5d24032c2f4",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/aba4984595b14d858022ce24caceb748/files/thumbnail_1725ffc7-fd92-4cc1-b15f-afe8ffec2478.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/5e521819-b4ee-4c40-a987-761763d3b456/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/9e00a97d-11c0-4d91-909c-8d1d2da6f6e1/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/304b59c1-80e8-4286-8cb2-47a164365ab4/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/d4775842-01e5-4289-b357-e1aea7a4dc63/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/59d56abd-a5ce-481b-a53f-7e69fa2f1492/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/55cc306c-a874-4696-b3db-14c89b621e41/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/3add823a-efeb-45b1-9f04-15ed5088f247/"
+  },
+  "faces": 49312
+ },
+ {
+  "q": "wine bottle",
+  "name": "Wine Bottles 01",
+  "id": "06e22946-d63f-4c14-b622-54141faeee72",
+  "base": "a4e11527-b336-4b4a-a378-dc70f4a206fd",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/06e22946d63f4c14b62254141faeee72/files/thumbnail_a21adbe1-8d4a-42cf-a1f0-092540cfdeb9.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/4013775d-f099-43fa-958b-0dbbd8aca25b/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/53bcbf9e-3416-4c20-bc11-f355a3bf8712/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/e4337674-b9e1-4cf7-bb0e-aa8b330449f4/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/969acc84-eb9f-4aad-b945-44b64f7d7ea9/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/2b74f88a-c30b-4da2-a9b2-015036f31409/",
+   "resolution_8K": "https://www.blenderkit.com/api/v1/downloads/0d2a310c-3ecd-4005-82d5-1221bf37531f/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/6f7417ff-3369-401a-a0d0-ee81931ed3ec/"
+  },
+  "faces": null
+ },
+ {
+  "q": "beer bottle",
+  "name": "Bar",
+  "id": "c8e1d669-9ae9-4b42-994b-0d26443f83b0",
+  "base": "2ba053ee-16f7-498c-a1e6-256e92ecd05f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/c8e1d6699ae94b42994b0d26443f83b0/files/thumbnail_a7f0394f-78bb-4d96-b9af-d3846c0116ab.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/d529f563-e7b3-4a2b-995a-6a5e6fe3e627/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/10a89bf2-1ed9-4d1b-bb7c-d9551f5ca4d7/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/db6db61f-f67c-4a74-833d-a3d9671be83c/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/b3ee0e60-5566-4aa0-8fdd-78ecfb85ac7c/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/d5cad2c6-2f29-4c81-b15d-1519dd7d30a0/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/d9bb3c14-f878-4b0c-b398-e50a07465e49/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/c895593d-b649-4508-8a61-e09d1b400bb0/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/a7f0394f-78bb-4d96-b9af-d3846c0116ab/"
+  },
+  "faces": 75654
+ },
+ {
+  "q": "beer bottle",
+  "name": "Beer chiller with ice cubes",
+  "id": "99eec335-dbae-4147-becc-668435679f03",
+  "base": "df966bf0-9973-49de-ae0b-3bb5b106bf91",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/99eec335dbae4147becc668435679f03/files/thumbnail_eec0a582-5bba-4e8c-933a-c3f3df0cbe97.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/58aeda3f-19fb-4eb7-8944-ce5652110601/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/8e606bb7-5f4c-47e0-8fb5-afde8d1fd05c/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/c9178b32-6c38-4583-b8eb-6a98ff687ee5/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/38914f07-95e8-40d8-be15-9e39e559d5a5/"
+  },
+  "faces": 944463
+ },
+ {
+  "q": "beer bottle",
+  "name": "Heineken beer 600ml",
+  "id": "65812f73-e077-42fb-80d2-cff8d416b822",
+  "base": "31abd635-f6a5-4bb0-937e-9edc17234418",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/65812f73e07742fb80d2cff8d416b822/files/thumbnail_252281bf-06aa-42c1-b4ea-0e12ae01a62f.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/349dc13a-d255-49a2-9038-c3109e603f48/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/8b5f9dda-1f83-4eee-aace-2ebed7dcc439/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/82c121af-9ad4-44b3-83a2-037dd7e431f7/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/52b42c36-c6a7-4c16-af22-5793bfae4dc1/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/d0c78cfc-7a95-4e3d-ac53-8e8d21972d76/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/a6ae669a-3033-45bf-97dd-2e32700897a6/"
+  },
+  "faces": 3277
+ },
+ {
+  "q": "shampoo bottle",
+  "name": "Plastic Packaging Bag",
+  "id": "f7b96506-874f-45f0-b26e-cb7d4d9614b8",
+  "base": "99ba4171-e15d-49b3-9509-d64f823a93a6",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/f7b96506874f45f0b26ecb7d4d9614b8/files/thumbnail_399e9f2f-afe4-4340-a947-3b71f8b08adc.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/91e835eb-859d-4208-ba0d-946671266fd0/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/3a5bfa2b-abdc-48cf-a393-badab96be921/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/9ad319bc-34c2-47cc-9bdc-477cb01e1d31/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/ed510511-57da-4a28-b4d6-54c9da6362ee/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/12f9f714-8f56-4749-b522-c5dcff652170/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/fb42f0b2-6742-4a5c-9c10-b89d744b1929/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/f629e905-b8da-4c01-994b-eb229b99307f/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/d23e80e9-2a45-42e1-9b60-0b3fd93f0a0d/",
+   "prxc": "https://www.blenderkit.com/api/v1/downloads/d270a678-cff9-4e17-85f9-9fd353fefb2c/"
+  },
+  "faces": 394
+ },
+ {
+  "q": "shampoo bottle",
+  "name": "Shampoo Bottle",
+  "id": "8a697596-7e47-4c2e-a768-de6b4da19354",
+  "base": "f83c83e9-e0ac-4512-a743-7c4e7fb8afc1",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/8a6975967e474c2ea768de6b4da19354/files/thumbnail_c6cb832f-1f07-4c8a-905d-f6727fcce2a6.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/903640c3-104d-49c9-9272-9997a2c89e16/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/dc0f1f7f-16a3-4a4a-99cb-dcbec5009731/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/b70ed9a3-7a56-4cf1-9ed8-b17a053649f3/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/e2b15d99-eea2-4c09-9d8f-5f2848f9209a/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/a0e5b1fe-6a11-455e-a308-cbce8e7fe84c/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/c6cb832f-1f07-4c8a-905d-f6727fcce2a6/"
+  },
+  "faces": 1722
+ },
+ {
+  "q": "shampoo bottle",
+  "name": "Soap",
+  "id": "3e3c9f97-2393-409a-b425-cb2597577133",
+  "base": "a8b94094-9e18-4f2d-b0f9-868dacce557f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/3e3c9f972393409ab425cb2597577133/files/thumbnail_c9ebfd1c-8f3e-4d1f-9d7a-d353fcfc89b1.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/76d07ab7-56f6-4bdf-be6a-bf3e629c33f3/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/9c81d40b-356d-4d28-a35b-1e7471c03b4b/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/dd464cdd-6109-4a34-96ee-d3ad9732ffb6/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/37af59c8-e1a2-4e2b-858d-79d81acc0ab6/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/de079caa-ccf1-4cdf-9a3b-282c3d6c20ac/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/0511866c-aefe-47f2-9a78-067676eacf45/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/adfa5305-f0f4-4b58-8796-7c2a9bce23eb/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/e22e8138-1d3d-4711-a701-29568d8c00ec/"
+  },
+  "faces": 2562
+ },
+ {
+  "q": "milk bottle",
+  "name": "Organic Fresh Milk Bottle 1L",
+  "id": "da2f3e59-f0de-4fc5-a3cc-4842d2e5d577",
+  "base": "42b0e8c7-2903-4ead-a53c-63b632db61ef",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/da2f3e59f0de4fc5a3cc4842d2e5d577/files/thumbnail_53b9247a-a4c8-479f-ae25-ea87e38baac2.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/ff37bdaa-bc61-4c6f-becd-9bd8cbbb039d/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/d0ba9c23-b145-4be1-985e-47531e7a230e/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/f1a3ad81-e0da-400b-b888-9938f991e4a1/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/ddb21729-b294-4416-9d3e-c2174d253ef9/"
+  },
+  "faces": 1172
+ },
+ {
+  "q": "milk bottle",
+  "name": "Old fashioned bottle of milk",
+  "id": "fda5d5cd-fdfd-48b7-a29d-de5542c8c8fd",
+  "base": "308a8096-cf1f-44c6-8490-c58a723a07f8",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/fda5d5cdfdfd48b7a29dde5542c8c8fd/files/thumbnail_8794506a-017b-433b-9c2a-fe4a687ede6b.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/e7338c58-c404-4701-95f0-ce2af7a00c8d/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/161df904-44b5-4ff1-9bc1-2afaf3883971/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/7404bb71-1e3e-4d1c-80f2-b633b6279984/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/0dcb81bf-554d-4d02-90e3-1b36c5965cf8/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/801074b6-a335-4ad0-bf8a-d0627231a9b5/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/27737529-681c-465d-8c5f-8e8ba2477002/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/8951fe16-94f1-456c-a24f-493646209168/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/6e4b4ace-154c-48b1-9b9b-7accca8fecfa/"
+  },
+  "faces": 6346
+ },
+ {
+  "q": "milk bottle",
+  "name": "Glass Milk Bottle",
+  "id": "f3152d91-6cb9-4738-a8d8-6484008d79e6",
+  "base": "249dbf01-a6f9-4b57-94ee-68e490f56907",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/f3152d916cb94738a8d86484008d79e6/files/thumbnail_dc60a926-8a47-46f1-bd97-dbb7bf00a6a6.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/a6d93d79-feae-476d-8bb6-cbe3fa83a5bf/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/893f27d5-d580-4ff7-9dbf-bbb65e00dbe2/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/e51878dc-bc0d-4076-8f0a-346d99be235f/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/ab7d853c-c70c-4d61-a1cc-b700919f1281/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/b116d386-ac48-4c76-9789-f4f793a4add1/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/a5fc9e9b-d015-4fbf-99b6-3721001e58d8/"
+  },
+  "faces": 1603
+ },
+ {
+  "q": "egg carton",
+  "name": "Eggs in an Egg Box/Carton",
+  "id": "d973f456-ec89-4579-8f97-6f72850d2abf",
+  "base": "7caa8e5b-bd54-49cb-9f72-de8c19e7075c",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/d973f456ec8945798f976f72850d2abf/files/thumbnail_e5de5e05-1b05-4ce2-9569-41e085d4cc68.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/cd59b025-7087-4260-8e2f-1af9e4765426/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/2b44d539-9fe9-4a10-a44a-fe2125820fd6/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/385b1735-1823-4be4-847c-37b5b22dc09a/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/7e54ecf7-bb61-4e3a-a9a7-9a0e85d9b025/"
+  },
+  "faces": 17656
+ },
+ {
+  "q": "egg carton",
+  "name": "Chubby Eggs",
+  "id": "5f48df82-12ee-414a-9a48-6f97cdcc5aba",
+  "base": "ccc13d54-8608-49e6-b542-1740d352407d",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/5f48df8212ee414a9a486f97cdcc5aba/files/thumbnail_093f6038-d9b6-4c38-9401-29e459381141.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/0e4d1b97-bcd7-49bb-a4f7-ca6763e22e79/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/a0021475-7d84-43b4-b036-1dfaa3a5ed36/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/8ea443f4-cfcb-4e6a-961e-45d610b01122/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/fd86a540-1d8d-4eab-ba1f-b00f341e3109/"
+  },
+  "faces": 1814
+ },
+ {
+  "q": "cereal box",
+  "name": "Corn Flakes Box",
+  "id": "08277589-951e-4b17-833f-ae867d70d016",
+  "base": "6d632a17-1062-47ea-b6b0-357d35ccb3ee",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/08277589951e4b17833fae867d70d016/files/thumbnail_9a482141-f845-4fb1-9b63-b20d89c2a157.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/8a9302be-2c32-433b-b9e6-f87dcdc43866/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/d393ab14-58b7-44c4-b070-d1c7753795d5/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/1cd5a4f0-b821-4b94-856f-e356e0dc6607/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/04a68d09-6ad3-49c0-ba3d-0121817ef6ef/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/f26801a0-89b4-462a-a58c-304934752d44/"
+  },
+  "faces": 928
+ },
+ {
+  "q": "cereal box",
+  "name": "Zlakovy Coffee - Cereal-Based Coffee",
+  "id": "6d9f8c84-aa78-4df4-a71d-9c733b16c5df",
+  "base": "29f1a564-5712-431d-8ff0-4a0e60f50d04",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/6d9f8c84aa784df4a71d9c733b16c5df/files/thumbnail_97773d31-9931-4da6-8554-30998f78ac4f.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/26dbabd7-b60f-4847-86b2-ebf69b65d687/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/b192eee5-5865-47dd-91a6-baacdc556bf4/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/e23179a6-5629-45e9-8ab9-78c5e67976f9/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/099a3710-65ee-4f08-b229-64f23e8aa737/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/1815a283-823d-4f1a-a8f0-0e051490d977/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/2217170d-496b-4da8-b753-2f9e4178c0f6/"
+  },
+  "faces": null
+ },
+ {
+  "q": "cereal box",
+  "name": "Chocolate Cereal Boxes Set",
+  "id": "6073ab99-c29a-466b-83b1-c05738016c21",
+  "base": "1c416aa1-1cc6-4f61-a5a3-8c4c9ede8a7f",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/6073ab99c29a466b83b1c05738016c21/files/thumbnail_09adb516-36ea-4a5d-873d-baf6214d0c9f.png.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/182db3c7-e507-4e0f-bb36-53894aacf8d9/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/0fd07145-2f1b-45f1-ab9c-02af4b8887f4/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/926d0aa5-81b9-42a5-af0b-9255a1490e23/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/bb517a92-63a8-4f77-8733-83279f62cb72/"
+  },
+  "faces": 348
+ },
+ {
+  "q": "pasta package",
+  "name": "Vermicelli Pasta 250g Package",
+  "id": "361ce4be-60f9-44af-8fb9-f46071af641b",
+  "base": "cb0c8f47-3292-402d-9e65-2d20cbf170ae",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/361ce4be60f944af8fb9f46071af641b/files/thumbnail_12136a6a-0979-4141-83fa-3cf9a1cba431.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/3395e1b7-3fa2-4b0f-8420-6c0992204f7e/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/3cfb3b42-4abf-4138-a0f6-f98a0faffb5a/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/d4511fd4-965d-4a3e-8bc3-d7352c54df80/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/f0ec513f-3c7a-4ec5-b373-de7b75cf780c/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/d7b6ad60-5b2a-473e-a33c-7868b7849bb7/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/d76b5fa2-a8b5-4ba8-a51d-f0663f894838/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/31662fa3-da1a-4f40-8e22-e5acce64a086/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/5296d983-b040-4139-8564-1fc0b2096ba3/",
+   "prxc": "https://www.blenderkit.com/api/v1/downloads/d79104e9-6349-4a59-b12f-66a6160f6c24/"
+  },
+  "faces": 3840
+ },
+ {
+  "q": "chips bag",
+  "name": "Bag of Chips",
+  "id": "48377d35-dc77-4106-9287-6f010f9d1c4c",
+  "base": "bf7c2376-1431-45af-93ee-6496b4756782",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/48377d35dc77410692876f010f9d1c4c/files/thumbnail_4db52ec2-ce07-473b-a4dc-bbb425456b66.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/2ea10543-c130-460f-bf69-11f565f097cb/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/d998c4fd-16ea-4ea9-97af-feac6615b10d/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/98081578-d3a6-4c18-8261-4a1599c0b430/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/542037d3-38f6-40d6-b2b5-2c872926df41/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/f3585ed2-94e6-4a0d-aa32-5b814c0120b7/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/5dd0861f-8d6e-4a55-ba45-9de175a1e560/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/44a7f237-540c-4aef-9e70-57ca6d73f56a/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/b60a6e5b-be96-403c-bb92-fc6f114fec2c/"
+  },
+  "faces": 5066
+ },
+ {
+  "q": "chips bag",
+  "name": "ChipBag",
+  "id": "4091126b-8a6f-4df7-afdf-8f3d7d1c24f7",
+  "base": "29326f7a-e05c-4eca-9346-02f07272adf9",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/4091126b8a6f4df7afdf8f3d7d1c24f7/files/thumbnail_258c6a7d-78b4-40e2-a53f-b980f882b2cf.png.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/bd2af609-811b-429c-a0ee-6aa9d72c633a/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/812b51c1-580a-47fe-aa8d-30c2bbef669e/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/2010da80-1a02-4bef-86fe-f16f2257be72/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/1dc80afe-3a85-4d24-997f-caeae04a211b/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/78a63921-3992-4442-8ff2-ed754607ac6d/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/01cea508-33c6-43fb-95c1-cf3d99359413/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/2a208a4c-a261-4106-8d62-b7178e294c23/"
+  },
+  "faces": 608
+ },
+ {
+  "q": "chips bag",
+  "name": "Bag of chips Lays",
+  "id": "20727326-bc2d-41d0-8dac-a225b485bf0a",
+  "base": "5682a417-ade6-470b-9b73-e415576f1150",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/20727326bc2d41d08daca225b485bf0a/files/thumbnail_15be0864-bd89-42e7-af92-c967ace29a46.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/a503b048-f994-43da-83b7-d5ebca712324/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/893c84d2-6e46-40aa-8e65-35595a295b1c/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/70f9b9ff-8202-4447-b952-c87e2bc29935/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/4364f1d4-a3b7-4137-8640-7930b3622a3c/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/a49bc255-c1bc-48c0-9c12-0c72b8254bac/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/9d7b5adc-d217-4e87-8628-101ad20d4d55/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/47601ba4-1e24-4486-97af-85868475bf3c/"
+  },
+  "faces": 294
+ },
+ {
+  "q": "soda can pack",
+  "name": "Pack of Orange POP drinks",
+  "id": "b73af0ce-e118-4b79-a749-d1c12eec95b7",
+  "base": "82a3eecb-126c-44fd-8cf0-133318da9dec",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/b73af0cee1184b79a749d1c12eec95b7/files/thumbnail_f8dcdec5-7484-4ddb-a7be-5ab968dfc0e4.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/cb3c882d-a2c0-42a9-ad50-82cf4cb0efb5/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/843ba099-5b24-47cf-9e63-7cac44a3d84a/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/bca46d15-cdec-48ce-8623-cd37e80e6e69/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/06ceb358-f657-4949-91ef-682dc207f532/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/14027e7c-5b30-4efa-9776-a83143625e6c/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/4a27eadc-5072-47b9-86d6-14dee21cbb25/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/400b5c12-c68c-485f-affb-7773d4965932/"
+  },
+  "faces": 6494
+ },
+ {
+  "q": "soda can pack",
+  "name": "Case of fizzy lemon drinks",
+  "id": "1d829814-959f-4526-889d-3d5084a15b3b",
+  "base": "24ce8c47-c305-4e44-a5d6-c92a828460b2",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/1d829814959f4526889d3d5084a15b3b/files/thumbnail_a894d171-d311-4dde-a7f5-29ce07f28fa0.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/3fa5cacc-798f-4867-8fe6-243152de1361/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/00916516-0eee-4848-bc91-05b70a2e687d/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/b45b54a6-e4d7-4967-9ed6-089d30d950cb/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/00f13963-87d0-4b33-9cec-53f2c10180bf/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/452c7dc6-5f07-4fe9-ab14-c4dc1ed8cc5d/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/5d44a0b4-3791-4718-a162-88b096eff530/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/ff6aa05b-9448-453a-a798-0d698071c655/"
+  },
+  "faces": 6494
+ },
+ {
+  "q": "coffee jar",
+  "name": "Coffee Jar",
+  "id": "0995a013-b93d-4ad2-9648-9ace02915605",
+  "base": "5a2a8e44-981e-4505-8826-f2055d724151",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/0995a013b93d4ad296489ace02915605/files/thumbnail_6647e879-f695-4af9-a5c7-f88f32a9310d.JPG.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/717c8afb-c885-462f-975c-11fa33378982/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/2d9dfb41-87f5-4871-8b47-76e9117f4396/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/d0223471-49b2-4837-9754-59b6072d8c3e/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/ef8818f9-3043-4f2d-82fc-811a12696430/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/93292366-dc08-4b61-87a0-c86de3e23b7e/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/e6959622-6c43-4780-9520-6c073fb2039b/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/a5aa6e6a-4358-4762-badd-0323bc5f27dd/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/fc2e0495-6950-4640-9a7c-8da695d54f2d/"
+  },
+  "faces": 13994
+ },
+ {
+  "q": "coffee jar",
+  "name": "Premium Mocha Mix Jar",
+  "id": "7d4ce1a7-2e8b-4d7f-95c5-35aa685053b1",
+  "base": "880eec19-8c12-42f5-895f-7431e15c476a",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/7d4ce1a72e8b4d7f95c535aa685053b1/files/thumbnail_d1e419c8-a3cb-4b9b-a040-426bd4ba9892.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/3b877796-c043-4624-ade6-8a77a14c9adf/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/674f1e58-92df-4b08-a382-fe8c5a106582/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/30e19590-447b-485a-9a7e-4cecf7a61d3a/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/db12650b-315e-4c5e-a2ab-039fd7b288fe/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/3a944e18-59a9-4221-98e0-385c7cb377ff/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/f22156f5-9d72-4cfc-b647-7d45c1aec92d/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/b3ef4092-67cd-4d59-b72f-c07e414afd73/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/865faf9f-fe6b-4081-9578-0cd9bdd611f9/",
+   "prxc": "https://www.blenderkit.com/api/v1/downloads/081d83ca-3d2a-4d45-9a1d-12e64b9da270/"
+  },
+  "faces": 3264
+ },
+ {
+  "q": "oil bottle",
+  "name": "KITCHEN SET 7 - Oil bottles",
+  "id": "d87c9791-94c6-41d3-8021-dfea85331b7b",
+  "base": "31a14dfc-eebd-45c7-a0a1-9a0f6e2416e0",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/d87c979194c641d38021dfea85331b7b/files/thumbnail_9efeddc7-be76-44eb-aaf3-92541d6bc562.png.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/fd58c4ac-721f-47b4-b1c8-a7619d6c5dea/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/0ac45ca7-b0fa-4c75-b001-311c66ac2c88/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/872ed2ac-4d5d-4435-b88a-4bafb01bfb1d/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/bdcad5ca-eec0-42de-a790-8ad8d8eebf47/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/588185c4-13e7-4cba-ae71-a47c80991bd8/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/11f015e3-078d-4d0c-b9f8-f2c757959a55/"
+  },
+  "faces": null
+ },
+ {
+  "q": "oil bottle",
+  "name": "Oil Bottle",
+  "id": "28d301e0-be9d-429d-81d1-c6c58ab7f222",
+  "base": "9bb74de4-1c3b-4554-ac96-8d2795b5307d",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/28d301e0be9d429d81d1c6c58ab7f222/files/thumbnail_aac3be0b-8e61-478d-9e68-74cec1e8cc5a.jpg.256x256_q85_crop-%2C.jpg",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/3c4aba8f-3bf9-4a21-bb90-641eba19492b/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/f84632b6-cfbc-40f9-8c33-b9ec9948ad12/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/3ad58265-944b-4569-a1f4-4dca0f6f5223/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/baf049d0-018c-4d66-a31f-7587cbdb18cb/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/f10536ce-b675-4768-88fc-ae9797f5f79f/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/1483fe22-15a5-411f-8dd5-4e3a496a799f/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/bee26d04-e8d4-4f1c-84c9-95df5ecc672b/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/502cb227-fa26-420b-8953-33ae47005c5f/"
+  },
+  "faces": 151785
+ },
+ {
+  "q": "oil bottle",
+  "name": "Can Scan",
+  "id": "47aecf21-9344-4de0-b34d-cb00eaf8b2d8",
+  "base": "d561a253-dd8f-4d4a-98c0-8945d9dbf2b4",
+  "thumb": "https://public.blenderkit.com/thumbnails/assets/47aecf2193444de0b34dcb00eaf8b2d8/files/thumbnail_48dea0ba-20aa-46b4-831a-31b9a9e81078.webp.256x256_q85_crop-%2C.png",
+  "files": {
+   "blend": "https://www.blenderkit.com/api/v1/downloads/99ae331e-30e3-4e9c-8f67-cd1df3361ba2/",
+   "gltf": "https://www.blenderkit.com/api/v1/downloads/359f3b50-d4b3-4fe1-bf02-46eb99cf3cb1/",
+   "gltf_godot": "https://www.blenderkit.com/api/v1/downloads/f7004f7e-9092-4634-b664-ca456c4a9ec7/",
+   "resolution_0_5K": "https://www.blenderkit.com/api/v1/downloads/25d5d583-802a-4b12-8d22-c821ae234447/",
+   "resolution_1K": "https://www.blenderkit.com/api/v1/downloads/236669f6-4f23-4f3c-abea-71b802818d3a/",
+   "resolution_2K": "https://www.blenderkit.com/api/v1/downloads/0df8f130-6338-46ae-85ae-8d3cd81dc7d6/",
+   "resolution_4K": "https://www.blenderkit.com/api/v1/downloads/51f48801-2709-4490-a884-7f9312bf5b65/",
+   "thumbnail": "https://www.blenderkit.com/api/v1/downloads/5c17c8c4-22d4-42b3-8646-8558c6de560c/"
+  },
+  "faces": 32097
+ }
+]

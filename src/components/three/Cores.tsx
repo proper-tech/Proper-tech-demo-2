@@ -191,11 +191,14 @@ export function Stairs({ wallH, cap, ...spec }: StairSpec & { wallH: number; cap
 /** Lift shafts in a row, a car in each. Where the lifts stop on this floor, `doors` names the
  *  wall their steel doors are in (with a frame and a call button), and the cars line up along
  *  it; elsewhere they line up along the long side. */
-export function Lifts({ r, doors, wallH, cap }: { r: Rect; doors?: Side; wallH: number; cap?: boolean }) {
+export function Lifts({ r, doors, wallH, cap, color = SHAFT }: { r: Rect; doors?: Side; wallH: number; cap?: boolean; color?: string }) {
   const alongX = doors ? doors === 'N' || doors === 'S' : r.w > r.d;
   const len = alongX ? r.w : r.d;
   const n = Math.max(1, Math.round(len / 1.9));
   const step = len / n;
+  // doors and cars are cut with the walls where the walls are cut low (the floor plan)
+  const dh = Math.min(2.1, wallH);
+  const fh = Math.min(2.25, wallH);
   // the door wall's line, and which way is out of the shaft (towards the lobby)
   const wall = doors === 'E' ? r.x + r.w : doors === 'W' ? r.x : doors === 'S' ? r.z + r.d : r.z;
   const out = doors === 'E' || doors === 'S' ? 1 : -1;
@@ -214,17 +217,17 @@ export function Lifts({ r, doors, wallH, cap }: { r: Rect; doors?: Side; wallH: 
         const g = Math.min(1.1, step - 0.4); // door opening
         return (
           <group key={i}>
-            <Walls r={shaft} h={wallH} t={0.2} color={SHAFT} cap={cap} door={doors && { side: doors, at: c, w: g }} />
+            <Walls r={shaft} h={wallH} t={0.2} color={color} cap={cap} door={doors && { side: doors, at: c, w: g }} />
             <Box r={car} h={0.04} color="#C9CED3" />
-            <Walls r={car} h={2.2} t={0.05} color="#DDE2E7" door={doors && { side: doors, at: c, w: step - 0.42 }} />
+            <Walls r={car} h={Math.min(2.2, wallH - 0.05)} t={0.05} color="#DDE2E7" door={doors && { side: doors, at: c, w: step - 0.42 }} />
             {doors && (
               <>
                 {/* closed doors, two leaves, in a dark frame */}
-                <Box r={piece(c - g / 2 + 0.05, c - 0.01, -0.04, 0.04)} h={2.1} color={STEEL} />
-                <Box r={piece(c + 0.01, c + g / 2 - 0.05, -0.04, 0.04)} h={2.1} color={STEEL} />
-                <Box r={piece(c - g / 2 - 0.09, c - g / 2, -0.08, 0.08)} h={2.25} color={DARK} />
-                <Box r={piece(c + g / 2, c + g / 2 + 0.09, -0.08, 0.08)} h={2.25} color={DARK} />
-                <Box r={piece(c - g / 2 - 0.09, c + g / 2 + 0.09, -0.08, 0.08)} y={2.15} h={0.1} color={DARK} />
+                <Box r={piece(c - g / 2 + 0.05, c - 0.01, -0.04, 0.04)} h={dh} color={STEEL} />
+                <Box r={piece(c + 0.01, c + g / 2 - 0.05, -0.04, 0.04)} h={dh} color={STEEL} />
+                <Box r={piece(c - g / 2 - 0.09, c - g / 2, -0.08, 0.08)} h={fh} color={DARK} />
+                <Box r={piece(c + g / 2, c + g / 2 + 0.09, -0.08, 0.08)} h={fh} color={DARK} />
+                {wallH > 2.2 && <Box r={piece(c - g / 2 - 0.09, c + g / 2 + 0.09, -0.08, 0.08)} y={2.15} h={0.1} color={DARK} />}
                 <Box r={piece(c + g / 2 + 0.12, c + g / 2 + 0.22, 0.1, 0.14)} y={1.0} h={0.18} color={DARK} />
               </>
             )}

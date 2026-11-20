@@ -1337,6 +1337,49 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: #d9e6fb;
 }
 
+.plan-photo-unit-room {
+  fill: transparent;
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+
+.plan-unit.is-hovered .plan-photo-unit-room {
+  fill: rgba(47, 111, 222, 0.28);
+}
+
+.plan-unit.is-available text {
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 0.12px;
+  stroke-linejoin: round;
+}
+
+.plan-photo-room {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 0.05px;
+  transition: fill 0.15s ease;
+}
+
+.plan-photo-room.is-clickable {
+  cursor: pointer;
+}
+
+.plan-photo-room.is-clickable:hover {
+  fill: rgba(255, 255, 255, 0.22);
+}
+
+.plan-photo-room.is-selected,
+.plan-photo-room.is-selected:hover {
+  fill: rgba(59, 111, 214, 0.14);
+  stroke: #3b6fd6;
+}
+
+.plan-photo-label rect {
+  fill: rgba(255, 255, 255, 0.86);
+  pointer-events: none;
+}
+
 .plan-wall {
   stroke: var(--ink);
   stroke-width: 0.12;
@@ -1361,7 +1404,53 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .plan-corridor {
-  fill: #dde2e7;
+  fill: #ebe6dd;
+  stroke: #b9b2a6;
+  stroke-width: 0.04;
+}
+
+.plan-lift rect {
+  fill: #f4f2ee;
+  stroke: #14233b;
+  stroke-width: 0.12;
+}
+
+.plan-lift path {
+  stroke: #9aa3ad;
+  stroke-width: 0.04;
+}
+
+.plan-lift-door {
+  stroke: #8a929b;
+  stroke-width: 0.14;
+}
+
+.plan-stair rect {
+  fill: #f4f2ee;
+  stroke: #14233b;
+  stroke-width: 0.12;
+}
+
+.plan-stair line {
+  stroke: #a9a59c;
+  stroke-width: 0.03;
+}
+
+.plan-stair .plan-stair-well {
+  stroke: #14233b;
+  stroke-width: 0.06;
+}
+
+.plan-stair-arrow {
+  fill: none;
+  stroke: #14233b;
+  stroke-width: 0.05;
+}
+
+.plan-core-name {
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 0.1px;
 }
 
 /* Floor plan: slab, column grid and the lift and stair core */
