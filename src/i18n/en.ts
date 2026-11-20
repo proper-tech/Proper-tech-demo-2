@@ -116,6 +116,7 @@ const en = {
       mainRoad: 'Main road',
       parking: 'Parking',
       eastStreet: 'East street',
+      blockD: 'Block D',
       playground: 'Roof playground',
       towerRoof: 'Block B roof',
       'playground-swing': 'Swings',

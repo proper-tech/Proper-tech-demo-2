@@ -1,4 +1,4 @@
-import { Color, MeshStandardMaterial, Vector2 } from 'three';
+import { Color, MeshStandardMaterial, Vector2, Vector4 } from 'three';
 
 /**
  * Glass that shows lit rooms behind it, without any extra geometry:
@@ -41,6 +41,9 @@ uniform float uHome;
 uniform float uNight;
 uniform float uTime;
 uniform vec2 uFocus;
+uniform vec4 uStorey;
+uniform float uShopType;
+uniform float uParking;
 uniform vec3 uFarColor;
 uniform vec3 uFar;
 
@@ -218,11 +221,18 @@ vec3 furniture(float type, float a, float y, float W, float rid) {
     float k = ih2(vec2(i * 1.7, rid + 2.0));
     vec3 cl = k < 0.3 ? vec3(0.85, 0.82, 0.76) : k < 0.55 ? vec3(0.18, 0.2, 0.26) : k < 0.75 ? vec3(0.62, 0.48, 0.36) : vec3(0.48, 0.18, 0.2);
     return cl * (fract(x / 0.085) < 0.12 ? 0.55 : 1.0);
-  } else if (type < 3.5) {                            // reception desk and a plant
+  } else if (type < 3.5) {                            // reception desk
     if (abs(x) < 1.3 && y < 1.08) return y > 1.0 ? vec3(0.86, 0.84, 0.8) : vec3(0.45, 0.3, 0.18);
-    float px = x - 2.1;
-    if (abs(px) < 0.24 && y < 0.5) return vec3(0.3, 0.29, 0.28);
-    if (length(vec2(px, (y - 1.0) * 0.8)) < 0.48) return vec3(0.18, 0.36, 0.16) * (0.85 + 0.15 * sin(px * 23.0) * sin(y * 19.0) - 0.25 * smoothstep(0.2, 0.48, length(vec2(px, (y - 1.0) * 0.8))));
+    return vec3(-1.0);
+  } else if (type > 4.5) {                            // parking deck: the back of a parked car
+    float ax = abs(x);
+    vec3 paint = mix(vec3(0.75, 0.75, 0.74), vec3(0.12, 0.14, 0.18), step(0.5, fract(rid * 7.3)));
+    if (y < 0.32 && ax > 0.55 && ax < 0.85) return vec3(0.05);                         // tyres
+    if (y >= 0.3 && y < 1.02 && ax < 0.9 - 0.08 * smoothstep(0.85, 1.02, y)) {
+      if (y > 0.82 && y < 0.92 && ax > 0.6) return vec3(0.9, 0.08, 0.06);              // tail lights
+      return paint;
+    }
+    if (y >= 1.02 && y < 1.42 && ax < 0.72 - 0.3 * (y - 1.02)) return y < 1.06 ? paint : vec3(0.06, 0.08, 0.1);
     return vec3(-1.0);
   } else {                                            // office desks with screens
     if (abs(x) > 1.7) return vec3(-1.0);
@@ -237,14 +247,16 @@ vec3 furniture(float type, float a, float y, float W, float rid) {
 }
 
 vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
-  // storeys of the podium: ground 0 – 4.1, second 4.7 – 7.7, third 8.3 – 11.3 (slabs between)
+  // storeys: floors at 0, uStorey.x and uStorey.y, the roof at uStorey.z, slabs uStorey.w thick
+  // (podium: ground 0 – 4.1, second 4.7 – 7.7, third 8.3 – 11.3)
   float y = P.y;
   float lv0, lv1, fi;
-  if (y < 4.1) { lv0 = 0.0; lv1 = 4.1; fi = 0.0; }
-  else if (y < 4.7) { return vec3(0.03); }
-  else if (y < 7.7) { lv0 = 4.7; lv1 = 7.7; fi = 1.0; }
-  else if (y < 8.3) { return vec3(0.03); }
-  else { lv0 = 8.3; lv1 = 11.3; fi = 2.0; }
+  float sl = uStorey.w;
+  if (y < uStorey.x - sl) { lv0 = 0.0; lv1 = uStorey.x - sl; fi = 0.0; }
+  else if (y < uStorey.x) { return vec3(0.03); }
+  else if (y < uStorey.y - sl) { lv0 = uStorey.x; lv1 = uStorey.y - sl; fi = 1.0; }
+  else if (y < uStorey.y) { return vec3(0.03); }
+  else { lv0 = uStorey.y; lv1 = uStorey.z - sl; fi = 2.0; }
   float h = lv1 - lv0;
   bool shop = fi < 0.5; // the ground floor is shops whichever glass it is seen through
 
@@ -277,11 +289,12 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   float ao;
 
   // room type
-  float type = shop ? floor(ih(vec3(cu * 1.7, s, 4.0)) * 4.0) : 4.0;
+  float type = shop ? (uShopType >= 0.0 ? uShopType : floor(ih(vec3(cu * 1.7, s, 4.0)) * 4.0)) : (uParking > 0.5 ? 5.0 : 4.0);
   vec3 wall = type < 0.5 ? vec3(0.86, 0.85, 0.82)    // shop
             : type < 1.5 ? vec3(0.42, 0.26, 0.14)    // cafe, wood
             : type < 2.5 ? vec3(0.16, 0.16, 0.17)    // boutique, dark
             : type < 3.5 ? vec3(0.72, 0.67, 0.60)    // lobby, stone
+            : type > 4.5 ? vec3(0.56, 0.56, 0.54)    // parking, concrete
             : mix(vec3(0.84), vec3(0.72, 0.74, 0.76), step(0.6, rid)); // office
 
   if (t == tV) {
@@ -297,7 +310,7 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
       }
     } else {
       // floor: polished stone in shops, carpet in offices; furniture blocks as dark patches
-      col = shop ? vec3(0.62, 0.58, 0.53) : vec3(0.3, 0.31, 0.33);
+      col = shop ? vec3(0.62, 0.58, 0.53) : type > 4.5 ? vec3(0.4, 0.4, 0.39) : vec3(0.3, 0.31, 0.33);
       if (shop) {
         col *= 0.9 + 0.1 * step(0.5, fract(floor(hu / 0.8) * 0.5 + floor(hw / 0.8) * 0.5));
         // the polished floor mirrors the downlights, blurred
@@ -305,7 +318,7 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
         col += vec3(0.55) * smoothstep(0.3, 0.0, length(g));
       }
       vec2 desk = abs(fract(vec2(hu / 2.1, hw / 2.4)) - 0.5);
-      if (!shop && desk.x < 0.25 && desk.y < 0.18) col = vec3(0.55, 0.5, 0.44);
+      if (!shop && type < 4.5 && desk.x < 0.25 && desk.y < 0.18) col = vec3(0.55, 0.5, 0.44);
     }
     ao = edgeAo(hu, hw, W, D);
   } else {
@@ -424,7 +437,11 @@ export function nightFactor(elevation: number) {
   return t * t * (3 - 2 * t);
 }
 
-export function interiorGlass(kind: InteriorKind) {
+/** Options for buildings other than the podium: its storeys (floors 2 and 3, roof, slab), a fixed
+ *  ground-floor shop type (0 shop, 1 cafe, 2 boutique, 3 lobby) and parking decks upstairs. */
+export type InteriorOptions = { storeys?: [number, number, number, number]; shopType?: number; parking?: boolean };
+
+export function interiorGlass(kind: InteriorKind, opts: InteriorOptions = {}) {
   const look = LOOKS[kind];
   const m = new MeshStandardMaterial({ color: look.base.clone(), roughness: look.roughness, metalness: 0 });
   m.name = `Glass ${kind} (interior)`;
@@ -435,6 +452,9 @@ export function interiorGlass(kind: InteriorKind) {
     shader.uniforms.uNight = interiorNight;
     shader.uniforms.uTime = interiorTime;
     shader.uniforms.uFocus = interiorFocus;
+    shader.uniforms.uStorey = { value: new Vector4(...(opts.storeys ?? [4.7, 8.3, 11.9, 0.6])) };
+    shader.uniforms.uShopType = { value: opts.shopType ?? -1 };
+    shader.uniforms.uParking = { value: opts.parking ? 1 : 0 };
     shader.uniforms.uReflBoost = { value: look.refl };
     shader.uniforms.uTint = { value: look.tint };
     shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };
@@ -448,6 +468,6 @@ export function interiorGlass(kind: InteriorKind) {
       .replace('#include <emissivemap_fragment>', FRAG_EMISSIVE)
       .replace('#include <aomap_fragment>', FRAG_REFL);
   };
-  m.customProgramCacheKey = () => `interior-glass-${kind}`;
+  m.customProgramCacheKey = () => `interior-glass-${kind}`; // the options are uniforms only
   return m;
 }

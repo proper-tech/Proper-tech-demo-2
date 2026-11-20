@@ -109,6 +109,12 @@ function Model() {
       if (mesh.material.name === 'Glass Shopfront') mesh.material = shopGlass;
       else if (mesh.material.name === 'Glass') mesh.material = officeGlass;
     });
+    // block D: its store on the ground floor, parking decks above (storeys from data/blockD.ts)
+    const dGlass = interiorGlass('shop', { storeys: [4.5, 7.8, 10.8, 0.3], shopType: 0, parking: true });
+    scene.getObjectByName('Annex')?.traverse((o) => {
+      const mesh = o as Mesh;
+      if (mesh.isMesh && !Array.isArray(mesh.material) && mesh.material.name === 'D Glass') mesh.material = dGlass;
+    });
     // the towers' glass shows homes behind it (interiorGlass.ts)
     const homeGlass = interiorGlass('home');
     for (const name of ['Tower_B', 'Tower_C']) {
@@ -145,6 +151,24 @@ function PodiumDetail() {
   return <primitive object={scene} />;
 }
 useGLTF.preload(PODIUM_DETAIL_URL, DRACO_URL);
+
+/** Facade detail of block D (scripts/blockD-detail.py): plinth, slab bands, coping, framed windows, a lit
+ *  canopy and name sign over the shopfront, framed garage doors, faceted metal panels on the blank west
+ *  wall, roof plant. */
+const D_DETAIL_URL = '/models/blocks/D-detail.glb';
+
+function BlockDDetail() {
+  const { scene } = useGLTF(D_DETAIL_URL, DRACO_URL);
+  useMemo(() => {
+    registerNightGlow(scene);
+    registerFacadeWash(scene);
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(D_DETAIL_URL, DRACO_URL);
 
 /** Glass of the podium's curtain walls (scripts/podium-glass.py): in complex.glb the infill behind the
  *  dark metal glazing grid is modelled in the facade material, so these panes sit just in front of it. */
@@ -650,6 +674,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         <Model />
         <PodiumDetail />
         <PodiumGlass />
+        <BlockDDetail />
         <WhenReady onReady={ready} />
       </Suspense>
       {streetOn && (
