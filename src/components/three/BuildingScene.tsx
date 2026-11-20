@@ -16,6 +16,7 @@ import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
 import { interiorGlass, nightFactor } from './interiorGlass';
+import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -116,6 +117,8 @@ function Model() {
         if (mesh.isMesh && !Array.isArray(mesh.material) && mesh.material.name.startsWith('TB Glass')) mesh.material = homeGlass;
       });
     }
+    registerNightGlow(scene);
+    registerFacadeWash(scene);
     fixPeople(scene);
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
@@ -134,6 +137,7 @@ const PODIUM_DETAIL_URL = '/models/blocks/A-detail.glb';
 function PodiumDetail() {
   const { scene } = useGLTF(PODIUM_DETAIL_URL, DRACO_URL);
   useMemo(() => {
+    registerNightGlow(scene);
     scene.traverse((o) => {
       if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
     });
@@ -175,6 +179,28 @@ const GROUND_COLORS: Record<string, string> = {
   'Env Lawn': '#7FA35A',
 };
 
+/** Street trees whose crowns ran into a facade (found with scripts/tree-clearance.py): moved
+ *  clear of the building along the street, metres in x and z, and the crown scaled where a move
+ *  alone would have taken it off the verge. Scale 0 takes the tree out. */
+const TREE_FIX: Record<string, [number, number, number]> = {
+  Env_Tree_04: [-1.95, 0, 1.0],
+  Env_Tree_04001: [0, -2.7, 1.0],
+  Env_Tree_05: [0, -2.7, 0.72],
+  Env_Tree_06: [0, -2.2, 1.0],
+  Env_Tree_06001: [0, -0.45, 1.0],
+  Env_Tree_07: [0, -1.2, 1.0],
+  Env_Tree_09: [1.7, 0, 1.0],
+  Env_Tree_14: [0.95, 0, 1.0],
+  Env_Tree_15: [1.7, 0, 1.0],
+  Env_Tree_17: [0, 0.45, 1.0],
+  Env_Tree_20: [0.45, 0, 1.0],
+  Env_Tree_21: [1.2, 0, 1.0],
+  Env_Tree_22: [1.45, 0, 1.0],
+  Env_Tree_23: [1.45, 0, 1.0],
+  Env_Tree_24: [1.2, 0, 1.0],
+  Env_Tree_08: [0, 0, 0], // between the buildings: no room for it
+};
+
 function Environment() {
   const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
   usePeopleMotion(scene, animations);
@@ -192,6 +218,16 @@ function Environment() {
     };
   }, [gl, camera, world, scene]);
   useMemo(() => {
+    for (const [name, [dx, dz, k]] of Object.entries(TREE_FIX)) {
+      const tree = scene.getObjectByName(name);
+      if (!tree || tree.userData.cleared) continue;
+      tree.userData.cleared = true;
+      if (k === 0) tree.visible = false;
+      tree.position.x += dx;
+      tree.position.z += dz;
+      tree.scale.multiplyScalar(k || 1);
+    }
+    registerNightGlow(scene);
     fixPeople(scene);
     scene.traverse((o) => {
       // skinned people must not be culled by their rest-pose bounds
@@ -210,7 +246,12 @@ function Environment() {
       }
     });
   }, [scene]);
-  return <primitive object={scene} visible={shown} />;
+  return (
+    <>
+      <primitive object={scene} visible={shown} />
+      {shown && <StreetLights root={scene} />}
+    </>
+  );
 }
 // not preloaded: the street loads after the buildings are on screen (see BuildingScene)
 
@@ -568,6 +609,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   return (
     <SafeCanvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
+      <NightDriver />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       {/* The buildings come first, so the view appears as soon as they are in; the street and the

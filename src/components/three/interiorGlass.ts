@@ -39,6 +39,7 @@ uniform float uReflBoost;
 uniform vec3 uTint;
 uniform float uHome;
 uniform float uNight;
+uniform float uTime;
 uniform vec3 uFarColor;
 uniform vec3 uFar;
 
@@ -68,7 +69,10 @@ vec3 shopProducts(float hu, float hy, float rid) {
 
 
 // ---- homes in the towers: storeys of 3.0 m from the podium roof (11.7), ceiling 2.75 m up ----
-vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float wOut) {
+// Lit by a ceiling lamp (and a floor lamp in living rooms) with a pool of light and darker
+// corners, each room in its own colour of light; a TV flickers in some living rooms at night and
+// someone moves about in a few rooms.
+vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float wOut, out vec3 glow) {
   float fi = floor((P.y - 11.7) / 3.0);
   float lv0 = 11.7 + fi * 3.0;
   float h = 2.75;
@@ -80,7 +84,17 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
   float cu = floor(u / W);
   rid = ih(vec3(cu, fi, s + (alongX ? 3.0 : 0.0)));
   cuOut = cu; wOut = W;
-  if (P.y > lv1) return vec3(0.04);
+
+  // room: 0 living, 1 bedroom, 2 kitchen; palette, light
+  float type = floor(ih(vec3(cu * 2.3, fi * 1.7, s)) * 3.0);
+  float r2 = ih(vec3(rid * 9.1, 2.0, 5.0));
+  float r3 = ih(vec3(rid * 4.3, 7.0, 1.0));
+  vec3 lightCol = r3 < 0.45 ? vec3(1.0, 0.72, 0.45) : r3 < 0.8 ? vec3(1.0, 0.82, 0.6) : vec3(1.0, 0.93, 0.84);
+  // how bright: some rooms dark, a few only dimly lit (lamp or TV), most with the lights on
+  float on = rid < mix(0.24, 0.36, uNight) ? 0.0 : rid < 0.42 ? 0.35 : 1.0;
+  float lit = mix(mix(0.2, 0.03, uNight), 1.0, on);
+  glow = lightCol * lit;
+  if (P.y > lv1) return vec3(0.03);
 
   float dw = max(s * (alongX ? d.x : d.z), 1e-4);
   float du = alongX ? d.z : d.x;
@@ -94,21 +108,22 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
   float hu = clamp((alongX ? H.z : H.x) - u0, 0.0, W);
   float hy = clamp(H.y - lv0, 0.0, h);
   float hw = clamp(t * dw, 0.0, D);
+  vec3 Q = vec3(hu, hy, hw);
 
-  // room: 0 living, 1 bedroom, 2 kitchen; palette, light
-  float type = floor(ih(vec3(cu * 2.3, fi * 1.7, s)) * 3.0);
-  float r2 = ih(vec3(rid * 9.1, 2.0, 5.0));
   vec3 wall = r2 < 0.35 ? vec3(0.86, 0.83, 0.77) : r2 < 0.6 ? vec3(0.74, 0.7, 0.64) : r2 < 0.8 ? vec3(0.78, 0.79, 0.8) : vec3(0.58, 0.62, 0.55);
   vec3 wood = r2 < 0.5 ? vec3(0.56, 0.4, 0.25) : r2 < 0.8 ? vec3(0.72, 0.6, 0.45) : vec3(0.34, 0.24, 0.16);
-  float lit = rid < 0.28 ? mix(0.22, 0.03, uNight) : 0.65 + 0.35 * r2;
-  vec3 light = r2 < 0.75 ? vec3(1.0, 0.86, 0.68) : vec3(1.0, 0.95, 0.88);
   vec3 col; float ao;
+  vec3 extra = vec3(0.0);   // light of its own (lamps, TV), not lit by the room
+
+  // someone in the room, drifting slowly across it
+  float px = W * (0.3 + 0.4 * fract(rid * 13.0)) + 0.6 * sin(uTime * 0.17 + rid * 40.0);
+  bool person = on > 0.5 && fract(rid * 7.0) < 0.22;
 
   if (t == tV) {
     if (d.y > 0.0) {
-      col = vec3(0.6);
+      col = vec3(0.82);
       float lamp = length(vec2(hu - W * 0.5, hw - D * 0.45));
-      col += vec3(1.3) * smoothstep(0.35, 0.1, lamp) * step(0.28, rid) + vec3(0.3) * smoothstep(2.2, 0.0, lamp);
+      extra += lightCol * 1.6 * smoothstep(0.3, 0.12, lamp) * on;
     } else {
       col = wood * (0.92 + 0.08 * step(0.5, fract(hu / 0.19)));
       if (type < 0.5) { vec2 rg = abs(vec2(hu - W * 0.5, hw - D * 0.55)); if (rg.x < 1.1 && rg.y < 0.8) col = mix(vec3(0.75, 0.72, 0.68), vec3(0.45, 0.47, 0.52), r2); }
@@ -125,26 +140,45 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
       if (hy < 0.85 && mid < 1.25) col = hy > 0.62 ? vec3(0.42, 0.42, 0.44) * (0.8 + 0.4 * r2) : mix(vec3(0.62, 0.6, 0.56), vec3(0.28, 0.36, 0.4), r2); // sofa
       if (hy > 1.3 && hy < 1.95 && mid < 0.5) col = mix(vec3(0.85, 0.5, 0.3), vec3(0.25, 0.45, 0.6), ih2(vec2(floor(a * 3.0), floor(hy * 4.0) + rid))); // picture
       if (hy > 1.26 && hy < 1.99 && mid < 0.54 && (mid > 0.5 || hy < 1.3 || hy > 1.95)) col = vec3(0.12);
+      // floor lamp by the sofa
+      if (abs(a - 0.45) < 0.02 && hy < 1.5) col = vec3(0.1);
+      if (abs(a - 0.45) < 0.17 && hy > 1.42 && hy < 1.72) extra += lightCol * 1.4 * on;
     } else if (back && type < 1.5) {
       if (hy < 1.1 && mid < 0.95) col = hy < 0.55 ? vec3(0.92, 0.92, 0.9) : vec3(0.36, 0.3, 0.26); // bed, headboard
-      if (hy > 1.6 && hy < 1.85 && mid > 1.1 && mid < 1.35) col = vec3(2.0, 1.7, 1.2);           // wall lamps
+      if (hy > 1.6 && hy < 1.85 && mid > 1.1 && mid < 1.35) extra += lightCol * 1.8 * max(on, 0.35 * step(0.3, rid)); // bedside lamps
     } else if (type > 1.5) {
-      // kitchen units along the back and one side
+      // kitchen units along the back and one side, lit under the wall units
       if (hy < 0.9) col = r2 < 0.5 ? vec3(0.9, 0.89, 0.86) : wood;
       if (hy > 0.88 && hy < 0.93) col = vec3(0.2);
       if (hy > 1.45 && hy < 2.25) col = r2 < 0.5 ? vec3(0.88, 0.87, 0.84) : vec3(0.3, 0.3, 0.32);
-      if (hy > 0.93 && hy < 1.45) col = vec3(0.8, 0.78, 0.74);
+      if (hy > 0.93 && hy < 1.45) { col = vec3(0.8, 0.78, 0.74); extra += lightCol * 0.5 * smoothstep(1.2, 1.44, hy) * on; }
     } else if (!back && hy < 2.05 && abs(a - 3.6) < 0.45) {
       col = vec3(0.45, 0.33, 0.24); // door
+    }
+    // TV on the left wall of some living rooms: blue flicker in the evening
+    if (!back && type < 0.5 && hu < 0.5 && hw > 1.7 && hw < 2.9 && hy > 0.8 && hy < 1.45) {
+      col = vec3(0.02);
+      float fl = 0.65 + 0.35 * sin(uTime * 2.7 + rid * 31.0) * sin(uTime * 7.9 + rid * 7.0);
+      extra += vec3(0.35, 0.5, 0.95) * fl * 1.3 * uNight * step(0.5, r3) * step(0.24, rid);
+    }
+    if (back && person && abs(a - px) < 0.55) {
+      vec2 q = vec2(a - px, hy);
+      bool body = (abs(q.x) < 0.19 && hy > 0.85 && hy < 1.5) || (abs(q.x) < 0.13 && hy < 0.9) || length((q - vec2(0.0, 1.66)) / vec2(0.11, 0.13)) < 1.0;
+      if (body) col = vec3(0.16, 0.13, 0.12);
     }
     if (hy < 0.07) col = vec3(0.85);
     ao = edgeAo(a, hy, aw, h);
   }
-  return col * light * lit * ao * mix(1.0, 0.8, hw / D);
+  // the room's light: a pool under the ceiling lamp, a second by the floor lamp, a little fill
+  float l1 = 1.25 / (1.0 + 0.3 * dot(Q - vec3(W * 0.5, h - 0.4, D * 0.45), Q - vec3(W * 0.5, h - 0.4, D * 0.45)));
+  float l2 = type < 0.5 ? 0.8 / (1.0 + 0.9 * dot(Q - vec3(0.45, 1.55, D - 0.3), Q - vec3(0.45, 1.55, D - 0.3))) : 0.0;
+  float lightAmt = 0.38 + (l1 + l2) * on;
+  return col * lightCol * lit * lightAmt * ao + extra;
 }
 
-// curtains on the inside of the pane: sheers and drapes drawn in from both sides of each room
-vec3 curtains(vec3 room, float u, float y, float rid, float cu, float W) {
+// curtains on the inside of the pane: sheers and drapes drawn in from both sides of each room;
+// a lit room shines through its sheers
+vec3 curtains(vec3 room, vec3 glow, float u, float y, float rid, float cu, float W) {
   float fi = floor((y - 11.7) / 3.0);
   float hy = y - (11.7 + fi * 3.0);
   float a = u - cu * W;
@@ -154,9 +188,9 @@ vec3 curtains(vec3 room, float u, float y, float rid, float cu, float W) {
   float k = ih(vec3(rid, 4.0, 2.0));
   vec3 drape = k < 0.4 ? vec3(0.78, 0.74, 0.66) : k < 0.7 ? vec3(0.55, 0.55, 0.56) : vec3(0.42, 0.36, 0.3);
   vec3 c = room;
-  if (k > 0.25 && side < 1.0 - open) c = mix(room, vec3(0.9, 0.89, 0.86), 0.55);      // sheer
-  if (side < 0.22 * (1.0 - open) + 0.08) c = drape * fold * 0.75;                    // drape
-  if (hy > 2.62) c = vec3(0.18);                                                     // pelmet
+  if (k > 0.25 && side < 1.0 - open) c = mix(room, vec3(0.9, 0.89, 0.86) * mix(0.75, 1.0, 1.0 - uNight) + glow * 0.5 * uNight, 0.55) * fold; // sheer
+  if (side < 0.22 * (1.0 - open) + 0.08) c = drape * fold * (0.75 * (1.0 - uNight) + uNight * 0.6 * glow);   // drape
+  if (hy > 2.62) c = vec3(0.18) * (1.0 - 0.8 * uNight);                                                       // pelmet
   return c;
 }
 
@@ -279,8 +313,9 @@ const FRAG_EMISSIVE = /* glsl */ `
   vec3 iCol;
   if (uHome > 0.5) {
     float rid, cu, W;
-    iCol = homeColor(vIPos, iRay, iN, rid, cu, W);
-    iCol = curtains(iCol, abs(iN.x) > abs(iN.z) ? vIPos.z : vIPos.x, vIPos.y, rid, cu, W);
+    vec3 glow;
+    iCol = homeColor(vIPos, iRay, iN, rid, cu, W, glow);
+    iCol = curtains(iCol, glow, abs(iN.x) > abs(iN.z) ? vIPos.z : vIPos.x, vIPos.y, rid, cu, W);
   } else {
     iCol = interiorColor(vIPos, iRay, iN);
   }
@@ -311,11 +346,13 @@ const LOOKS: Record<InteriorKind, Look> = {
   shop: { base: new Color('#05080C'), roughness: 0.04, glow: 0.75, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
   office: { base: new Color('#05080C'), roughness: 0.04, glow: 0.7, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
   // the towers keep their blue glass: a darker blue base, the rooms seen through a blue tint
-  home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.55, tint: new Color(0.46, 0.62, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 60, to: 320, max: 0.6 } },
+  home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.72, tint: new Color(0.55, 0.7, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 60, to: 320, max: 0.6 } },
 };
 
 /** 0 by day, 1 at night: set from the sun (Sun.tsx), shared by every interior glass material. */
 export const interiorNight = { value: 0 };
+/** Seconds, for the TVs and the people moving about in the homes (BuildingScene.tsx). */
+export const interiorTime = { value: 0 };
 
 /** How far into the evening it is for a sun this high (degrees): lights come on as it gets low, full by dusk. */
 export function nightFactor(elevation: number) {
@@ -332,6 +369,7 @@ export function interiorGlass(kind: InteriorKind) {
     shader.uniforms.uHome = { value: kind === 'home' ? 1 : 0 };
     shader.uniforms.uGlow = { value: look.glow };
     shader.uniforms.uNight = interiorNight;
+    shader.uniforms.uTime = interiorTime;
     shader.uniforms.uReflBoost = { value: look.refl };
     shader.uniforms.uTint = { value: look.tint };
     shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };
