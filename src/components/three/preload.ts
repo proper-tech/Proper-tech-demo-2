@@ -10,7 +10,11 @@ export function preloadFloor3D(tower: string) {
   const kind = tower === 'A' ? 'podium' : tower === 'D' ? 'blockD' : 'tower';
   if (started.has(kind)) return;
   started.add(kind);
-  if (kind === 'podium') void import('./PodiumScene');
+  if (kind === 'podium') {
+    void import('./PodiumScene');
+    // the furnished first floor (the floor most visitors open): warm the browser cache
+    void fetch('/models/interior/A1.glb').catch(() => {});
+  }
   else if (kind === 'blockD') void import('./DFloorScene');
   else {
     void import('./FloorScene');
