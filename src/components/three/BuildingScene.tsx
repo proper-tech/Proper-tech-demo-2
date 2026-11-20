@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
-import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Material, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -12,9 +12,10 @@ import type { BlockId, TowerId } from '@/data/types';
 import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { SafeCanvas } from './SafeCanvas';
-import { CameraRig, type Tour } from './Tour';
+import { CameraRig, HOME, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
+import { useTraffic } from './traffic';
 import { interiorFocus, interiorGlass, nightFactor } from './interiorGlass';
 import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
 import { ARRIVE_KEY } from '@/lib/arrive';
@@ -228,6 +229,7 @@ const TREE_FIX: Record<string, [number, number, number]> = {
 function Environment() {
   const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
   usePeopleMotion(scene, animations);
+  useTraffic(scene);
   // Compiled off-screen first (against the live scene's lights), then shown: adding it straight
   // away compiled all its materials in one frame, a visible hitch.
   const { gl, camera, scene: world } = useThree();
@@ -253,6 +255,23 @@ function Environment() {
     }
     registerNightGlow(scene);
     fixPeople(scene);
+    // the big lawn round the site read as a park in a field: the real city (City) stands there instead, as in the film
+    const under = scene.getObjectByName('Env_Grass_Underlay');
+    if (under) under.visible = false;
+    // the lawn east of the east street is really a building (Гэрэл төв, in city.glb): paved like the sidewalks,
+    // its UVs scaled from the lawn's texture (6 m a tile) to the sidewalk's (1.8 m), as in scripts/build-film.py
+    const far = scene.getObjectByName('Env_EastStreet_FarLawn') as Mesh | undefined;
+    let walk: Material | undefined;
+    scene.traverse((o) => {
+      const m = (o as Mesh).material;
+      if (m && !Array.isArray(m) && m.name === 'Env Sidewalk') walk = m;
+    });
+    if (far?.isMesh && walk && far.material !== walk) {
+      const uv = far.geometry.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * 6) / 1.8, (uv.getY(i) * 6) / 1.8);
+      uv.needsUpdate = true;
+      far.material = walk;
+    }
     scene.traverse((o) => {
       // skinned people must not be culled by their rest-pose bounds
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
@@ -278,6 +297,50 @@ function Environment() {
   );
 }
 // not preloaded: the street loads after the buildings are on screen (see BuildingScene)
+
+/** The real city round the site, the same as in the film: OpenStreetMap buildings with photo facades and
+ *  the streets (public/models/blocks/city.glb, made by scripts/build-film.py --city-glb; map data ©
+ *  OpenStreetMap contributors), on plain ground out to the horizon. Not raycast, so the eye-level tour only
+ *  walks on the site model; casts no shadows, since most heights are guesses (untagged in OpenStreetMap),
+ *  too rough for the sun study. */
+const CITY_URL = '/models/blocks/city.glb';
+const noRaycast = () => {};
+
+function City() {
+  const { scene } = useGLTF(CITY_URL, DRACO_URL);
+  const env = useGLTF(ENV_URL, DRACO_URL).scene;
+  const gl = useThree((s) => s.gl);
+  useMemo(() => {
+    // the streets come with plain stand-ins named after the street model's materials ("City Sidewalk" for
+    // "Env Sidewalk"): they get the model's own, so the asphalt, sidewalks and paint match it exactly
+    const own = new Map<string, Material>();
+    env.traverse((o) => {
+      const m = (o as Mesh).material;
+      if (m && !Array.isArray(m)) own.set(m.name, m);
+    });
+    scene.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.receiveShadow = true;
+      mesh.raycast = noRaycast;
+      const m = mesh.material as MeshStandardMaterial;
+      const match = m.name.startsWith('City ') && own.get(m.name.replace('City ', 'Env '));
+      if (match) mesh.material = match;
+      else if (m.map) m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
+    });
+  }, [scene, env, gl]);
+  return (
+    <>
+      <primitive object={scene} />
+      {/* the film's ground colour; below the streets (+0.02) and the site model (0) */}
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.15} receiveShadow raycast={noRaycast}>
+        <planeGeometry args={[3000, 3000]} />
+        <meshStandardMaterial color="#6B6A65" roughness={1} />
+      </mesh>
+    </>
+  );
+}
+// not preloaded: loads with the street, after the buildings are on screen (see BuildingScene)
 
 /** Reports download progress of the models to the page's loader. */
 function Progress({ onProgress }: { onProgress?: (percent: number) => void }) {
@@ -663,7 +726,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   }, [onReady]);
 
   return (
-    <SafeCanvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+    <SafeCanvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: HOME.position.toArray() }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <NightDriver />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
@@ -684,6 +747,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
           {/* the HDRI is a day sky: dimmed in the evening, so the facades go dark and the lit windows carry */}
           <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35 * (1 - 0.75 * nightFactor(sun.elevation))} />
           <Environment />
+          <City />
         </Suspense>
       )}
       {/* the loading bar only listens until the buildings are in: the street, loading after,

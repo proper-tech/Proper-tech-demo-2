@@ -326,7 +326,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-        <p className="stage-hint">{tour.kind === 'spot' ? t.tour.lookHint : t.home.towerHint}</p>
+        {/* the city round the complex is OpenStreetMap data (city.glb): the ODbL licence needs this credit */}
+        <p className="stage-hint">
+          {tour.kind === 'spot' ? t.tour.lookHint : t.home.towerHint}
+          <br />© OpenStreetMap contributors
+        </p>
       </div>
     </div>
   );

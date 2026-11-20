@@ -35,7 +35,8 @@ export type Pt3 = [number, number, number];
 const toScene = ([u, v, h]: Pt3) => new Vector3(u, h, -v);
 
 export const HOME = {
-  position: new Vector3(-175, 95, 95),
+  // from the west, the podium front: from the south-west a real 15-storey neighbour (city.glb) hides block D
+  position: new Vector3(-192, 95, 16),
   target: new Vector3(0, 0, 16),
   fov: 30,
 };
