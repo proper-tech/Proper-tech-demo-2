@@ -34,19 +34,24 @@ Only some stops, or another sample count: `render_all.bat 128` or
 `tools/build_unit.py F|E <outdir>` (Blender's Python module `bpy`, needs the plan-D scene) rebuilds a scene;
 `tools/preview.py` renders a quick top view or low-resolution panoramas to check it.
 
-## Block D, floor 1 (car parts shop and repair shop) — Монгол заавар
+## Block D: floor 1 (car parts shop and repair shop) and the car parks B1, 2, 3 — Монгол заавар
 
 `D1.blend` is block D's first floor, furnished (shop shelves, counter, office, waiting room, two car lifts, the
-inspection pit, cars), built from the site's block D data by `tools/build_blockd.py` with F's materials and the
-site's car. `D1_cams.json` holds its 9 tour stops (block metres: x = u east, y = -v, height).
+inspection pit, cars); `D0.blend` (B1), `D2.blend` and `D3.blend` are the car parks (bays with cars, markings, the
+ramps and the opening over them, strip windows, the store room). Built from the site's block D data by
+`tools/build_blockd.py` (floor 1) and `tools/build_blockd_parking.py <floor>` (0, 2, 3), with F's materials and the
+site's car; `D<floor>_cams.json` holds each floor's tour stops (block metres: x = u east, y = -v, height).
 
 1. Рендер эхлүүлнэ (давхар товшиж болно, эсвэл PowerShell-д `.\interior\render_blockd.bat`):
    ```
-   interior\render_blockd.bat
+   interior\render_blockd.bat          (B1, 2, 3 давхар)
+   interior\render_blockd.bat 0        (зөвхөн B1)
+   interior\render_blockd.bat 1        (1-р давхар дахин)
    ```
-   9 панорам (4096×2048) болон дээрээс харсан зураг `interior\renders\D1` хавтсанд гарна.
-   Хурдан болгох бол: `interior\render_blockd.bat 64` (sample цөөн).
-2. Сайтад тавина: `python3 -I interior/tools/publish_blockd.py . 1` → `public/tour-d/1` (4K, жижиг хувилбар, top.webp).
+   Панорамууд (4096×2048) болон дээрээс харсан зураг `interior\renders\D<давхар>` хавтсанд гарна.
+   Хурдан болгох бол эхлээд `set SAMPLES=64` гэж бичнэ (cmd), PowerShell-д `$env:SAMPLES=64`.
+2. Сайтад тавина: `python3 -I interior/tools/publish_blockd.py . <давхар>` → `public/tour-d/<давхар>`.
 
-Rebuild the scene: `python3 -I interior/tools/build_blockd.py interior/F.blend <car.glb> interior` (bpy as a module;
+Rebuild the scenes: `python3 -I interior/tools/build_blockd.py interior/F.blend <car.glb> interior` and
+`python3 -I interior/tools/build_blockd_parking.py interior/F.blend <car.glb> interior <0|2|3>` (bpy as a module;
 car.glb is `Env_Car_01` cut out of `public/models/blocks/environment.glb`).

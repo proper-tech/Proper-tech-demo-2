@@ -38,16 +38,17 @@ except Exception as e:
 sc.cycles.device = 'GPU' if gpu else 'CPU'
 
 # what lies above the cut goes; walls, columns and racks that reach through it are cut by the camera
-UP = ('Slab', 'Beam', 'ShopCeiling', 'RoomCeiling', 'Panel_', 'Batten', 'Down', 'ShopSign', 'Ground', 'Pavement')
+UP = ('Slab', 'Beam', 'ShopCeiling', 'RoomCeiling', 'Panel_', 'Batten', 'MainBatten', 'Down', 'ShopSign', 'Ground', 'Pavement',
+      'Pipe', 'Head_', 'Tray', 'Main_Slab')
 for o in list(bpy.data.objects):
     if o.type == 'MESH' and o.name.startswith(UP):
         bpy.data.objects.remove(o, do_unlink=True)
     elif o.type == 'LIGHT' and o.data.type == 'SUN':
         o.hide_render = True
 # cut what reaches above the plan's cut height down to it, so the cut tops are lit from above like a model;
-# the ramp, which runs over the small rooms, goes
+# the ramp over floor 1's small rooms goes (the car parks keep theirs)
 for o in list(bpy.data.objects):
-    if o.type == 'MESH' and o.name.startswith('Ramp'):
+    if o.type == 'MESH' and o.name.startswith('RampOverhead'):
         bpy.data.objects.remove(o, do_unlink=True)
 for o in list(bpy.data.objects):
     if o.type != 'MESH' or o.name.startswith(('Car', 'plant', 'sofa', 'armchair')) or o.parent is not None:

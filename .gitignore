@@ -12,3 +12,6 @@ next-env.d.ts
 # local backups of replaced models and old scripts
 *.bak
 scripts/_*.py
+
+# Python bytecode (Blender build scripts)
+__pycache__/

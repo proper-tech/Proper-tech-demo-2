@@ -37,6 +37,17 @@ export interface PanoTourData {
 const door = (u: number, v: number): [number, number, number] => [u, v, 1.1];
 const spot = (u: number, v: number): [number, number, number] => [u, v, 0.15];
 
+/** The car parks: the aisle from end to end, and the spots by the stair door and the ramps. */
+const park = (floor: number, stops: PanoStop[], links: Record<string, string[]>): PanoTourData => ({
+  base: `/tour-d/${floor}`,
+  eye: 1.55,
+  top: { src: `/tour-d/${floor}/top.webp`, rect: [-0.6, -0.6, 21.4, 30.6] },
+  stops,
+  links: Object.fromEntries(
+    Object.entries(links).map(([id, to]) => [id, to.map((t) => ({ to: t, point: spot(...stops.find((s) => s.id === t)!.at) }))]),
+  ),
+});
+
 export const blockDTours: Partial<Record<number, PanoTourData>> = {
   1: {
     base: '/tour-d/1',
@@ -98,4 +109,41 @@ export const blockDTours: Partial<Record<number, PanoTourData>> = {
       ],
     },
   },
+  0: park(
+    0,
+    [
+      { id: 'north', at: [9.0, 27.0], heading: 180, room: '1' },
+      { id: 'middle', at: [9.0, 18.0], heading: 180, room: '1' },
+      { id: 'south', at: [9.0, 6.5], heading: 0, room: '1' },
+      { id: 'stair', at: [15.4, 25.1], heading: 270, room: '1' },
+    ],
+    { north: ['middle', 'stair'], middle: ['north', 'south', 'stair'], south: ['middle'], stair: ['north', 'middle'] },
+  ),
+  2: park(
+    2,
+    [
+      { id: 'north', at: [9.0, 27.0], heading: 180, room: '21' },
+      { id: 'middle', at: [9.0, 18.0], heading: 180, room: '21' },
+      { id: 'south', at: [9.0, 8.5], heading: 0, room: '21' },
+      { id: 'ramp', at: [15.0, 8.0], heading: 0, room: '21' },
+      { id: 'ramp_up', at: [15.0, 26.6], heading: 180, room: '21' },
+    ],
+    {
+      north: ['middle', 'ramp_up'],
+      middle: ['north', 'south', 'ramp', 'ramp_up'],
+      south: ['middle', 'ramp'],
+      ramp: ['south', 'middle'],
+      ramp_up: ['north', 'middle'],
+    },
+  ),
+  3: park(
+    3,
+    [
+      { id: 'north', at: [9.0, 27.0], heading: 180, room: '31' },
+      { id: 'middle', at: [9.0, 18.0], heading: 180, room: '31' },
+      { id: 'south', at: [9.0, 8.5], heading: 0, room: '31' },
+      { id: 'ramp', at: [15.0, 8.0], heading: 0, room: '31' },
+    ],
+    { north: ['middle'], middle: ['north', 'south', 'ramp'], south: ['middle', 'ramp'], ramp: ['south', 'middle'] },
+  ),
 };
