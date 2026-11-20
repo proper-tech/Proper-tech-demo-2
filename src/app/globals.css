@@ -1954,6 +1954,11 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .floor-stage.is-walk .stage-hint {
   max-width: calc(100% - 17rem);
 }
+/* the home page's 3D building stands on the city's dark ground (city.glb): the same light hint as the walk */
+.tower .stage-hint {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
 
 /* Sun and brightness panel over the 3D stage */
 .sun-panel {

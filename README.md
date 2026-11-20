@@ -74,7 +74,9 @@ npm run build && npm start
   `FACADES` is a folder with ambientCG's CC0 textures `Facade018A`, `Facade019A`, `Facade020A` and `Facade006`
   (the `1K-JPG` zips from ambientcg.com, about 24 MB, each unpacked into `FACADES/<name>/`; not in the repo):
   photo facades on the surrounding buildings, glass on the ones 30 m and taller. Without it they get a drawn
-  window grid.
+  window grid. The same city stands round the 3D building on the home page (`public/models/blocks/city.glb`,
+  credited under the view), exported with
+  `$B -b -P scripts/build-film.py -- --city-glb public/models/blocks/city.glb --osm scripts/osm-surroundings.json --facades FACADES`.
   `SKY.hdr` is optional (without it Blender's own sky is used); the film used Poly Haven's
   `kloofendal_48d_partly_cloudy_puresky_2k.hdr` (CC0). The Sun Position add-on, if installed, places the sun over
   Ulaanbaatar. The poster is frame 0000 resized to 1600 px. `public/media/intro.mp4` is no longer used.
