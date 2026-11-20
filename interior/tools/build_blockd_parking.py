@@ -48,9 +48,8 @@ def slab_pieces(z0, z1, name, mat, void=VOID):
         box(f'{name}{n}', x0, x1, y0, y1, z0, z1, mat)
 
 slab_pieces(-0.05, 0, 'Floor', MAT['floor'])
-slab_pieces(CEIL, STOREY, 'Slab', MAT['concrete'])
-if FLOOR == 2:   # through the opening: the roof slab two floors up, the floor-3 rails round it
-    box('Slab_Up', 12, 18, 12, 24, STOREY + 3.0 - SLAB, STOREY + 3.0, MAT['concrete'])
+# the ceiling: floor 3's floor (open over the ramps) on floor 2; the roof, closed, on floors 3 and B1
+slab_pieces(CEIL, STOREY, 'Slab', MAT['concrete'], void=VOID if FLOOR == 2 else None)
 if VOID:         # under the opening: floor 1 at the bottom of the well
     box('Floor_Well', 12, 18, 12, 24, -({2: 4.5, 3: 7.8}[FLOOR]) - 0.05, -({2: 4.5, 3: 7.8}[FLOOR]), MAT['concrete_dark'])
     for n, (x0, x1) in enumerate(((11.8, 12.0), (18.0, 18.2))):
@@ -160,13 +159,22 @@ for side in SIDES:
             box(nm + '_Handle', c0 - 0.06, c0 - 0.03, f0 + 0.1, f0 + 0.15, 0.95, 1.1, MAT['steel'])
         a = f1
     wall_piece(side, a, hi, 0, STOREY, MAT['plaster'], f'Wall_{side}_end')
-# a grey band low on the inside of the walls, as car parks have
-for n, (x0, x1, y0, y1) in enumerate(((0, 0.012, 0, V1), (U1 - 0.012, U1, 0, V1), (0, U1, 0, 0.012), (0, U1, V1 - 0.012, V1))):
-    if FLOOR == 0 and n == 3:
-        box('Band_N_W', 0, 5.8, V1 - 0.012, V1, 0, 1.0, MAT['wall_low'])
-        box('Band_N_E', 11.7, U1, V1 - 0.012, V1, 0, 1.0, MAT['wall_low'])
-        continue
-    box(f'Band{n}', x0, x1, y0, y1, 0, 1.0, MAT['wall_low'])
+# a grey band low on the inside of the walls, as car parks have; it stops at doors and openings
+BAND = 1.0
+for side in SIDES:
+    lo, hi = 0.0, (V1 if side in ('E', 'W') else U1)
+    cuts = sorted((o[1], o[2]) for o in FACADE if o[0] == side and o[3] < BAND)
+    a = lo
+    for k, (f0, f1) in enumerate(cuts + [(hi, hi)]):
+        if f0 - a > 1e-3:
+            c0, c1 = SIDES[side]['across']
+            inner = c0 if side in ('E', 'N') else c1
+            t0, t1 = (inner - 0.012, inner) if side in ('E', 'N') else (inner, inner + 0.012)
+            if side in ('E', 'W'):
+                box(f'Band_{side}{k}', t0, t1, a, f0, 0, BAND, MAT['wall_low'])
+            else:
+                box(f'Band_{side}{k}', a, f0, t0, t1, 0, BAND, MAT['wall_low'])
+        a = f1
 box('Core_Wall', U1 + WALL, 21.2, 19.6, V1 + WALL, 0, STOREY, MAT['plaster'])
 
 if FLOOR == 0:
@@ -258,6 +266,45 @@ for u in (6, 12):
             continue
         o = text(f'ColSign_{u}_{v}', LABEL, u, v - 0.23, 0.32, 0.0, MAT['line'], z=1.55)
         o.rotation_euler = (math.pi / 2, 0, 0.0)   # on the column's south face, facing south
+
+# ------------------------------------------------------------------ floor 2: floor 3 above it, seen up the ramp and through the opening
+if FLOOR == 2:
+    UP0, UPH = STOREY, 3.0
+    slab_pieces(UP0, UP0 + 0.004, 'Up_Floor', MAT['floor'])
+    box('Up_Roof', 0, U1, 0, V1, UP0 + UPH - SLAB, UP0 + UPH, MAT['concrete'])
+    for u in (0, 6, 12, 18):
+        box(f'Up_BeamV{u}', u - 0.2, u + 0.2, 0, V1, UP0 + UPH - SLAB - BEAM, UP0 + UPH - SLAB, MAT['concrete'])
+        for v in (0, 6, 12, 18, 24, 30):
+            box(f'Up_Col_{u}_{v}', u - 0.225, u + 0.225, v - 0.225, v + 0.225, UP0, UP0 + UPH - SLAB - BEAM, MAT['concrete'])
+    for v in (0, 6, 12, 18, 24, 30):
+        box(f'Up_BeamU{v}', 0, U1, v - 0.2, v + 0.2, UP0 + UPH - SLAB - BEAM, UP0 + UPH - SLAB, MAT['concrete'])
+    w0, w1 = UP0 + 1.7, UP0 + 2.35
+    for side in SIDES:
+        lo, hi = SIDES[side]['along']
+        wins = [] if side == 'W' else [(c - 1.965, c + 1.965) for c in (3, 9, 15)]
+        if side == 'E':
+            wins = [w for w in wins if not (w[0] < 26.8 and w[1] > 25.6)]
+        a = lo
+        for k, (f0, f1) in enumerate(wins):
+            wall_piece(side, a, f0, UP0, UP0 + UPH, MAT['plaster'], f'Up_Wall_{side}{k}')
+            wall_piece(side, f0, f1, UP0, w0, MAT['plaster'], f'Up_Wall_{side}{k}_low')
+            wall_piece(side, f0, f1, w1, UP0 + UPH, MAT['plaster'], f'Up_Wall_{side}{k}_top')
+            window(side, f0, f1, w0, w1, f'Up_Win_{side}{k}')
+            a = f1
+        wall_piece(side, a, hi, UP0, UP0 + UPH, MAT['plaster'], f'Up_Wall_{side}_end')
+    box('Up_Parapet_W', 11.8, 12.0, 12.0, 24.0, UP0, UP0 + 1.1, MAT['concrete'])
+    box('Up_ParapetCap_W', 11.78, 12.02, 12.0, 24.0, UP0 + 1.1, UP0 + 1.14, MAT['yellow'])
+    for u in (3.0, 7.6, 10.4, 15.0):
+        for v in [2.4 + 3.0 * k for k in range(10)]:
+            if u > 12 and 12 < v < 24:
+                continue
+            z = UP0 + UPH - SLAB - BEAM - 0.05
+            box(f'Up_BattenL_{u}_{v:.1f}', u - 0.05, u + 0.05, v - 0.68, v + 0.68, z - 0.055, z - 0.05, MAT['tube_light'])
+            area_light(f'Up_L_{u}_{v:.1f}', u, v, z - 0.08, 0.2, 1.4, 120, (0.97, 0.98, 1.0))
+    # floor 3's cars at the top of the ramp (its south row and west row)
+    for k, (cx, cy, rot) in enumerate(bays(8.85, 3.05, 2) + bays(15.1, 3.05, 2) + bays(3.0, 8.9, 1) + bays(3.0, 14.85, 1)):
+        if k % 4 != 3:
+            car(f'Up_Car{k}', cx, cy, {1: 0.0, 2: math.pi / 2, 3: math.pi}[rot], z=UP0, paint=random.choice(['#f4f4f2', '#1d1f22', '#b9bdc2', '#1f3a5f', '#8e1b1b']))
 
 # ------------------------------------------------------------------ services under the slab and the lights
 z_pipe = CEIL - BEAM - 0.12
