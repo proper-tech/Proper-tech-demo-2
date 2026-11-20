@@ -67,6 +67,12 @@ function extrude(outline: Pt[], height: number) {
 }
 
 
+/** Glass of block A (podium) and D, matched to the towers' glass: deeper blue, glossy, so the sky reflects. */
+const GLASS: Record<string, { color: string; roughness: number }> = {
+  Glass: { color: '#0E2E5E', roughness: 0.12 },
+  'Glass Shopfront': { color: '#16222F', roughness: 0.06 },
+};
+
 function Model() {
   const { scene, animations } = useGLTF(MODEL_URL, DRACO_URL);
   usePeopleMotion(scene, animations);
@@ -74,6 +80,18 @@ function Model() {
   useMemo(() => {
     const cars = scene.getObjectByName('Cars');
     if (cars) cars.visible = false;
+    scene.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const g = GLASS[m.name];
+        if (g && 'color' in m) {
+          (m as MeshStandardMaterial).color.set(g.color);
+          (m as MeshStandardMaterial).roughness = g.roughness;
+          (m as MeshStandardMaterial).metalness = 0;
+        }
+      }
+    });
     fixPeople(scene);
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
@@ -84,6 +102,21 @@ function Model() {
   return <primitive object={scene} />;
 }
 useGLTF.preload(MODEL_URL, DRACO_URL);
+
+/** Facade detail of the podium (scripts/podium-detail.py): framed windows, mullions and transoms, shopfront
+ *  canopies. Kept apart from complex.glb so the podium model itself is not re-exported. */
+const PODIUM_DETAIL_URL = '/models/blocks/A-detail.glb';
+
+function PodiumDetail() {
+  const { scene } = useGLTF(PODIUM_DETAIL_URL, DRACO_URL);
+  useMemo(() => {
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(PODIUM_DETAIL_URL, DRACO_URL);
 
 /** Everything around the buildings, modelled in Blender (environment.blend): ground, roads,
  *  parking with cars, trees, hedges, street lights, furniture and people. Same site-plan frame
@@ -479,6 +512,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
           sky reflections (about 7 MB more) load right after, without holding it up. */}
       <Suspense fallback={null}>
         <Model />
+        <PodiumDetail />
         <WhenReady onReady={ready} />
       </Suspense>
       {buildingsIn && (
