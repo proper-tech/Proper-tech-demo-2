@@ -6,7 +6,7 @@ import { useI18n } from '@/i18n/I18nProvider';
 // The 38-second flight round the complex, rendered from the site's own 3D model (scripts/build-film.py);
 // the same file loops silently behind the home page's hero.
 const VIDEO_SRC = '/media/film.mp4';
-const POSTER_SRC = '/media/film-poster.jpg';
+const POSTER_SRC = '/media/film-poster.webp';
 
 export function VideoSection() {
   const { t } = useI18n();

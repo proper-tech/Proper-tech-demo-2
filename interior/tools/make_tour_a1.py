@@ -1,4 +1,4 @@
-"""Make the Block A 1st-floor 360° tour (public/tour/A1/index.html) from the plan-D tour.
+"""Make the Block A 1st-floor 360° tour (interior/tours/A1/index.html) from the plan-D tour.
 
 The plan-D tour is a self-contained page: the viewer code with its data inlined (panoramas, top view,
 stops, door hotspots). This keeps the viewer and swaps the data for the renders of interior/A1.blend:
@@ -13,8 +13,8 @@ import base64, io, json, math, os, re
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-SRC = os.path.join(ROOT, 'public/tour/D/index.html')
-OUT = os.path.join(ROOT, 'public/tour/A1/index.html')
+SRC = os.path.join(ROOT, 'interior/tours/D/index.html')
+OUT = os.path.join(ROOT, 'interior/tours/A1/index.html')
 REN = os.path.join(ROOT, 'interior/renders/A1')
 CAMS = json.load(open(os.path.join(ROOT, 'interior/A1_cams.json')))
 
