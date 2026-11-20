@@ -59,7 +59,9 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     const m = a.getAttribute('href')?.match(/\/floors\/([A-D])\/([^/?#]+)/);
     if (!m) return;
+    // stop the link's own navigation too: this runs in the capture phase, before Link's handler
     e.preventDefault();
+    e.stopPropagation();
     const floor = m[2] === 'B1' ? 0 : Number(m[2]);
     open({ tower: m[1] as BlockId, floor }, a.getAttribute('href')!);
   };
@@ -223,7 +225,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               )}
             </span>
           </div>
-          <ol className="lift-buttons" aria-label={t.home.panelLabel} onClick={onLiftClick}>
+          <ol className="lift-buttons" aria-label={t.home.panelLabel} onClickCapture={onLiftClick}>
             {tower === 'A' &&
               podiumPanel.map((f) => (
                 <li key={f.floor}>

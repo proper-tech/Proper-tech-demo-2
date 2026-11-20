@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
-import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Material, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Raycaster, Shape, Vector3, type Material, type Object3D, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -612,11 +612,13 @@ const smooth = (k: number) => k * k * (3 - 2 * k);
  * with the floor, square on to the facade it was looking at, with the whole floor across the view; then
  * straight at that facade until a window fills the view and the rooms behind the glass show (interiorGlass);
  * then on through the glass, while the page fades and opens the floor, whose own view starts inside that
- * facade (ARRIVE_KEY). The podium and block D take the first and last moves only.
+ * facade (ARRIVE_KEY). The podium and block D the same, onto a window or shopfront on a side with open
+ * space in front of it, found by casting rays at the building and what stands round it.
  */
 function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
+  const scene = useThree((s) => s.scene);
   type Path = { p0: Vector3; t0: Vector3; p1: Vector3; p2: Vector3; p3: Vector3; t1: Vector3; t3: Vector3; f0: number; k: number; done: boolean; dir: Vector3; near: number };
   const path = useRef<Path | null>(null);
   useEffect(() => {
@@ -648,10 +650,83 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
       interiorFocus.value.set(y0, y0 + FLOOR_HEIGHT);
       t3 = t1.clone().add(side).add(eye);
     } else {
-      p1 = t1.clone().add(dir.clone().multiplyScalar(d1)).add(new Vector3(0, 1.2, 0));
-      p2 = p1.clone();
-      p3 = t1.clone().add(dir.clone().multiplyScalar(4)).add(new Vector3(0, 0.3, 0));
-      t3 = t1.clone();
+      // the podium and block D: onto a window or shopfront at the floor's height, on the side
+      // nearest the camera that has one there (rays cast at the building), else the nearest side
+      const bb = to.tower === 'D' ? bounds(blockDOutline.map(blockDToSite)) : bounds(podiumOutline);
+      const hx = (bb.u1 - bb.u0) / 2;
+      const hz = (bb.v1 - bb.v0) / 2;
+      const building = scene.getObjectByName(to.tower === 'D' ? 'Annex' : 'Podium');
+      const extra = to.tower === 'D' ? scene.getObjectByName('D Facade Detail') : scene.getObjectByName('A Curtain Glass');
+      const axes = [new Vector3(1, 0, 0), new Vector3(-1, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1)].sort((p, q) => q.dot(dir) - p.dot(dir));
+      type Pick = { d: Vector3; face: number; off: number; dy: number; clear: number };
+      let pick: Pick | null = null;
+      let best: Pick | null = null;
+      const ray = new Raycaster();
+      const targets = [building, extra].filter((o): o is NonNullable<typeof o> => !!o);
+      // what the camera must not fly through: anything visible but the ground, the sky and labels
+      const solid = (o: Object3D) => {
+        const m = o as Mesh;
+        if (!m.isMesh || !m.visible || (o as { isSprite?: boolean }).isSprite) return false;
+        for (let p: Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+        const b = m.geometry.boundingBox!;
+        return b.max.y - b.min.y > 0.5;
+      };
+      // collected once, without people (skinned meshes are slow to cast rays at) and without the sky
+      const obstacles: Object3D[] = [];
+      scene.traverse((o) => {
+        // trees and street furniture are left out: brushing a crown is fine, a wall is not
+        if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh || /Person|MH_|Sky|Tree|Shrub|Hedge|Lamp|Light|Car|Traffic|Bench|Bollard/i.test(o.name)) return;
+        const m = o as Mesh;
+        if (m.isMesh && solid(o) && (m.geometry.boundingSphere?.radius ?? (m.geometry.computeBoundingSphere(), m.geometry.boundingSphere!.radius)) < 500) obstacles.push(o);
+      });
+      for (const d of axes) {
+        if (pick || !building) break;
+        const half = d.x !== 0 ? hz : hx;
+        const along = new Vector3(-d.z, 0, d.x);
+        // windows sit at different heights in a storey: try a few
+        search: for (const dy of [0, 0.7, -0.7, 1.1]) {
+          for (const f of [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8]) {
+            const from = t1.clone().add(d.clone().multiplyScalar(200)).add(along.clone().multiplyScalar(f * half)).setY(t1.y + dy);
+            ray.set(from, d.clone().negate());
+            ray.far = 400;
+            const hit = ray.intersectObjects(targets, true)[0];
+            const mat = hit && (Array.isArray((hit.object as Mesh).material) ? null : ((hit.object as Mesh).material as Material));
+            if (hit && mat && /glass/i.test(mat.name)) {
+              // and clear in front: nothing (another block, the city round the site, a tree) within
+              // 12 m of the window; how far it stays clear sets how far out the approach starts
+              // a few rays, a little to either side and higher up, so a gap can't fool it
+              let clear = 60;
+              for (const [ox, oy] of [[0, 0], [-1.5, 0], [1.5, 0], [0, 3]]) {
+                ray.set(hit.point.clone().add(d.clone().multiplyScalar(0.3)).add(along.clone().multiplyScalar(ox)).add(new Vector3(0, oy, 0)), d);
+                ray.far = 60;
+                const block = ray.intersectObjects(obstacles, false)[0];
+                if (block) clear = Math.min(clear, block.distance);
+              }
+              const cand = { d, face: 200 - hit.distance, off: f * half, dy, clear };
+              if (clear >= 20) {
+                pick = cand;
+                break search;
+              }
+              // nothing clear yet: remember the window with the most room in front of it
+              if (!best || clear > best.clear) best = cand;
+            }
+          }
+        }
+      }
+      if (!pick && best) pick = best;
+      if (!pick) {
+        const d = Math.abs(dir.x) * hz > Math.abs(dir.z) * hx ? new Vector3(Math.sign(dir.x), 0, 0) : new Vector3(0, 0, Math.sign(dir.z));
+        pick = { d, face: d.x !== 0 ? hx : hz, off: 0, dy: 0, clear: 30 };
+      }
+      dir.copy(pick.d);
+      const face = pick.face;
+      const side = new Vector3(-dir.z, 0, dir.x).multiplyScalar(pick.off);
+      t1.add(side).add(new Vector3(0, pick.dy, 0));
+      p1 = t1.clone().add(dir.clone().multiplyScalar(face + Math.max(8, Math.min(d1 * 0.4, pick.clear - 2)))).add(new Vector3(0, 3, 0));
+      p2 = t1.clone().add(dir.clone().multiplyScalar(face + 4)).add(new Vector3(0, 0.1, 0));
+      p3 = t1.clone().add(dir.clone().multiplyScalar(face - 1.5)).add(new Vector3(0, 0.1, 0));
+      t3 = t1.clone().add(new Vector3(0, 0.1, 0));
     }
     path.current = { p0: camera.position.clone(), t0, p1, p2, p3, t1, t3, f0: camera.fov, k: 0, done: false, dir, near: camera.near };
     if (controls) controls.enabled = false;
@@ -663,7 +738,7 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
         camera.updateProjectionMatrix();
       }
     };
-  }, [to, camera, controls]);
+  }, [to, camera, controls, scene]);
   useFrame((_, dt) => {
     const z = path.current;
     if (!z || z.done) return;
@@ -672,7 +747,11 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
     const a = smooth(Math.min(1, z.k / 0.45));
     const b = smooth(MathUtils.clamp((z.k - 0.45) / 0.35, 0, 1));
     const c = MathUtils.clamp((z.k - 0.8) / 0.2, 0, 1);
-    const pos = new Vector3().lerpVectors(z.p0, z.p1, a).lerp(z.p2, b).lerp(z.p3, c * c);
+    // on the way round, keep height until near the end, so the camera comes down onto the floor's
+    // level from above instead of skimming through trees and neighbouring blocks
+    const pos = new Vector3().lerpVectors(z.p0, z.p1, a);
+    pos.y = MathUtils.lerp(z.p0.y, z.p1.y, a * a);
+    pos.lerp(z.p2, b).lerp(z.p3, c * c);
     camera.position.copy(pos);
     const target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15)).lerp(z.t3, b);
     if (controls) controls.target.copy(target);
