@@ -17,6 +17,7 @@ import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
 import { interiorFocus, interiorGlass, nightFactor } from './interiorGlass';
 import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
+import { removeStrayKerbs } from './strayKerbs';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -251,6 +252,7 @@ function Environment() {
       tree.position.z += dz;
       tree.scale.multiplyScalar(k || 1);
     }
+    removeStrayKerbs(scene);
     registerNightGlow(scene);
     fixPeople(scene);
     scene.traverse((o) => {
