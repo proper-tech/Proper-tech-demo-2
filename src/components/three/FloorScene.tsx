@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, Path, PlaneGeometry, Shape } from 'three';
+import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3 } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -18,6 +18,7 @@ import { Lights } from './ApartmentScene';
 import { stoneTexture } from './textures';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { ARRIVE_KEY } from '@/lib/arrive';
 
 interface Props {
   units: Unit[];
@@ -27,6 +28,8 @@ interface Props {
   hovered: string | null;
   onHover: (id: string | null) => void;
   onOpen: (id: string) => void;
+  /** Called once the plan pictures are in, the shaders compiled and the first frames drawn. */
+  onReady?: () => void;
 }
 
 // Floor-plate coordinates (X east, Y north, see layouts.ts) -> scene: x east, z south,
@@ -51,11 +54,8 @@ export function unitPlacement(layout: Layout): [number, number, number] {
   return [sx(layout.origin[0]), 0, sz(layout.origin[1])];
 }
 
-/** The middle of the apartment's living room, where its tag goes. */
-export function unitCentre(layout: Layout): [number, number] {
-  const r = layout.rooms.find((room) => room.id === 'living') ?? layout.rooms[0];
-  return [layout.origin[0] + r.x + r.w / 2, layout.origin[1] - r.z - r.d / 2];
-}
+import { unitCentre } from '@/lib/unitCentre';
+export { unitCentre };
 
 function roundedRect(x0: number, y0: number, x1: number, y1: number, r: number) {
   const s = new Shape();
@@ -146,10 +146,37 @@ function StoneFloor({ x, z, w, d }: { x: number; z: number; w: number; d: number
 function FitCamera() {
   const camera = useThree((s) => s.camera);
   const aspect = useThree((s) => s.size.width / s.size.height);
+  const arrive = useRef<{ from: Vector3; to: Vector3; k: number } | null>(null);
   useEffect(() => {
     const k = Math.max(1, 1.05 / aspect);
-    camera.position.set(4 * k, 40 * k, 22 * k);
+    const to = new Vector3(4 * k, 40 * k, 22 * k);
+    // just zoomed in from the building (BuildingScene's ZoomIn): come down from the side the zoom came from
+    let from: Vector3 | null = null;
+    try {
+      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number } | null;
+      sessionStorage.removeItem(ARRIVE_KEY);
+      if (a && Date.now() - a.at < 8000) from = new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
+    } catch {
+      // no storage: plain view
+    }
+    if (from && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      arrive.current = { from, to, k: 0 };
+      camera.position.copy(from);
+    } else camera.position.copy(to);
+    camera.lookAt(0, 0, 0);
   }, [camera, aspect]);
+  useFrame((_, dt) => {
+    const a = arrive.current;
+    if (!a) return;
+    a.k = Math.min(1, a.k + dt / 1.2);
+    const e = 1 - (1 - a.k) ** 3;
+    // swing up over the floor on an arc rather than a straight line
+    const p = new Vector3().lerpVectors(a.from, a.to, e);
+    p.setLength(MathUtils.lerp(a.from.length(), a.to.length(), e));
+    camera.position.copy(p);
+    camera.lookAt(0, 0, 0);
+    if (a.k >= 1) arrive.current = null;
+  });
   return null;
 }
 
@@ -205,7 +232,44 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
   );
 }
 
-export default function FloorScene({ units, core, layer, hovered, onHover, onOpen }: Props) {
+/** The furnished plan pictures (PhotoApartment); asked for as soon as this module loads. */
+const PLAN_PICTURES = Object.values(photoModels).flatMap((m) => (m ? [m.image.src] : []));
+useLoader.preload(TextureLoader, PLAN_PICTURES);
+
+/**
+ * Waits for the plan pictures (the same cached textures PhotoApartment uses), compiles every
+ * material's shaders, lets two frames draw, then reports ready, so the page can swap its 2D plan
+ * for a finished 3D view instead of one that pops in and stutters.
+ */
+function WhenReady({ onReady }: { onReady?: () => void }) {
+  useLoader(TextureLoader, PLAN_PICTURES);
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    let cancelled = false;
+    let frame = 0;
+    (async () => {
+      try {
+        await gl.compileAsync(scene, camera);
+      } catch {
+        // older drivers: the frames below compile instead
+      }
+      let n = 0;
+      const step = () => {
+        if (cancelled) return;
+        if (++n < 3) frame = requestAnimationFrame(step);
+        else onReady?.();
+      };
+      frame = requestAnimationFrame(step);
+    })();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [gl, scene, camera, onReady]);
+  return null;
+}
+
+export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady }: Props) {
   const anchors = useMemo<Anchor[]>(
     () => [
       ...units.map((u): Anchor => {
@@ -245,6 +309,9 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
     <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 1, far: 400, position: [4, 40, 22] }}>
       <Lights />
       <FitCamera />
+      <Suspense fallback={null}>
+        <WhenReady onReady={onReady} />
+      </Suspense>
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
 
       <Slab hole={hole} />

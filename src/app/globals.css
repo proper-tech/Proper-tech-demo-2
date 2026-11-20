@@ -567,6 +567,39 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: var(--ink);
 }
 
+.floor-hover-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgb(20 35 59 / 0.9);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(10 20 40 / 0.25);
+}
+
+.floor-hover-tag strong {
+  font-weight: 700;
+}
+
+.floor-hover-tag span {
+  color: #c4cfdd;
+  font-size: 0.75rem;
+}
+
+.floor-hover-tag.is-for-sale {
+  background: rgb(47 111 222 / 0.94);
+}
+
+.floor-hover-tag.is-for-sale span {
+  color: #e3ecff;
+}
+
 .tower-tag {
   padding: 0.25rem 0.7rem;
   border-radius: 999px;
@@ -762,27 +795,43 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   color: var(--paper);
 }
 
+/* Sale status: a coloured dot and plain text, so it never reads as a button (amber is for actions). */
 .status {
-  display: inline-block;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.8125rem;
   font-weight: 500;
   white-space: nowrap;
+  color: var(--ink);
 }
 
-.status-available {
-  background: var(--amber);
+.status::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-available::before {
+  background: #2f9d5b;
 }
 
 .status-reserved {
-  box-shadow: inset 0 0 0 1px var(--stone);
   color: var(--stone);
 }
 
+.status-reserved::before {
+  background: #d39b1f;
+}
+
 .status-sold {
-  background: #d3d9e0;
   color: var(--stone);
+}
+
+.status-sold::before {
+  background: #aab4bf;
 }
 
 /* Floor and apartment pages: 3D stage on the left, panel on the right */
@@ -1122,7 +1171,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 .rooms th,
 .rooms td {
-  padding: 0.5rem 0.4rem;
+  padding: 0.5rem 0.3rem;
   text-align: right;
   font-weight: 400;
   border-bottom: 1px solid var(--line);
@@ -1137,6 +1186,13 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .rooms thead th {
   color: var(--stone);
   font-size: 0.8125rem;
+  white-space: normal;
+}
+
+/* the last column ends at the panel's edge, not short of it, so nothing is cut off */
+.rooms th:last-child,
+.rooms td:last-child {
+  padding-right: 0;
 }
 
 .rooms tbody button {
@@ -1250,9 +1306,10 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .unit-list .is-off,
 .unit-list .is-static {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'id status' 'info info' 'open open';
   align-items: center;
-  gap: 0.25rem 0.9rem;
+  gap: 0.45rem 0.9rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -1275,6 +1332,20 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-family: var(--display);
   font-size: 1.05rem;
   font-weight: 500;
+}
+
+.unit-list .unit-id {
+  grid-area: id;
+  justify-self: start;
+}
+
+.unit-list .status {
+  grid-area: status;
+  justify-self: end;
+}
+
+.unit-list .unit-info {
+  grid-area: info;
 }
 
 .unit-id.is-flat {
@@ -1308,7 +1379,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .unit-open {
-  grid-column: 2 / -1;
+  grid-area: open;
   color: var(--sky);
   font-size: 0.875rem;
   font-weight: 500;
@@ -2437,12 +2508,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 40;
   background: var(--board);
   pointer-events: none;
-  animation: tower-zoom-fade 1.2s ease-in forwards;
+  animation: tower-zoom-fade 1.7s ease-in forwards;
 }
 
 @keyframes tower-zoom-fade {
   0%,
-  65% {
+  72% {
     opacity: 0;
   }
   100% {
@@ -2515,7 +2586,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 0;
   height: 100svh;
   overflow: hidden;
-  background: var(--ink) url('/media/film-poster.jpg') center / cover; /* the film's first frame */
+  background: var(--ink) url('/media/film-poster.webp') center / cover; /* the film's first frame */
 }
 
 .story-film {
@@ -2593,8 +2664,9 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   100% { transform: scaleY(1); opacity: 0; }
 }
 
-/* each chapter: a frosted card over the film */
-.chapter-card {
+/* each chapter: a frosted card in the middle of the film, for what the film is showing at that
+   moment: a short amber line, the title, one line */
+.chapter-caption {
   display: grid;
   justify-items: center;
   gap: 0.9rem;
@@ -2604,45 +2676,26 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   border-radius: 28px;
   background: rgb(14 26 46 / 0.55);
   backdrop-filter: blur(14px) saturate(1.2);
+  text-align: center;
 }
 
-.chapter-n {
-  font: 600 0.875rem / 1 var(--display);
-  letter-spacing: 0.1em;
-  color: var(--amber);
+.chapter-caption::before {
+  content: '';
+  width: 3.5rem;
+  height: 3px;
+  background: var(--amber);
 }
 
-.chapter-card h2 {
+.chapter-caption h2 {
   font-size: clamp(2.5rem, 6vw, 5rem);
   line-height: 0.95;
   letter-spacing: -0.04em;
 }
 
-.chapter-card p {
+.chapter-caption p {
   max-width: 34rem;
-  font-size: 1.125rem;
+  font-size: clamp(1.05rem, 0.4vw + 1rem, 1.2rem);
   color: #dbe3ee;
-}
-
-.chapter-figures {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem clamp(1.5rem, 5vw, 3.5rem);
-  margin: 0.75rem 0 0;
-}
-
-.chapter-figures dd {
-  margin: 0;
-  font: 600 clamp(2.25rem, 5vw, 3.75rem) / 1 var(--display);
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.chapter-figures dt {
-  margin-top: 0.4rem;
-  font-size: 0.875rem;
-  color: #c3cedc;
 }
 
 /* which chapter you are in: a dot per chapter on the right of the film */
@@ -2721,7 +2774,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 .explore-cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
@@ -3341,4 +3394,16 @@ html.js-motion .fx.rv.is-in {
   stroke: #fffffff0;
   stroke-width: 0.35px;
   stroke-linejoin: round;
+}
+
+/* The 2D plan standing in for a floor's 3D view while that loads (FloorExperience). */
+.floor-plan.is-standin {
+  z-index: 1;
+  background: var(--board);
+  animation: standin-in 0.2s ease-out;
+}
+@keyframes standin-in {
+  from {
+    opacity: 0;
+  }
 }

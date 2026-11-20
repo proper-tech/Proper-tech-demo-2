@@ -13,8 +13,9 @@ import type { TowerId } from '@/data/types';
 import { fmt, type Dict } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { bounds, m, polygonCentre, type Pt } from '@/lib/geometry';
-import { ROOF_SPOTS, type Tour } from './three/Tour';
+import { ROOF_SPOTS, type Tour } from './three/spots';
 import { TourBar } from './TourBar';
+import { fitTourFrame } from './tourFrame';
 
 const PodiumScene = dynamic(() => import('./three/PodiumScene'), {
   ssr: false,
@@ -101,10 +102,13 @@ function PlanAccess({ pf }: { pf: PodiumFloor }) {
   );
 }
 
+/** Podium floors with a rendered 360° tour (public/tour/<id>/index.html, made by interior/tools/make_tour_a1.py). */
+const PHOTO_TOURS: Partial<Record<number, string>> = { 1: 'A1' };
+
 export function PodiumFloorExperience({ floor, tower, block }: { floor: number; tower?: TowerId; block?: 'D' }) {
   const { locale, t } = useI18n();
   const router = useRouter();
-  const [view, setView] = useState<'3d' | 'walk' | '2d'>('3d');
+  const [view, setView] = useState<'3d' | 'walk' | '2d' | 'photo'>('3d');
   const [room, setRoom] = useState<string | null>(null);
   const [spots, setSpots] = useState<Pt[]>([]);
   const dot = useRef<SVGGElement>(null);
@@ -136,25 +140,29 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
     const q = new URLSearchParams(window.location.search);
     const v = q.get('view');
     if (block === 'D' && (v === '360' || v === 'walk')) setView('walk');
+    if (!block && !tower && PHOTO_TOURS[floor] && (v === '360' || v === 'tour')) setView('photo');
     const pair = (k: string) => {
       const n = (q.get(k) ?? '').split(',').map(Number);
       return n.length === 2 && n.every(Number.isFinite) ? (n as [number, number]) : null;
     };
     const [at, look] = [pair('at'), pair('look')];
     if (at && look) setSpot({ start: at, look });
-  }, [block]);
+  }, [block, tower, floor]);
   const [hovered, setHovered] = useState<string | null>(null);
   const layer = useRef<HTMLDivElement>(null);
   const isD = block === 'D';
   // block D floors rendered in Blender: a 360° tour of photos and the furnished top view
   const pano = isD ? blockDTours[floor] : undefined;
-  const photoTour = !!pano && view === 'walk';
+  const dTour = !!pano && view === 'walk';
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   const pf = tower ? getRoofFloor(tower) : isD ? getBlockDFloor(floor)! : getPodiumFloor(floor)!;
   const lower = isD ? getBlockDFloor(floor - 1) : undefined;
   // the roof playground (floor 4) has a 360° view you can walk through
   const walkable = !tower && !isD && pf.spaces.some((s) => s.type === 'playground');
   const walking = tour.kind === 'spot';
+  // a rendered 360° tour of the floor (public/tour/<id>/index.html), when there is one
+  const photoTour = !tower && !isD ? PHOTO_TOURS[floor] : undefined;
+  const photo = view === 'photo' && !!photoTour;
   const listed = listedSpaces(pf);
   const towerHref = (s: PodiumSpace) => `/${locale}/floors/${s.tower}/${FLOOR_MIN}`;
   const open = (s: PodiumSpace) => s.tower && router.push(towerHref(s));
@@ -197,12 +205,12 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
 
   return (
     <div className="floor">
-      <section className={photoTour ? 'floor-stage is-tour' : isD && view === 'walk' ? 'floor-stage is-walk' : 'floor-stage'}>
-        {pano && photoTour && <PanoTour tour={pano} floorLabel={blockDLabel(floor)} />}
-        <div className={view === '2d' || photoTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
+      <section className={dTour ? 'floor-stage is-tour' : isD && view === 'walk' ? 'floor-stage is-walk' : 'floor-stage'}>
+        {pano && dTour && <PanoTour tour={pano} floorLabel={blockDLabel(floor)} />}
+        <div className={view === '2d' || photo || dTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
           {isD ? (
             view !== '2d' &&
-            !photoTour && (
+            !dTour && (
               <DFloorScene
                 key={view}
                 floor={pf}
@@ -279,7 +287,10 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
           </div>
         )}
 
-        <div className="apt-head">
+        {photo && (
+          <iframe className="apt-tour-frame" src={`/tour/${photoTour}/index.html`} title={t.apt.modeTour} allow="fullscreen" onLoad={(e) => fitTourFrame(e.currentTarget)} />
+        )}
+        <div className={photo ? 'apt-head is-over-photo' : 'apt-head'}>
           <Link className="back" href={`/${locale}#floors`}>
             {t.floor.back}
           </Link>
@@ -289,6 +300,11 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
             <button type="button" aria-pressed={view === '3d'} onClick={() => setView('3d')}>
               {t.floor.view3d}
             </button>
+            {photoTour && (
+              <button type="button" aria-pressed={view === 'photo'} onClick={() => setView('photo')}>
+                {t.apt.modeTour}
+              </button>
+            )}
             {isD && (
               <button type="button" aria-pressed={view === 'walk'} onClick={() => setView('walk')}>
                 {t.blockD.walk}
@@ -308,7 +324,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
         </div>
         {view === '3d' && walkable && <TourBar tour={tour} setTour={setTour} spots={ROOF_SPOTS} label={t.tour.label} />}
         {view === '3d' && <p className="stage-hint">{walking ? t.tour.lookHint : t.podium.hint}</p>}
-        {isD && view === 'walk' && !photoTour && (
+        {isD && view === 'walk' && !dTour && (
           <>
             <div className="walk-hud">
               <div className="walk-room" aria-live="polite">

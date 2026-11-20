@@ -15,3 +15,13 @@ scripts/_*.py
 
 # Python bytecode (Blender build scripts)
 __pycache__/
+
+# Interior tours: the downloaded HDRI (re-download from Poly Haven, see interior/README.md),
+# test renders and render logs
+interior/hdri/
+interior/renders/**/_*
+interior/renders/**/*.log
+
+# Block A 1st-floor scene: 430 MB with the product scans packed in, over GitHub's file limit;
+# rebuild it with interior/tools/build_a1.py (see interior/README.md)
+interior/A1.blend

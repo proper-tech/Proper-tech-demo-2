@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,11 @@ import { useI18n } from '@/i18n/I18nProvider';
 import { layoutArea, m } from '@/lib/geometry';
 import { PlanGroup, type PlanTx } from './Plan2D';
 import { photoModels } from '@/data/photoModels';
-import { unitCentre } from './three/FloorScene';
+import { unitCentre } from '@/lib/unitCentre';
+import { preloadFloor3D } from './three/preload';
+
+// the 3D view's code and pictures start downloading as soon as this page's code runs
+preloadFloor3D('B');
 
 const FloorScene = dynamic(() => import('./three/FloorScene'), {
   ssr: false,
@@ -106,6 +110,9 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   const { locale, t } = useI18n();
   const router = useRouter();
   const [view, setView] = useState<'3d' | '2d'>('3d');
+  // until the 3D view has drawn its first frames, the 2D plan stands in for it
+  const [drawn, setDrawn] = useState(false);
+  const ready = useCallback(() => setDrawn(true), []);
   const [hovered, setHovered] = useState<string | null>(null);
   const summary = getFloor(tower, floor)!;
   const core = coreFor(tower, floor);
@@ -131,7 +138,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
     <div className="floor">
       <section className="floor-stage">
         <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} />
+          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} onReady={ready} />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
               <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
@@ -147,8 +154,8 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             )}
           </div>
         </div>
-        {view === '2d' && (
-          <div className="floor-plan">
+        {(view === '2d' || !drawn) && (
+          <div className={view === '2d' ? 'floor-plan' : 'floor-plan is-standin'}>
             <svg className="plan-svg" viewBox={`-0.6 -0.6 ${PLAN_W + 1.2} ${PLAN_H + 1.2}`} role="img">
               <rect className="plan-slab" x={0} y={0} width={PLAN_W} height={PLAN_H} rx={PLATE.corner} />
               {PLATE.grid.x.map((X) => (

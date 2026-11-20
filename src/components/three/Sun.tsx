@@ -3,23 +3,10 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import site from '@/data/site.json';
+import type { SunSettings } from './sunSettings';
 import { BackSide, CanvasTexture, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type Group, type PerspectiveCamera, type Sprite } from 'three';
 
-/** Where the sun is and how bright the scene is, as set by the sun panel (SunPanel.tsx). */
-export interface SunSettings {
-  /** Compass direction the sun shines from, in degrees: 0 north, 90 east, 180 south, 270 west. */
-  azimuth: number;
-  /** Height of the sun above the horizon, in degrees. */
-  elevation: number;
-  /** Overall brightness, 1 = normal. */
-  brightness: number;
-  /** How far through the day the sun is: 0 at sunrise, 1 at sunset. In the overview the sun
-   *  is drawn crossing the picture over the apartments, left at sunrise, right at sunset. */
-  dayFraction?: number;
-}
-
-/** Late-morning sun from the south-east, so the default view shows the towers' shadows. */
-export const DEFAULT_SUN: SunSettings = { azimuth: 140, elevation: 38, brightness: 1 };
+export { DEFAULT_SUN, type SunSettings } from './sunSettings';
 
 /** Centre of the site in the scene and the half-size of the area that gets shadows (metres). */
 const CENTER: [number, number, number] = [0, 0, -12];
@@ -235,7 +222,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
         color={sunColor}
         intensity={(1.6 + 0.8 * (1 - low)) * day * b}
         position={[CENTER[0] + lx * DISTANCE, CENTER[1] + ly * DISTANCE, CENTER[2] + lz * DISTANCE]}
-        shadow-mapSize={[4096, 4096]}
+        shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.04}
         shadow-camera-left={-REACH}

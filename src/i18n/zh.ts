@@ -5,11 +5,11 @@ const zh: Dict = {
     name: 'Sebotse',
     description: '选择楼层,查看平面图,以 3D 方式走进每一套公寓。',
     footer: '建筑、楼层平面和房间面积依据建筑师的方案设计(Uran Project,2026 年)。销售状态仍为占位内容。',
-    sales: '售楼处:+976 0000 0000',
+    sales: '售楼处:{phone}',
   },
   nav: { floors: '楼层', explore: '探索', layouts: '户型', video: '视频', contact: '联系', language: '语言', menu: '菜单' },
   hero: {
-    lead: '两座16层住宅塔楼坐落于商业服务裙楼之上，屋顶设有儿童游乐场。乌兰巴托市钦格尔泰区。',
+    lead: '两座16层住宅塔楼坐落于商业服务裙楼之上，屋顶设有儿童游乐场。',
     toFloors: '选择楼层',
     toFilm: '观看影片',
     floors: '楼层',
@@ -18,13 +18,13 @@ const zh: Dict = {
   story: {
     scroll: '向下滚动',
     location: { title: '位置', line: '乌兰巴托市中心钦格尔泰区，临主干道。' },
-    towers: { title: '双塔', line: 'B座与C座高16层，{min}至{max}层共{count}套公寓。' },
+    towers: { title: '双塔', line: 'B座与C座，各16层，{min}层以上为住宅。' },
     podium: { title: '裙楼与屋顶', line: '塔楼下方为三层商业服务，两座塔楼之间的屋顶设有游乐场。' },
     homes: { title: '您的家', line: '三种户型，每套均带阳台，并为住户提供室内停车位。' },
   },
   explore: {
-    heading: '四种方式了解项目',
-    lead: '以下内容均已可以使用，打开亲自看看。',
+    heading: '走进去看看',
+    lead: '在3D和360°中查看公寓、商业楼层和屋顶游乐场。',
     floors: {
       title: '选择楼层',
       line: '在电梯面板或3D楼宇上选择楼栋和楼层，查看在售房源。',
@@ -39,6 +39,11 @@ const zh: Dict = {
       title: '裙楼、屋顶与停车场',
       line: '1至3层为商业服务，裙楼屋顶设有游乐场，地下为室内停车场。',
       cta: '打开屋顶游乐场',
+    },
+    shops: {
+      title: '商业楼层360°',
+      line: 'A座1层：带自动扶梯的中庭和超市，逐点漫游。',
+      cta: '打开360°全景',
     },
     site: {
       title: '总平面',
@@ -123,7 +128,7 @@ const zh: Dict = {
     architect: '建筑设计：Uran Project 有限责任公司',
     loading3d: '正在加载 3D 模型…',
     title: '选择楼层,在建成之前走进您的公寓',
-    lead: '两栋 16 层住宅楼(B 座和 C 座)坐落在三层商业服务裙楼之上,{min} 至 {max} 层共 {count} 套公寓。亮起的按钮表示该楼层仍有公寓在售。',
+    lead: '选择楼栋和楼层。亮起的按钮表示该楼层仍有在售公寓，点击即可打开该层平面。',
     towerN: '{t} 座',
     panelLabel: '楼层',
     floorN: '{n} 层',
@@ -136,7 +141,7 @@ const zh: Dict = {
     videoHeading: '38秒了解项目',
     videoLead: '以本网站同一3D模型渲染的环绕飞行影片：两座塔楼、裙楼、屋顶游乐场及周边街道。',
     playVideo: '播放视频',
-    videoNote: '由3D模型渲染，周边建筑仅为示意。',
+    videoNote: '由3D模型渲染；周边建筑来自OpenStreetMap，高度为近似值。地图数据 © OpenStreetMap contributors。',
     galleryHeading: '建筑外观',
     galleryLead: '建筑师绘制的两栋塔楼、裙楼和场地效果图。',
     captions: {

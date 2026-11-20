@@ -6,14 +6,15 @@ The plan-D scene (d4k/scene.blend) supplies every material, light set-up and pie
 - rebuilds the walls, floor, ceiling, windows, curtains, doors and window light for the new plan,
 - deletes everything of D, adds one panorama camera per stop and saves <unit>.blend + <unit>_cams.json.
 Plan coordinates as in the D scene: x east, y south (as drawn), metres; Blender X = x, Y = -y.
-Run: python3 -I build_unit.py F|E outdir
+Run: python3 -I build_unit.py F|E outdir [plan-D scene] [fixes.py]
 """
 import sys, json, math, re
 import bpy
 from mathutils import Matrix, Vector
 
 UNIT, OUT = sys.argv[1], sys.argv[2]
-bpy.ops.wm.open_mainfile(filepath='/home/claude/d4k/scene.blend')
+SRC = sys.argv[3] if len(sys.argv) > 3 else '/home/claude/units/out/D.blend'  # the cleaned-up plan-D scene (interior/D.blend)
+bpy.ops.wm.open_mainfile(filepath=SRC)
 ORIG = list(bpy.data.objects)
 OBJ = bpy.data.objects
 MAT = bpy.data.materials
@@ -287,6 +288,27 @@ else:  # E
     CAMS = dict(entry=(13.55, 10.55, 1.5), kitchen=(15.6, 11.9, 1.5), living=(18.45, 11.0, 1.5),
                 bed_e2=(19.95, 8.75, 1.5), bath_e3=(13.25, 12.45, 1.4), balcony=(21.15, 8.2, 1.5))
 
+def clear_doorways():
+    """Kit wall tiles that came from a wall without a door can cover a new doorway: take them out of it."""
+    for g in DOORWAYS:
+        if g['kind'] not in ('door', 'open'): continue
+        for o in list(coll.objects):
+            if o.type != 'MESH' or not re.match(r'^(Bath_.*tile|Wall_Tile)', o.name): continue
+            bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
+            x0, x1 = min(v.x for v in bb), max(v.x for v in bb)
+            y0, y1 = min(-v.y for v in bb), max(-v.y for v in bb)
+            z0, z1 = min(v.z for v in bb), max(v.z for v in bb)
+            along = (x0, x1) if g['along_x'] else (y0, y1)
+            across = (y0, y1) if g['along_x'] else (x0, x1)
+            if along[1] > g['a'] + 0.02 and along[0] < g['b'] - 0.02 and across[1] > g['line'] - 0.3 and across[0] < g['line'] + 0.3 and z0 < DOOR_H and z1 > 0.3:
+                print('cleared from doorway', o.name); OBJ.remove(o, do_unlink=True)
+
+clear_doorways()
+exec(open(sys.argv[4] if len(sys.argv) > 4 else '/home/claude/units/fixes.py').read())
+PLANT_ROOMS = dict(F={'living': (13.95, 3.3, 21.85, 7.0), 'bed4': (13.95, 0.0, 17.25, 3.15), 'bed5': (17.4, 0.0, 20.3, 3.15),
+                      'hall': (13.0, 7.15, 15.4, 9.6), 'balcony': (20.45, 0.0, 21.85, 3.15)},
+                   E={'living': (13.0, 9.85, 21.85, 13.9), 'bed2': (17.45, 7.15, 20.2, 9.7), 'balcony': (20.35, 7.15, 21.85, 9.7)})
+fit_plants(PLANT_ROOMS[UNIT], small=('balcony',))
 window_dressing()
 skirting(rooms.values(), DOORWAYS)
 for i, (x0, y0, x1, y1) in enumerate(FLOORS):

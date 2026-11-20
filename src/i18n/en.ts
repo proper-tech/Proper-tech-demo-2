@@ -3,11 +3,11 @@ const en = {
     name: 'Sebotse',
     description: 'Choose a floor, open its plan and walk through every apartment in 3D.',
     footer: 'The building, floor plans and room areas follow the architect\'s schematic design (Uran Project, 2026). The sales status is still a placeholder.',
-    sales: 'Sales office: +976 0000 0000',
+    sales: 'Sales office: {phone}',
   },
   nav: { floors: 'Floors', explore: 'Explore', layouts: 'Layouts', video: 'Video', contact: 'Contact', language: 'Language', menu: 'Menu' },
   hero: {
-    lead: 'Two 16-storey towers on a podium of shops and services, with a playground on the roof. Chingeltei district, Ulaanbaatar.',
+    lead: 'Two 16-storey towers on a podium of shops and services, with a playground on the roof.',
     toFloors: 'Choose your floor',
     toFilm: 'Watch the film',
     floors: 'Floors',
@@ -16,13 +16,13 @@ const en = {
   story: {
     scroll: 'Scroll',
     location: { title: 'Location', line: 'Chingeltei district, in the centre of Ulaanbaatar, on the main road.' },
-    towers: { title: 'Two towers', line: 'Blocks B and C rise 16 storeys, with {count} apartments on floors {min} to {max}.' },
+    towers: { title: 'Two towers', line: 'Blocks B and C, 16 storeys each, with homes from floor {min} up.' },
     podium: { title: 'Podium and roof', line: 'Three storeys of shops and services under the towers, and a playground on the roof between them.' },
     homes: { title: 'Your home', line: 'Three apartment types, every one with a balcony, and heated parking for the residents.' },
   },
   explore: {
-    heading: 'Four ways to look around',
-    lead: 'Everything below already works. Open it and look for yourself.',
+    heading: 'Step inside',
+    lead: 'An apartment, the shopping floor and the roof playground, in 3D and 360°.',
     floors: {
       title: 'Choose a floor',
       line: 'Pick a tower and a floor on the lift panel or the 3D building, and see which apartments are for sale.',
@@ -37,6 +37,11 @@ const en = {
       title: 'Podium, roof and parking',
       line: 'Shops and services on floors 1 to 3, the playground on the podium roof, and the heated car park below.',
       cta: 'Open the roof playground',
+    },
+    shops: {
+      title: 'The shopping floor in 360°',
+      line: 'Block A, 1st floor: the hall with its escalators, and the supermarket. Step from spot to spot.',
+      cta: 'Open the 360° tour',
     },
     site: {
       title: 'The site',
@@ -128,7 +133,7 @@ const en = {
     architect: 'Architect: Uran Project LLC',
     loading3d: 'Loading the 3D model…',
     title: 'Choose a floor and walk through your apartment before it is built',
-    lead: 'Two 16-storey towers, Blocks B and C, on a three-storey podium of shops and services, with {count} apartments on floors {min} to {max}. Lit buttons are floors that still have apartments for sale.',
+    lead: 'Pick a block and a floor. Lit buttons are floors that still have apartments for sale; selecting one opens that floor\'s plan.',
     towerN: 'Block {t}',
     panelLabel: 'Floors',
     floorN: 'Floor {n}',
@@ -141,7 +146,7 @@ const en = {
     videoHeading: 'Sebotse in 38 seconds',
     videoLead: 'A flight round the complex, rendered from the same 3D model as this site: the towers, the podium, the roof playground and the streets around them.',
     playVideo: 'Play video',
-    videoNote: 'Rendered from the 3D model. The buildings around the site are only indicated.',
+    videoNote: 'Rendered from the 3D model. The buildings around the site come from OpenStreetMap, with approximate heights. Map data © OpenStreetMap contributors.',
     galleryHeading: 'The building',
     galleryLead: 'Architect\'s renders of the two towers, the podium and the site.',
     captions: {
