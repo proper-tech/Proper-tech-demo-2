@@ -111,6 +111,7 @@ const zh: Dict = {
       mainRoad: '主干道',
       parking: '停车场',
       eastStreet: '东侧街道',
+      blockD: 'D栋',
       playground: '屋顶游乐场',
       towerRoof: 'B 座屋顶',
       'playground-swing': '秋千',

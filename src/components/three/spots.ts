@@ -10,6 +10,7 @@ export type SpotId =
   | "mainRoad"
   | "parking"
   | "eastStreet"
+  | "blockD"
   | "playground"
   | "towerRoof"
   | "playground-swing"
@@ -29,6 +30,7 @@ export const SPOTS: SpotDef[] = [
   { id: "mainRoad", at: [2, 62, 0.15], look: [2, 18, 14] }, // far sidewalk across the main road
   { id: "parking", at: [-25, -14, 0.0], look: [-8, -4, 4] }, // parking aisle, west side
   { id: "eastStreet", at: [38, -6, 0.1], look: [4, -4, 12] }, // across the east street
+  { id: "blockD", at: [41, -45, 0.1], look: [16, -58, 5] }, // block D's shopfront, from across the east street
   { id: "playground", at: [3, 6.5, 11.71], look: [-5, 2, 13.5] }, // block A roof playground
   { id: "playground-swing", at: [-8, 9, 11.71], look: [-13, 18, 12.6] }, // block A roof, facing the swings
   { id: "towerRoof", at: [15, 13, 51.6], look: [-2, -24, 48] }, // roof of block B (viewing deck), towards block C

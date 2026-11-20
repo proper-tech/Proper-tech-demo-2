@@ -118,6 +118,7 @@ const mn: Dict = {
       mainRoad: 'Төв зам',
       parking: 'Зогсоол',
       eastStreet: 'Зүүн гудамж',
+      blockD: 'D блок',
       playground: 'Дээвэр дээрх тоглоомын талбай',
       towerRoof: 'B блокийн дээвэр',
       'playground-swing': 'Савлуур',
