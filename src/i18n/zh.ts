@@ -129,7 +129,7 @@ const zh: Dict = {
     videoHeading: '38秒了解项目',
     videoLead: '以本网站同一3D模型渲染的环绕飞行影片：两座塔楼、裙楼、屋顶游乐场及周边街道。',
     playVideo: '播放视频',
-    videoNote: '由3D模型渲染，周边建筑仅为示意。',
+    videoNote: '由3D模型渲染；周边建筑来自OpenStreetMap，高度为近似值。地图数据 © OpenStreetMap contributors。',
     galleryHeading: '建筑外观',
     galleryLead: '建筑师绘制的两栋塔楼、裙楼和场地效果图。',
     captions: {

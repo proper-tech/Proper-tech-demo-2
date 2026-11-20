@@ -9,7 +9,7 @@ Six shots, hard cuts between them (24 fps):
   3  rise        f 336-479   from the street at tower C's south-west corner up its facade to the roof
   4  roof        f 480-623   a glide over the podium-roof playground between the towers
   5  street      f 624-767   eye level, walking up to the podium's glazed west entrance
-  6  finale      f 768-911   pulling back and up from the south-west, the whole complex with block D
+  6  finale      f 768-911   pulling back and up from the west, the podium front, both towers and block D
 
 Light: the sun over Ulaanbaatar (47.92 N, 106.92 E, UTC+8) on 15 June at 10:30, placed by the Sun Position
 add-on when it is installed (otherwise a fixed sun from the same direction), and a sky image for ambient light
@@ -19,7 +19,11 @@ own physical sky is used).
   blender -b -P scripts/build-film.py -- --stills 70,240,400,550,700,880 --out DIR [--res 960] [--samples 16]
   blender -b -P scripts/build-film.py -- --render --out DIR [--start 0] [--end 911] [--res 1920] [--samples 48]
   blender -b -P scripts/build-film.py -- --encode --out DIR --mp4 public/media/film.mp4
-Options go after --, plus --sky PATH. --render writes DIR/0000.jpg ... and skips frames already there, so an
+Options go after --, plus --sky PATH and --osm scripts/osm-surroundings.json (the real city round the site from
+OpenStreetMap, made by scripts/fetch-osm.py, in place of the generated blocks; the film must then credit "Map data
+© OpenStreetMap contributors"), and with it --facades DIR: photo facades on those buildings from ambientCG's
+CC0 textures Facade018A, Facade019A, Facade020A and Facade006 (the 1K-JPG zips unpacked into DIR/<name>/; not in
+the repo, like the sky). --render writes DIR/0000.jpg ... and skips frames already there, so an
 interrupted render resumes. --encode joins DIR's frames into a silent H.264 MP4 (--crf: Blender's quality
 names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf LOW --width 1600.
 """
@@ -39,8 +43,13 @@ SHOTS = [
     dict(name="rise", f=(336, 479), lens=24, cam=[(-38, -52, 2.5), (-33, -47, 52)], aim=[(-6, -24, 16), (-2, -21, 56)]),
     dict(name="roof", f=(480, 623), lens=28, cam=[(-44, 3, 27), (-8, 1, 22)], aim=[(14, 0, 13), (24, -1, 12)]),
     dict(name="street", f=(624, 767), lens=30, cam=[(-62, 9, 1.7), (-40, 14, 1.7)], aim=[(-16, 17, 7), (-15, 18, 7)]),
-    dict(name="finale", f=(768, 911), lens=35, cam=[(-58, -92, 24), (-122, -176, 72)], aim=[(1, -14, 24), (2, -16, 28)], ease=True),
+    # from the west: from the south-west a real 15-storey slab just south of block D hides it (--osm)
+    dict(name="finale", f=(768, 911), lens=35, cam=[(-97, -14, 48), (-202, -14, 96)], aim=[(1, -14, 24), (2, -16, 28)], ease=True),
 ]
+
+# ---- photo facades for the real city (--facades): ambientCG texture, height of one tile in m (6 or 8 storeys of 3 m) ----
+FACADES_LOW = [("Facade018A", 18), ("Facade019A", 18), ("Facade020A", 18)]   # brick and concrete, most buildings
+FACADE_TALL = ("Facade006", 24)                                               # glass grid, buildings 30 m and up
 
 
 def matte(name, rgb, rough=0.95):
@@ -112,6 +121,172 @@ def city():
                 ob.data.materials.append(rng.choice(mats))
 
 
+def photo_facade(folder, asset):
+    """A wall material from an unpacked ambientCG facade: colour, roughness, metalness and normal maps on UVs
+    measured in tiles (osm_city sets them). Only the JPEG maps are read, never the zip's .blend."""
+    m = bpy.data.materials.new("Film Facade " + asset)
+    m.use_nodes = True
+    nt = m.node_tree
+    b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
+
+    def tex(kind, colour=False):
+        t = nt.nodes.new("ShaderNodeTexImage")
+        t.image = bpy.data.images.load(os.path.join(folder, asset, f"{asset}_1K-JPG_{kind}.jpg"))
+        if not colour:
+            t.image.colorspace_settings.name = "Non-Color"
+        return t
+
+    nt.links.new(tex("Color", True).outputs["Color"], b.inputs["Base Color"])
+    nt.links.new(tex("Roughness").outputs["Color"], b.inputs["Roughness"])
+    nt.links.new(tex("Metalness").outputs["Color"], b.inputs["Metallic"])
+    nm = nt.nodes.new("ShaderNodeNormalMap")
+    nt.links.new(tex("NormalGL").outputs["Color"], nm.inputs["Color"])
+    nt.links.new(nm.outputs["Normal"], b.inputs["Normal"])
+    return m
+
+
+def camera_path():
+    """Points along every shot's camera path (x, y, z), to keep real buildings out of the cameras' way."""
+    pts = []
+    for s in SHOTS:
+        for k in range(41):
+            t = k / 40
+            if "orbit" in s:
+                o = s["orbit"]
+                a = math.radians(o["a"][0] + (o["a"][1] - o["a"][0]) * t)
+                pts.append((o["c"][0] + o["r"] * math.cos(a), o["c"][1] + o["r"] * math.sin(a), o["z"][0] + (o["z"][1] - o["z"][0]) * t))
+            else:
+                (x0, y0, z0), (x1, y1, z1) = s["cam"]
+                pts.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z0 + (z1 - z0) * t))
+    return pts
+
+
+def osm_city(path):
+    """The real city round the site (scripts/osm-surroundings.json, from scripts/fetch-osm.py; map data
+    © OpenStreetMap contributors): buildings extruded to their height, streets as flat asphalt. Left out: any
+    building or bit of street on the site or the street model (the plot's old buildings, small misfits of the
+    map), and buildings a camera would fly through. Call after the models and the ground are in the scene."""
+    import json, bmesh
+    data = json.load(open(path))
+    scene = bpy.context.scene
+    # the street model's big lawn round the site reads as a park (and tints nearby walls green): not here
+    under = bpy.data.objects.get("Env_Grass_Underlay")
+    if under:
+        bpy.data.objects.remove(under)
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    def modelled(x, y):
+        """Does the site or street model already cover this point (anything but lawn and the plain ground)?"""
+        hit, _, _, i, ob, _ = scene.ray_cast(depsgraph, Vector((x, y, 300)), Vector((0, 0, -1)))
+        if not hit or ob.name == "Film Ground":
+            return False
+        m = ob.material_slots[ob.data.polygons[i].material_index].material if ob.material_slots else None
+        return not (m and "Lawn" in m.name)
+
+    def along(p, q, step=4.0):
+        """Points every `step` metres from p to q (both included)."""
+        n = max(1, math.ceil(math.dist(p, q) / step))
+        return [(p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n) for k in range(n + 1)]
+
+    def inside(x, y, ring):
+        c = False
+        for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1]):
+            if (y0 > y) != (y1 > y) and x < (x1 - x0) * (y - y0) / (y1 - y0) + x0:
+                c = not c
+        return c
+
+    def near(x, y, ring, d):
+        """Within d metres of the outline (or inside it)?"""
+        if inside(x, y, ring):
+            return True
+        for p, q in zip(ring, ring[1:] + ring[:1]):
+            vx, vy = q[0] - p[0], q[1] - p[1]
+            t = max(0, min(1, ((x - p[0]) * vx + (y - p[1]) * vy) / (vx * vx + vy * vy or 1)))
+            if math.hypot(x - p[0] - t * vx, y - p[1] - t * vy) < d:
+                return True
+        return False
+
+    cams = camera_path()
+    folder = arg("--facades")
+    if folder:
+        # photo facades (low ones brick or concrete, towers glass), then a plain roof as the last material
+        looks = FACADES_LOW + [FACADE_TALL]
+        mats = [photo_facade(folder, a) for a, _ in looks] + [matte("Film Roof", (0.42, 0.42, 0.4), 0.9)]
+    else:
+        mats = [facade(f"Film City {i}", c) for i, c in enumerate([(0.62, 0.6, 0.56), (0.7, 0.66, 0.58), (0.55, 0.55, 0.55), (0.68, 0.62, 0.52)])]
+    bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "in a camera's way": 0}
+    uv = bm.loops.layers.uv.new("UVMap")
+    for b in data["buildings"]:
+        ring = [tuple(p) for i, p in enumerate(b["ring"]) if p != b["ring"][i - 1]]   # no repeated points
+        if len(ring) < 3:
+            continue
+        edge_pts = [pt for p, q in zip(ring, ring[1:] + ring[:1]) for pt in along(p, q)]
+        cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
+        if any(modelled(x, y) for x, y in edge_pts + [(cx, cy)]):
+            dropped["on the model"] += 1
+            continue
+        if any(z < b["h"] + 3 and near(x, y, ring, 4) for x, y, z in cams):
+            dropped["in a camera's way"] += 1
+            continue
+        if sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1])) < 0:
+            ring.reverse()   # counter-clockwise, so the walls face out
+        lo = [bm.verts.new((x, y, 0)) for x, y in ring]
+        hi = [bm.verts.new((x, y, b["h"])) for x, y in ring]
+        try:
+            faces = [bm.faces.new((lo[i], lo[i - len(ring) + 1], hi[i - len(ring) + 1], hi[i])) for i in range(len(ring))]
+            faces.append(bm.faces.new(hi))
+        except ValueError:   # a self-touching outline; skip it
+            continue
+        if folder:
+            k = len(FACADES_LOW) if b["h"] >= 30 else b["id"] % len(FACADES_LOW)
+            tile = looks[k][1]
+            run = 0.0   # walls: UVs in tiles, along the outline and up from the ground, so storeys stay 3 m
+            for f, (p, q) in zip(faces, zip(ring, ring[1:] + ring[:1])):
+                u0, u1, v1 = run / tile, (run + math.dist(p, q)) / tile, b["h"] / tile
+                for loop, (u, v) in zip(f.loops, ((u0, 0), (u1, 0), (u1, v1), (u0, v1))):
+                    loop[uv].uv = (u, v)
+                f.material_index = k
+                run += math.dist(p, q)
+            faces[-1].material_index = len(mats) - 1   # the roof
+        else:
+            for f in faces:
+                f.material_index = b["id"] % len(mats)
+        kept += 1
+    me = bpy.data.meshes.new("Film OSM Buildings")
+    bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new("Film OSM Buildings", me)
+    scene.collection.objects.link(ob)
+    for m in mats:
+        me.materials.append(m)
+    print(f"FILM OSM buildings: {kept} kept, left out {dropped}")
+
+    # streets: 4 m pieces of flat ribbon (round discs at the bends), just above the plain ground
+    bm, pieces = bmesh.new(), 0
+    for r in data["roads"]:
+        w, z = r["w"] / 2, 0.02
+        for p, q in zip(r["line"], r["line"][1:]):
+            d = math.dist(p, q)
+            if d < 0.05:
+                continue
+            nx, ny = -(q[1] - p[1]) / d * w, (q[0] - p[0]) / d * w
+            pts = along(p, q)
+            for a, c in zip(pts, pts[1:]):
+                if modelled((a[0] + c[0]) / 2, (a[1] + c[1]) / 2):
+                    continue
+                bm.faces.new([bm.verts.new(v) for v in ((a[0] + nx, a[1] + ny, z), (a[0] - nx, a[1] - ny, z), (c[0] - nx, c[1] - ny, z), (c[0] + nx, c[1] + ny, z))])
+                pieces += 1
+        for x, y in r["line"][1:-1]:
+            if not modelled(x, y):
+                bm.faces.new([bm.verts.new((x + w * math.cos(k * math.pi / 4), y + w * math.sin(k * math.pi / 4), z)) for k in range(8)])
+    me = bpy.data.meshes.new("Film OSM Streets")
+    bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new("Film OSM Streets", me)
+    scene.collection.objects.link(ob)
+    me.materials.append(matte("Film Street", (0.05, 0.05, 0.05), 0.9))
+    print(f"FILM OSM streets: {pieces} pieces")
+
+
 def build():
     t0 = time.time()
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -130,11 +305,16 @@ def build():
             b.inputs["Base Color"].default_value = (*rgb, 1)
 
     # ground out to the horizon, and a plain city round the site so the aerials aren't a model in a void
-    bpy.ops.mesh.primitive_plane_add(size=40000, location=(0, 0, -0.05))
+    # a grid of 400 m squares, not one 40 km quad: on two giant triangles the sun's shadows lose precision and
+    # the ground speckles differently every frame (the twitching in the hero)
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=100, y_subdivisions=100, size=40000, location=(0, 0, -0.05))
     ground = bpy.context.object
     ground.name = "Film Ground"
     ground.data.materials.append(matte("Film Ground", (0.15, 0.145, 0.13)))
-    city()
+    if arg("--osm"):
+        osm_city(arg("--osm"))
+    else:
+        city()
 
     # sky: an HDRI if given, else Blender's physical sky
     world = bpy.data.worlds.new("Film Sky")
