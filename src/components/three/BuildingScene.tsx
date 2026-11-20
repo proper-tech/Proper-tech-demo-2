@@ -14,6 +14,7 @@ import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
+import { interiorGlass } from './podiumGlass';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -84,6 +85,9 @@ function Model() {
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
       for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        // The podium's baked occlusion (PodiumA_AO) is black over most of its outer walls, which then
+        // turn black wherever the sun is not on them, so it is left off.
+        if (m.name.endsWith('PodiumAO')) (m as MeshStandardMaterial).aoMap = null;
         const g = GLASS[m.name];
         if (g && 'color' in m) {
           (m as MeshStandardMaterial).color.set(g.color);
@@ -92,6 +96,27 @@ function Model() {
         }
       }
     });
+    // the podium's glass shows lit shops and offices behind it (podiumGlass.ts)
+    const shopGlass = interiorGlass('shop');
+    const officeGlass = interiorGlass('office');
+    scene.getObjectByName('Podium')?.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      if (mesh.material.name === 'Glass Shopfront') mesh.material = shopGlass;
+      else if (mesh.material.name === 'Glass') mesh.material = officeGlass;
+    });
+    // the towers' glass runs down through the podium storeys too: rooms there, tower glass above
+    const towerGlass = new Map<string, MeshStandardMaterial>();
+    for (const name of ['Tower_B', 'Tower_C']) {
+      scene.getObjectByName(name)?.traverse((o) => {
+        const mesh = o as Mesh;
+        if (!mesh.isMesh || Array.isArray(mesh.material) || !mesh.material.name.startsWith('TB Glass')) return;
+        const own = mesh.material as MeshStandardMaterial;
+        if (!towerGlass.has(own.name))
+          towerGlass.set(own.name, interiorGlass('office', { cut: PODIUM_HEIGHT, color: own.color.clone(), roughness: own.roughness }));
+        mesh.material = towerGlass.get(own.name)!;
+      });
+    }
     fixPeople(scene);
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
@@ -117,6 +142,22 @@ function PodiumDetail() {
   return <primitive object={scene} />;
 }
 useGLTF.preload(PODIUM_DETAIL_URL, DRACO_URL);
+
+/** Glass of the podium's curtain walls (scripts/podium-glass.py): in complex.glb the infill behind the
+ *  dark metal glazing grid is modelled in the facade material, so these panes sit just in front of it. */
+const PODIUM_GLASS_URL = '/models/blocks/A-glass.glb';
+
+function PodiumGlass() {
+  const { scene } = useGLTF(PODIUM_GLASS_URL, DRACO_URL);
+  useMemo(() => {
+    const glass = interiorGlass('office');
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) (o as Mesh).material = glass;
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(PODIUM_GLASS_URL, DRACO_URL);
 
 /** Everything around the buildings, modelled in Blender (environment.blend): ground, roads,
  *  parking with cars, trees, hedges, street lights, furniture and people. Same site-plan frame
@@ -513,6 +554,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       <Suspense fallback={null}>
         <Model />
         <PodiumDetail />
+        <PodiumGlass />
         <WhenReady onReady={ready} />
       </Suspense>
       {buildingsIn && (
