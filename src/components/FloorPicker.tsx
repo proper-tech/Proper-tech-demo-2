@@ -311,7 +311,6 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                     ? fmt(t.home.towerN, { t: hovered.tower })
                     : fmt(t.home.floorN, { n: hovered.floor })}
               </strong>
-              {current && <span>{current.available > 0 ? fmt(t.home.forSaleN, { n: current.available }) : t.home.soldOut}</span>}
             </div>
           )}
         </div>

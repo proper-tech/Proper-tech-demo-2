@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
-import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { NeutralToneMapping, EdgesGeometry, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -256,17 +256,13 @@ function WhenReady({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-/** Rings round a floor at its slab and ceiling lines: the hovered floor's crisp outline. */
+/** The hovered floor's outline: hairlines along its slab and ceiling edges and down its corners. */
 function FloorFrame({ outline, y0, y1, color }: { outline: Pt[]; y0: number; y1: number; color: string }) {
-  const ring = useMemo(() => extrude(offsetPolygon(outline as [number, number][], 0.06), 0.14), [outline]);
+  const edges = useMemo(() => new EdgesGeometry(extrude(offsetPolygon(outline as [number, number][], 0.02), y1 - y0), 25), [outline, y0, y1]);
   return (
-    <>
-      {[y0, y1 - 0.14].map((y) => (
-        <mesh key={y} geometry={ring} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
-          <meshBasicMaterial color={color} toneMapped={false} />
-        </mesh>
-      ))}
-    </>
+    <lineSegments geometry={edges} position={[0, y0, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+      <lineBasicMaterial color={color} transparent opacity={0.95} toneMapped={false} />
+    </lineSegments>
   );
 }
 
@@ -313,12 +309,12 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
             }}
           >
             {/* no tint at rest, so the facade shows its real colours */}
-            <meshBasicMaterial color={forSale ? '#2F6FDE' : '#5B6672'} transparent opacity={isHovered ? (forSale ? 0.34 : 0.26) : 0} depthWrite={false} />
+            <meshBasicMaterial color={forSale ? '#3B7BFF' : '#6B7683'} transparent opacity={isHovered ? (forSale ? 0.48 : 0.36) : 0} depthWrite={false} toneMapped={false} />
           </mesh>
         );
       })}
       {current && (
-        <FloorFrame outline={outline} y0={floorLevel(current.floor)} y1={floorLevel(current.floor) + FLOOR_HEIGHT} color={current.available > 0 ? '#5B95FF' : '#8D98A5'} />
+        <FloorFrame outline={outline} y0={floorLevel(current.floor) + 0.02} y1={floorLevel(current.floor) + FLOOR_HEIGHT - 0.02} color="#FFFFFF" />
       )}
     </>
   );
@@ -357,13 +353,13 @@ function PodiumZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHo
               onOpen({ tower: 'A', floor: f.floor });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#3B7BFF" transparent opacity={isHovered ? 0.45 : 0} depthWrite={false} toneMapped={false} />
           </mesh>
         );
       })}
       {aboveGround.map((f, i) =>
         hovered?.tower === 'A' && hovered.floor === f.floor ? (
-          <FloorFrame key={`frame-${f.floor}`} outline={outlines[i]} y0={f.z0} y1={f.z1} color="#5B95FF" />
+          <FloorFrame key={`frame-${f.floor}`} outline={outlines[i]} y0={f.z0} y1={f.z1} color="#FFFFFF" />
         ) : null,
       )}
     </>
@@ -404,7 +400,7 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
               onOpen({ tower, floor: ROOF_FLOOR });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#3B7BFF" transparent opacity={isHovered ? 0.45 : 0} depthWrite={false} toneMapped={false} />
           </mesh>
         );
       })}
@@ -442,13 +438,13 @@ function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHo
               onOpen({ tower: 'D', floor: f.floor });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#3B7BFF" transparent opacity={isHovered ? 0.45 : 0} depthWrite={false} toneMapped={false} />
           </mesh>
         );
       })}
       {above.map((f) =>
         hovered?.tower === 'D' && hovered.floor === f.floor ? (
-          <FloorFrame key={`frame-${f.floor}`} outline={outline} y0={f.z0} y1={f.z1} color="#5B95FF" />
+          <FloorFrame key={`frame-${f.floor}`} outline={outline} y0={f.z0} y1={f.z1} color="#FFFFFF" />
         ) : null,
       )}
     </>
