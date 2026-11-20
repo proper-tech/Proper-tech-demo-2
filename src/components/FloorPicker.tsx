@@ -17,6 +17,7 @@ import type { Tour } from './three/spots';
 import { TourBar } from './TourBar';
 import { SunPanel } from './SunPanel';
 import { DEFAULT_SUN, type SunSettings } from './three/sunSettings';
+import { preloadFloor3D } from './three/preload';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
   ssr: false,
@@ -41,6 +42,8 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   // a picked floor: the 3D view zooms in to it, then the floor page opens
   const [zoom, setZoom] = useState<{ key: FloorKey; href: string } | null>(null);
   const open = (key: FloorKey, href: string) => {
+    // the floor's 3D view downloads during the zoom animation
+    preloadFloor3D(key.tower);
     if (zoom) return;
     if (reducedMotion || !ready || tour.kind !== 'overview') {
       router.push(href);
@@ -75,6 +78,15 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     io.observe(el);
     return () => io.disconnect();
   }, [near]);
+  // while the picker is out of sight the 3D view stops drawing, so scrolling the page stays smooth
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => setOnScreen(entries[entries.length - 1].isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const [progress, setProgress] = useState(0);
   const onReady = useCallback(() => setReady(true), []);
 
@@ -266,6 +278,8 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             floors={floors}
             hovered={hovered}
             onHover={(key) => {
+              // pointing at a floor starts fetching its 3D view
+              if (key) preloadFloor3D(key.tower);
               setHovered(key);
               if (key) setTower(key.tower);
             }}
@@ -278,6 +292,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             sun={sun}
             onReady={onReady}
             onProgress={setProgress}
+            active={onScreen}
           />
         )}
         <div className={`label-layer${tour.kind === 'spot' ? ' is-hidden' : ''}`} ref={layer}>

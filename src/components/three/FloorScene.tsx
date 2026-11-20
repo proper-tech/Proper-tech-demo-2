@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, Vector3 } from 'three';
+import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3 } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -27,6 +27,8 @@ interface Props {
   hovered: string | null;
   onHover: (id: string | null) => void;
   onOpen: (id: string) => void;
+  /** Called once the plan pictures are in, the shaders compiled and the first frames drawn. */
+  onReady?: () => void;
 }
 
 // Floor-plate coordinates (X east, Y north, see layouts.ts) -> scene: x east, z south,
@@ -229,7 +231,44 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
   );
 }
 
-export default function FloorScene({ units, core, layer, hovered, onHover, onOpen }: Props) {
+/** The furnished plan pictures (PhotoApartment); asked for as soon as this module loads. */
+const PLAN_PICTURES = Object.values(photoModels).flatMap((m) => (m ? [m.image.src] : []));
+useLoader.preload(TextureLoader, PLAN_PICTURES);
+
+/**
+ * Waits for the plan pictures (the same cached textures PhotoApartment uses), compiles every
+ * material's shaders, lets two frames draw, then reports ready, so the page can swap its 2D plan
+ * for a finished 3D view instead of one that pops in and stutters.
+ */
+function WhenReady({ onReady }: { onReady?: () => void }) {
+  useLoader(TextureLoader, PLAN_PICTURES);
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    let cancelled = false;
+    let frame = 0;
+    (async () => {
+      try {
+        await gl.compileAsync(scene, camera);
+      } catch {
+        // older drivers: the frames below compile instead
+      }
+      let n = 0;
+      const step = () => {
+        if (cancelled) return;
+        if (++n < 3) frame = requestAnimationFrame(step);
+        else onReady?.();
+      };
+      frame = requestAnimationFrame(step);
+    })();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [gl, scene, camera, onReady]);
+  return null;
+}
+
+export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady }: Props) {
   const anchors = useMemo<Anchor[]>(
     () => [
       ...units.map((u): Anchor => {
@@ -269,6 +308,9 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
     <Canvas flat dpr={[1, 2]} camera={{ fov: 38, near: 1, far: 400, position: [4, 40, 22] }}>
       <Lights />
       <FitCamera />
+      <Suspense fallback={null}>
+        <WhenReady onReady={onReady} />
+      </Suspense>
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
 
       <Slab hole={hole} />

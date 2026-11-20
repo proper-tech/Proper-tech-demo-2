@@ -36,6 +36,8 @@ interface Props {
   onHover: (key: FloorKey | null) => void;
   onOpen: (key: FloorKey) => void;
   autoRotate: boolean;
+  /** False while the view is scrolled out of sight: it stops drawing, so scrolling stays smooth. */
+  active?: boolean;
   /** Element that holds the tower name tags (see Projector). */
   layer: LabelLayer;
   /** The 360° tour: overview orbit or an eye-level viewpoint (see Tour.tsx). */
@@ -138,6 +140,19 @@ const GROUND_COLORS: Record<string, string> = {
 function Environment() {
   const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
   usePeopleMotion(scene, animations);
+  // Compiled off-screen first (against the live scene's lights), then shown: adding it straight
+  // away compiled all its materials in one frame, a visible hitch.
+  const { gl, camera, scene: world } = useThree();
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    let live = true;
+    gl.compileAsync(scene, camera, world)
+      .catch(() => undefined)
+      .then(() => live && setShown(true));
+    return () => {
+      live = false;
+    };
+  }, [gl, camera, world, scene]);
   useMemo(() => {
     fixPeople(scene);
     scene.traverse((o) => {
@@ -145,7 +160,11 @@ function Environment() {
       if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh) o.frustumCulled = false;
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.receiveShadow = true;
+      // people and small street furniture don't cast: their shadows are a few pixels at this
+      // distance and cost a shadow pass each, every frame
+      if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+      mesh.castShadow = !(o as { isSkinnedMesh?: boolean }).isSkinnedMesh && (mesh.geometry.boundingSphere?.radius ?? 0) * Math.max(...o.getWorldScale(new Vector3()).toArray()) > 1.5;
       for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
         const color = GROUND_COLORS[m.name.replace(/\.\d{3}$/, '')];
         // textured ground (photo textures, environment.blend) keeps its own colours
@@ -153,7 +172,7 @@ function Environment() {
       }
     });
   }, [scene]);
-  return <primitive object={scene} />;
+  return <primitive object={scene} visible={shown} />;
 }
 // not preloaded: the street loads after the buildings are on screen (see BuildingScene)
 
@@ -475,7 +494,7 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   return null;
 }
 
-export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress, zoomTo, onZoomed }: Props) {
+export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress, zoomTo, onZoomed, active = true }: Props) {
   const hoverAnchor = useMemo<Anchor[]>(() => {
     if (!hovered || hovered.floor === 0) return [];
     const p = floorPoint(hovered);
@@ -498,13 +517,18 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   }, []);
 
   const [buildingsIn, setBuildingsIn] = useState(false);
+  // the street starts one render after the loading bar has gone (see <Progress> below)
+  const [streetOn, setStreetOn] = useState(false);
+  useEffect(() => {
+    if (buildingsIn) setStreetOn(true);
+  }, [buildingsIn]);
   const ready = useCallback(() => {
     setBuildingsIn(true);
     onReady?.();
   }, [onReady]);
 
   return (
-    <Canvas shadows dpr={[1, 2]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
+    <Canvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
@@ -515,7 +539,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         <PodiumDetail />
         <WhenReady onReady={ready} />
       </Suspense>
-      {buildingsIn && (
+      {streetOn && (
         <Suspense fallback={null}>
           {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
               see stays the Sun component's dome */}
@@ -523,7 +547,9 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
           <Environment />
         </Suspense>
       )}
-      <Progress onProgress={onProgress} />
+      {/* the loading bar only listens until the buildings are in: the street, loading after,
+          would otherwise update it mid-render */}
+      {!buildingsIn && <Progress onProgress={onProgress} />}
 
       {tour.kind === 'overview' && towers.map((tower) => (
         <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />

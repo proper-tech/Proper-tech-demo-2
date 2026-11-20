@@ -9,6 +9,7 @@ import { PlanGroup } from '@/components/Plan2D';
 import { FLOOR_MAX, FLOOR_MIN, availableUnits, capacity, units } from '@/data/building';
 import { apartmentTypes, flatColors, layouts } from '@/data/layouts';
 import { fmt, getDict } from '@/i18n/config';
+import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
 // The home page as a short film in chapters: the film (scripts/build-film.py) stays pinned full-screen
@@ -29,25 +30,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   // an apartment with the rendered 360° photo tour (plan D), for the "walk through" card
   const showUnit = availableUnits.find((u) => u.layout === 'D') ?? availableUnits[0];
 
-  // the chapters over the film, each with the figures that belong to it
-  const chapters = [
-    { key: 'location', figures: [] },
-    {
-      key: 'towers',
-      figures: [
-        [units.length, '', t.home.factApartments],
-        [FLOOR_MAX, '', t.hero.floors],
-      ],
-    },
-    { key: 'podium', figures: [[capacity.publicArea, ' m²', t.home.factPublic]] },
-    { key: 'homes', figures: [[capacity.heatedParking, '', t.hero.heated]] },
-  ] as const;
+  // the chapters over the film: captions for what the film is showing at that moment
+  const chapters = ['location', 'towers', 'podium', 'homes'] as const;
 
+  // places to step into that the page itself doesn't show (the floor picker and site plan are on it)
   const explore = [
-    { key: 'floors', img: 'aerial-front', href: `/${locale}#floors` },
     { key: 'apartment', img: 'corner', href: `/${locale}/apartments/${showUnit?.id}?view=tour` },
+    { key: 'shops', img: 'podium', href: `/${locale}/floors/A/1?view=360` },
     { key: 'podium', img: 'aerial-back', href: `/${locale}/floors/A/4` },
-    { key: 'site', img: 'parking', href: `/${locale}#site` },
   ] as const;
 
   return (
@@ -57,7 +47,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         <div className="story-stage">
           <HeroFilm src={FILM} poster={FILM_POSTER} />
           <ol className="story-dots" aria-hidden="true">
-            {['intro', ...chapters.map((c) => c.key)].map((k) => (
+            {['intro', ...chapters].map((k) => (
               <li key={k} data-dot={k} />
             ))}
           </ol>
@@ -71,34 +61,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <a className="pill pill-primary" href="#floors">
               {t.hero.toFloors}
             </a>
-            <a className="pill pill-ghost" href="#video">
-              {t.hero.toFilm}
-            </a>
           </div>
-          <p className="story-scroll" aria-hidden="true">
-            {t.story.scroll}
-          </p>
         </div>
 
-        {chapters.map(({ key, figures }, i) => (
+        {chapters.map((key) => (
           <div key={key} className="story-chapter" data-chapter={key}>
-            <div className="chapter-card fx">
-              <span className="chapter-n">{String(i + 1).padStart(2, '0')}</span>
+            <div className="chapter-caption fx">
               <h2>{t.story[key].title}</h2>
               <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
-              {figures.length > 0 && (
-                <dl className="chapter-figures">
-                  {figures.map(([value, unit, label]) => (
-                    <div key={label}>
-                      <dd>
-                        <span data-count={value}>{value.toLocaleString('en-US')}</span>
-                        {unit}
-                      </dd>
-                      <dt>{label}</dt>
-                    </div>
-                  ))}
-                </dl>
-              )}
             </div>
           </div>
         ))}
@@ -106,7 +76,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
       <FloorPicker>
         <h2>{t.home.title}</h2>
-        <p className="lead">{fmt(t.home.lead, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
+        <p className="lead">{t.home.lead}</p>
       </FloorPicker>
 
       <section className="explore" id="explore">
@@ -115,17 +85,16 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <p className="lead">{t.explore.lead}</p>
         </div>
         <ul className="explore-cards">
-          {explore.map(({ key, img, href }, i) => {
+          {explore.map(({ key, img, href }) => {
             const item = t.explore[key];
             return (
               <li key={key} className="fx">
                 <Link className="explore-card" href={href}>
                   <img src={`/media/renders/${img}.webp`} alt="" width={1179} height={663} loading="lazy" />
-                  <span className="explore-n">{String(i + 1).padStart(2, '0')}</span>
                   <span className="explore-body">
                     <b>{item.title}</b>
                     <span>{item.line}</span>
-                    <span className="explore-go">{fmt(item.cta, { id: showUnit?.id ?? '' })} →</span>
+                    <span className="explore-go">{fmt(item.cta, { id: showUnit?.id ?? '' })}</span>
                   </span>
                 </Link>
               </li>
@@ -238,7 +207,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <p className="lead">{t.contact.lead}</p>
           {/* these strings carry their own labels ("Sales office: …", "Developer: …") */}
           <ul className="contact-lines">
-            <li>{t.site.sales}</li>
+            {SALES_PHONE && (
+              <li>
+                <a href={`tel:${SALES_PHONE.replace(/\s/g, '')}`}>{fmt(t.site.sales, { phone: SALES_PHONE })}</a>
+              </li>
+            )}
             <li>{t.home.address}</li>
           </ul>
           <a className="pill pill-primary" href="#floors">
