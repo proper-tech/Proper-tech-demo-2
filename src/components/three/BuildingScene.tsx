@@ -15,7 +15,7 @@ import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
-import { interiorGlass } from './podiumGlass';
+import { interiorGlass } from './interiorGlass';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -99,7 +99,7 @@ function Model() {
         }
       }
     });
-    // the podium's glass shows lit shops and offices behind it (podiumGlass.ts)
+    // the podium's glass shows lit shops and offices behind it (interiorGlass.ts)
     const shopGlass = interiorGlass('shop');
     const officeGlass = interiorGlass('office');
     scene.getObjectByName('Podium')?.traverse((o) => {
@@ -108,16 +108,12 @@ function Model() {
       if (mesh.material.name === 'Glass Shopfront') mesh.material = shopGlass;
       else if (mesh.material.name === 'Glass') mesh.material = officeGlass;
     });
-    // the towers' glass runs down through the podium storeys too: rooms there, tower glass above
-    const towerGlass = new Map<string, MeshStandardMaterial>();
+    // the towers' glass shows homes behind it (interiorGlass.ts)
+    const homeGlass = interiorGlass('home');
     for (const name of ['Tower_B', 'Tower_C']) {
       scene.getObjectByName(name)?.traverse((o) => {
         const mesh = o as Mesh;
-        if (!mesh.isMesh || Array.isArray(mesh.material) || !mesh.material.name.startsWith('TB Glass')) return;
-        const own = mesh.material as MeshStandardMaterial;
-        if (!towerGlass.has(own.name))
-          towerGlass.set(own.name, interiorGlass('office', { cut: PODIUM_HEIGHT, color: own.color.clone(), roughness: own.roughness }));
-        mesh.material = towerGlass.get(own.name)!;
+        if (mesh.isMesh && !Array.isArray(mesh.material) && mesh.material.name.startsWith('TB Glass')) mesh.material = homeGlass;
       });
     }
     fixPeople(scene);

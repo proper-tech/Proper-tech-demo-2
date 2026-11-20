@@ -2,7 +2,7 @@
 
 In complex.glb the infill behind the glazing grid (dark metal mullions, and the frames of A-detail.glb)
 is modelled in the facade material. This copies those facade faces 3.5 cm out, as a mesh with a
-"Glass" material, which BuildingScene.tsx gives the interior glass of podiumGlass.ts.
+"Glass" material, which BuildingScene.tsx gives the interior glass of interiorGlass.ts.
 A face counts when it is vertical, in the podium storeys, faces the outside (nothing in front of it
 beyond the frames), every sample point on it is near the grid (1.5 m on the ground floor's wide
 shopfront bays, 0.95 m above) and it is not next to a punched window's reveal.
