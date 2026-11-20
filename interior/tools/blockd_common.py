@@ -390,14 +390,14 @@ def car(name, cx, cy, heading, z=0.0, paint='#d8d9db'):
     return o
 
 
-def finish(name, stops, eye=1.55, exposure=-0.9):
+def finish(name, stops, eye=1.55, exposure=-0.9, sun_energy=2.2):
     """Sun, render settings, the panorama camera; save <name>.blend and <name>_cams.json (x = u, y = -v)."""
     global cam
     for o in bpy.data.objects:
         if o.type == 'LIGHT' and o.data.type == 'SUN':
             pass
     sun_d = bpy.data.lights.new('Sun_D', 'SUN')
-    sun_d.energy = 2.2
+    sun_d.energy = sun_energy
     sun_d.angle = math.radians(1.0)
     sun = bpy.data.objects.new('Sun_D', sun_d)
     sun.rotation_euler = (math.radians(50), 0, math.radians(125))

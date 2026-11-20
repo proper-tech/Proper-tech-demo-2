@@ -58,7 +58,13 @@ def thin_glass(name):
     gl.inputs['Roughness'].default_value = 0.03
     fr = nt.nodes.new('ShaderNodeFresnel')
     fr.inputs['IOR'].default_value = 1.45
-    nt.links.new(fr.outputs['Fac'], mix.inputs[0])
+    # a quarter of the Fresnel reflection: at a glancing angle full Fresnel turns the long curtain wall
+    # into a mirror of the lit hall, which reads as more rooms behind glass partitions
+    k = nt.nodes.new('ShaderNodeMath')
+    k.operation = 'MULTIPLY'
+    k.inputs[1].default_value = 0.25
+    nt.links.new(fr.outputs['Fac'], k.inputs[0])
+    nt.links.new(k.outputs[0], mix.inputs[0])
     nt.links.new(tr.outputs[0], mix.inputs[1])
     nt.links.new(gl.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], out.inputs['Surface'])
@@ -472,4 +478,7 @@ STOPS = {
 for k, p in STOPS.items():
     assert inpoly(p, OUTLINE) and all(math.dist(p, c) > 1.0 for c in cols), k
 sc['top_rect'] = [-19.0, -32.2, 18.8, 32.4]
-finish(f'A{FLOOR}', STOPS, exposure=-1.1)
+# daylight outside brighter than the hall, as it is by day (F's sky alone left the street dimmer than the
+# lit hall, so the glass showed the hall more than the street)
+sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 3.0
+finish(f'A{FLOOR}', STOPS, exposure=-1.1, sun_energy=4.5)
