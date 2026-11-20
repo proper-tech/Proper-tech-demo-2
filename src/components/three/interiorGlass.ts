@@ -39,7 +39,7 @@ uniform float uReflBoost;
 uniform vec3 uTint;
 uniform float uHome;
 uniform vec3 uFarColor;
-uniform vec2 uFar;
+uniform vec3 uFar;
 
 float ih(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
 float ih2(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 15731.743); }
@@ -264,7 +264,7 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
 const FRAG_COLOR = /* glsl */ `
 #include <color_fragment>
 // seen from afar the glass reads as the towers' blue; up close the rooms behind it show
-float iFar = smoothstep(uFar.x, uFar.y, length(vIPos - vICam));
+float iFar = uFar.z * smoothstep(uFar.x, uFar.y, length(vIPos - vICam));
 diffuseColor.rgb = mix(diffuseColor.rgb, uFarColor, iFar);
 `;
 
@@ -301,13 +301,13 @@ reflectedLight.indirectSpecular *= uReflBoost;
 #include <aomap_fragment>
 `;
 
-type Look = { base: Color; roughness: number; glow: number; tint: Color; refl: number; far?: { color: Color; from: number; to: number } };
+type Look = { base: Color; roughness: number; glow: number; tint: Color; refl: number; far?: { color: Color; from: number; to: number; max: number } };
 
 const LOOKS: Record<InteriorKind, Look> = {
   shop: { base: new Color('#05080C'), roughness: 0.04, glow: 0.75, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
   office: { base: new Color('#05080C'), roughness: 0.04, glow: 0.7, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
   // the towers keep their blue glass: a darker blue base, the rooms seen through a blue tint
-  home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.55, tint: new Color(0.46, 0.62, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 45, to: 140 } },
+  home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.55, tint: new Color(0.46, 0.62, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 60, to: 320, max: 0.6 } },
 };
 
 export function interiorGlass(kind: InteriorKind) {
@@ -321,7 +321,7 @@ export function interiorGlass(kind: InteriorKind) {
     shader.uniforms.uReflBoost = { value: look.refl };
     shader.uniforms.uTint = { value: look.tint };
     shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };
-    shader.uniforms.uFar = { value: [look.far?.from ?? 1e5, look.far?.to ?? 2e5] };
+    shader.uniforms.uFar = { value: [look.far?.from ?? 1e5, look.far?.to ?? 2e5, look.far?.max ?? 0] };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
       .replace('#include <project_vertex>', `#include <project_vertex>\n${VERT_BODY}`);
