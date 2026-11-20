@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { interiorNight, nightFactor } from './interiorGlass';
 import site from '@/data/site.json';
 import type { SunSettings } from './sunSettings';
 import { BackSide, CanvasTexture, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type Group, type PerspectiveCamera, type Sprite } from 'three';
@@ -155,6 +156,8 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   uniforms.low.value = low;
   uniforms.brightness.value = b;
   uniforms.night.value = 1 - day;
+  // lights come on in the shops, offices and homes as the sun gets low, full by dusk
+  interiorNight.value = nightFactor(sun.elevation);
 
   // the overview sun: placed in front of the camera each frame, at the distance of the complex
   const arcSun = useRef<Sprite>(null);

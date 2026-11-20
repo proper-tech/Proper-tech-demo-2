@@ -38,6 +38,7 @@ uniform float uGlow;
 uniform float uReflBoost;
 uniform vec3 uTint;
 uniform float uHome;
+uniform float uNight;
 uniform vec3 uFarColor;
 uniform vec3 uFar;
 
@@ -99,7 +100,7 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
   float r2 = ih(vec3(rid * 9.1, 2.0, 5.0));
   vec3 wall = r2 < 0.35 ? vec3(0.86, 0.83, 0.77) : r2 < 0.6 ? vec3(0.74, 0.7, 0.64) : r2 < 0.8 ? vec3(0.78, 0.79, 0.8) : vec3(0.58, 0.62, 0.55);
   vec3 wood = r2 < 0.5 ? vec3(0.56, 0.4, 0.25) : r2 < 0.8 ? vec3(0.72, 0.6, 0.45) : vec3(0.34, 0.24, 0.16);
-  float lit = rid < 0.28 ? 0.22 : 0.65 + 0.35 * r2;
+  float lit = rid < 0.28 ? mix(0.22, 0.03, uNight) : 0.65 + 0.35 * r2;
   vec3 light = r2 < 0.75 ? vec3(1.0, 0.86, 0.68) : vec3(1.0, 0.95, 0.88);
   vec3 col; float ao;
 
@@ -192,7 +193,7 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   float rid = ih(vec3(cu, fi, s + (alongX ? 3.0 : 0.0)));
 
   vec3 light = shop ? vec3(1.0, 0.9, 0.76) : vec3(0.95, 0.97, 1.0);
-  float lit = shop ? 1.0 : (rid < 0.22 ? 0.35 : 0.85);
+  float lit = shop ? 1.0 : (rid < mix(0.22, 0.55, uNight) ? mix(0.35, 0.04, uNight) : 0.85);
   vec3 col;
   float ao;
 
@@ -264,7 +265,8 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
 const FRAG_COLOR = /* glsl */ `
 #include <color_fragment>
 // seen from afar the glass reads as the towers' blue; up close the rooms behind it show
-float iFar = uFar.z * smoothstep(uFar.x, uFar.y, length(vIPos - vICam));
+// at night the lit windows stay lit however far away
+float iFar = uFar.z * (1.0 - uNight) * smoothstep(uFar.x, uFar.y, length(vIPos - vICam));
 diffuseColor.rgb = mix(diffuseColor.rgb, uFarColor, iFar);
 `;
 
@@ -292,12 +294,14 @@ const FRAG_EMISSIVE = /* glsl */ `
   }
   float cosT = abs(dot(normalize(-iRay), iN));
   float fres = 0.04 + 0.96 * pow(1.0 - cosT, 5.0);
-  totalEmissiveRadiance += iCol * uTint * uGlow * (1.0 - fres) * (1.0 - 0.85 * iFar);
+  // evening and night: the rooms' lights carry against the dark, through a less coloured glass
+  vec3 iTint = mix(uTint, vec3(0.92, 0.95, 1.0), 0.6 * uNight);
+  totalEmissiveRadiance += iCol * iTint * uGlow * mix(1.0, 2.6, uNight) * (1.0 - fres) * (1.0 - 0.85 * iFar);
 }
 `;
 
 const FRAG_REFL = /* glsl */ `
-reflectedLight.indirectSpecular *= uReflBoost;
+reflectedLight.indirectSpecular *= uReflBoost * mix(1.0, 0.35, uNight); // the HDRI is a day sky
 #include <aomap_fragment>
 `;
 
@@ -310,6 +314,15 @@ const LOOKS: Record<InteriorKind, Look> = {
   home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.55, tint: new Color(0.46, 0.62, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 60, to: 320, max: 0.6 } },
 };
 
+/** 0 by day, 1 at night: set from the sun (Sun.tsx), shared by every interior glass material. */
+export const interiorNight = { value: 0 };
+
+/** How far into the evening it is for a sun this high (degrees): lights come on as it gets low, full by dusk. */
+export function nightFactor(elevation: number) {
+  const t = Math.min(1, Math.max(0, (10 - elevation) / 13));
+  return t * t * (3 - 2 * t);
+}
+
 export function interiorGlass(kind: InteriorKind) {
   const look = LOOKS[kind];
   const m = new MeshStandardMaterial({ color: look.base.clone(), roughness: look.roughness, metalness: 0 });
@@ -318,6 +331,7 @@ export function interiorGlass(kind: InteriorKind) {
     shader.uniforms.uShop = { value: kind === 'shop' ? 1 : 0 };
     shader.uniforms.uHome = { value: kind === 'home' ? 1 : 0 };
     shader.uniforms.uGlow = { value: look.glow };
+    shader.uniforms.uNight = interiorNight;
     shader.uniforms.uReflBoost = { value: look.refl };
     shader.uniforms.uTint = { value: look.tint };
     shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };

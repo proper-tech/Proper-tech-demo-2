@@ -15,7 +15,7 @@ import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
-import { interiorGlass } from './interiorGlass';
+import { interiorGlass, nightFactor } from './interiorGlass';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -582,7 +582,8 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         <Suspense fallback={null}>
           {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
               see stays the Sun component's dome */}
-          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
+          {/* the HDRI is a day sky: dimmed in the evening, so the facades go dark and the lit windows carry */}
+          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35 * (1 - 0.75 * nightFactor(sun.elevation))} />
           <Environment />
         </Suspense>
       )}
