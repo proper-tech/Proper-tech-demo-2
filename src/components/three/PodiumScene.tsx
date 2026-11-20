@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { type ThreeEvent } from '@react-three/fiber';
+import { useLoader, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
-import { ExtrudeGeometry, Group, Path, Shape, Vector3, type Mesh } from 'three';
+import { ExtrudeGeometry, Group, Path, SRGBColorSpace, Shape, TextureLoader, Vector3, type Mesh } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import type { Rect } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
@@ -31,6 +31,9 @@ interface Props {
   onOpen: (space: PodiumSpace) => void;
   /** 360° view of the roof playground (floor 4 only): overview or an eye-level viewpoint. */
   tour?: Tour;
+  /** A rendered top view of the floor (podiumTour.ts) and the site-plan rectangle it covers: drawn
+   *  instead of the floor tiles, cores and furniture. */
+  photo?: { src: string; rect: [number, number, number, number] };
 }
 
 const COLOR: Record<PodiumSpaceType, string> = {
@@ -359,7 +362,31 @@ function CoreMesh({ space, r, hovered, onHover, onOpen, children }: { space: Pod
   );
 }
 
-export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, tour = { kind: 'overview' } }: Props) {
+/** The rendered top view lying on the slab, site plan -> this floor's frame. */
+function PhotoFloor({ src, rect, cu, cv }: { src: string; rect: [number, number, number, number]; cu: number; cv: number }) {
+  const map = useLoader(TextureLoader, src);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  const [u0, v0, u1, v1] = rect;
+  return (
+    <mesh position={[(u0 + u1) / 2 - cu, 0.012, -((v0 + v1) / 2 - cv)]} rotation={[-Math.PI / 2, 0, 0]} raycast={noRay}>
+      <planeGeometry args={[u1 - u0, v1 - v0]} />
+      <meshBasicMaterial map={map} alphaTest={0.5} toneMapped={false} />
+    </mesh>
+  );
+}
+
+/** An invisible box that keeps the pointer for a core drawn by the top view or the interior model. */
+function PointerBox({ r }: { r: Rect }) {
+  return (
+    <mesh position={[r.x + r.w / 2, 1.2, r.z + r.d / 2]}>
+      <boxGeometry args={[r.w, 2.4, r.d]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
+export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, tour = { kind: 'overview' }, photo }: Props) {
   const b = bounds(floor.outline);
   const cu = (b.u0 + b.u1) / 2;
   const cv = (b.v0 + b.v1) / 2;
@@ -375,6 +402,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
   const terrace = floor.spaces.find((s) => s.type === 'playground');
   const planting = useMemo(() => (terrace ? offsetPolygon(terrace.outline, -1.6) : null), [terrace]);
   const isRoof = floor.spaces.some((s) => s.type === 'roof');
+  const usePhoto = !!photo && !isRoof && !terrace;
   const interior = !isRoof && !terrace ? INTERIORS[floor.floor] : undefined;
   const [interiorReady, setInteriorReady] = useState(false);
   const ready = useCallback(() => setInteriorReady(true), []);
@@ -452,7 +480,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
           // up to ground level: the top of this storey
           <RampMesh key={s.id} space={s} r={rectOf(s.outline)} rise={floor.z1 - floor.z0} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} />
         ) : (
-          <SpaceMesh key={s.id} space={s} at={at} holes={holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} ghost={modelled.has(s.id)} />
+          <SpaceMesh key={s.id} space={s} at={at} holes={holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} ghost={usePhoto || modelled.has(s.id)} />
         ),
       )}
       {/* parking spaces: white lines painted on the car park floor */}
@@ -463,35 +491,32 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
         ))}
       {cores.stairs.map(({ space, spec }) => (
         <CoreMesh key={space.id} space={space} r={spec.r} hovered={hovered === space.id} onHover={onHover} onOpen={onOpen}>
-          <Stairs {...spec} wallH={CUT} />
+          {usePhoto ? <PointerBox r={spec.r} /> : <Stairs {...spec} wallH={CUT} />}
         </CoreMesh>
       ))}
       {floor.spaces
         .filter((s) => s.type === 'lifts')
         .map((s) => (
           <CoreMesh key={s.id} space={s} r={rectOf(s.outline)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen}>
-            <Lifts r={rectOf(s.outline)} doors={s.doors} wallH={CUT} />
+            {usePhoto ? <PointerBox r={rectOf(s.outline)} /> : <Lifts r={rectOf(s.outline)} doors={s.doors} wallH={CUT} />}
           </CoreMesh>
         ))}
       {cores.own && (
         <CoreMesh space={cores.own} r={rectOf(cores.own.outline)} hovered={hovered === cores.own.id} onHover={onHover} onOpen={onOpen}>
-          {modelled.has(cores.own.id) ? (
-            // modelled: an invisible box keeps the pointer
-            (() => {
-              const r = rectOf(cores.own.outline);
-              return (
-                <mesh position={[r.x + r.w / 2, 1.2, r.z + r.d / 2]}>
-                  <boxGeometry args={[r.w, 2.4, r.d]} />
-                  <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-                </mesh>
-              );
-            })()
+          {usePhoto || modelled.has(cores.own.id) ? (
+            // drawn by the top view or the interior model: an invisible box keeps the pointer
+            <PointerBox r={rectOf(cores.own.outline)} />
           ) : (
             cores.runs.map((run, i) => <Escalators key={i} run={run} cut={CUT} />)
           )}
         </CoreMesh>
       )}
-      <Furniture items={modelled.size ? furniture.filter((f) => !inModelled(f.x, f.z)) : furniture} finish={defaultFinish} />
+      {!usePhoto && <Furniture items={modelled.size ? furniture.filter((f) => !inModelled(f.x, f.z)) : furniture} finish={defaultFinish} />}
+      {usePhoto && (
+        <Suspense fallback={null}>
+          <PhotoFloor src={photo!.src} rect={photo!.rect} cu={cu} cv={cv} />
+        </Suspense>
+      )}
       {interior && (
         <Suspense fallback={null}>
           <Interior url={interior.url} cu={cu} cv={cv} z0={floor.z0} onReady={ready} />

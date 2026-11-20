@@ -18,6 +18,7 @@ import { fixPeople, usePeopleMotion } from './people';
 import { useTraffic } from './traffic';
 import { interiorFocus, interiorGlass, nightFactor } from './interiorGlass';
 import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
+import { removeStrayKerbs } from './strayKerbs';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -253,6 +254,7 @@ function Environment() {
       tree.position.z += dz;
       tree.scale.multiplyScalar(k || 1);
     }
+    removeStrayKerbs(scene);
     registerNightGlow(scene);
     fixPeople(scene);
     // the big lawn round the site read as a park in a field: the real city (City) stands there instead, as in the film

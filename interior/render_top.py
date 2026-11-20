@@ -15,9 +15,10 @@ out = args[0]
 ppm = float(args[1]) if len(args) > 1 else 40
 samples = int(args[2]) if len(args) > 2 else 32
 CUT = 2.4
-RECT = [-0.6, -0.6, 21.4, 30.6]  # the block, its walls and the stair core, in block metres
 
 sc = bpy.context.scene
+# the block, its walls and the stair core, in block metres; a scene can set its own (the podium: site metres)
+RECT = list(sc.get('top_rect', [-0.6, -0.6, 21.4, 30.6]))
 gpu = None
 try:
     prefs = bpy.context.preferences.addons['cycles'].preferences
