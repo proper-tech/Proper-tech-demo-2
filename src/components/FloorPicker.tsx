@@ -286,6 +286,19 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               {fmt(t.home.towerN, { t: id })}
             </div>
           ))}
+          {/* the pointed floor, pinned to it in the 3D view */}
+          {hovered && hovered.floor > 0 && (
+            <div className={`floor-hover-tag${current && current.available > 0 ? ' is-for-sale' : ''}`} data-anchor="hover">
+              <strong>
+                {hovered.tower === 'A' || hovered.tower === 'D'
+                  ? `${fmt(t.home.towerN, { t: hovered.tower })} · ${fmt(t.home.floorN, { n: hovered.floor })}`
+                  : hovered.floor === ROOF_FLOOR
+                    ? fmt(t.home.towerN, { t: hovered.tower })
+                    : fmt(t.home.floorN, { n: hovered.floor })}
+              </strong>
+              {current && <span>{current.available > 0 ? fmt(t.home.forSaleN, { n: current.available }) : t.home.soldOut}</span>}
+            </div>
+          )}
         </div>
         <TourBar tour={tour} setTour={setTour} />
         <SunPanel setSun={setSun} />

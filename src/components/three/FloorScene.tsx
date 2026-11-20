@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, Path, PlaneGeometry, Shape } from 'three';
+import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, Vector3 } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -17,6 +17,7 @@ import { Lights } from './ApartmentScene';
 import { stoneTexture } from './textures';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { ARRIVE_KEY } from '@/lib/arrive';
 
 interface Props {
   units: Unit[];
@@ -142,10 +143,37 @@ function StoneFloor({ x, z, w, d }: { x: number; z: number; w: number; d: number
 function FitCamera() {
   const camera = useThree((s) => s.camera);
   const aspect = useThree((s) => s.size.width / s.size.height);
+  const arrive = useRef<{ from: Vector3; to: Vector3; k: number } | null>(null);
   useEffect(() => {
     const k = Math.max(1, 1.05 / aspect);
-    camera.position.set(4 * k, 40 * k, 22 * k);
+    const to = new Vector3(4 * k, 40 * k, 22 * k);
+    // just zoomed in from the building (BuildingScene's ZoomIn): come down from the side the zoom came from
+    let from: Vector3 | null = null;
+    try {
+      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number } | null;
+      sessionStorage.removeItem(ARRIVE_KEY);
+      if (a && Date.now() - a.at < 8000) from = new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
+    } catch {
+      // no storage: plain view
+    }
+    if (from && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      arrive.current = { from, to, k: 0 };
+      camera.position.copy(from);
+    } else camera.position.copy(to);
+    camera.lookAt(0, 0, 0);
   }, [camera, aspect]);
+  useFrame((_, dt) => {
+    const a = arrive.current;
+    if (!a) return;
+    a.k = Math.min(1, a.k + dt / 1.2);
+    const e = 1 - (1 - a.k) ** 3;
+    // swing up over the floor on an arc rather than a straight line
+    const p = new Vector3().lerpVectors(a.from, a.to, e);
+    p.setLength(MathUtils.lerp(a.from.length(), a.to.length(), e));
+    camera.position.copy(p);
+    camera.lookAt(0, 0, 0);
+    if (a.k >= 1) arrive.current = null;
+  });
   return null;
 }
 
