@@ -567,6 +567,39 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: var(--ink);
 }
 
+.floor-hover-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgb(20 35 59 / 0.9);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(10 20 40 / 0.25);
+}
+
+.floor-hover-tag strong {
+  font-weight: 700;
+}
+
+.floor-hover-tag span {
+  color: #c4cfdd;
+  font-size: 0.75rem;
+}
+
+.floor-hover-tag.is-for-sale {
+  background: rgb(47 111 222 / 0.94);
+}
+
+.floor-hover-tag.is-for-sale span {
+  color: #e3ecff;
+}
+
 .tower-tag {
   padding: 0.25rem 0.7rem;
   border-radius: 999px;
@@ -2400,12 +2433,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 40;
   background: var(--board);
   pointer-events: none;
-  animation: tower-zoom-fade 1.2s ease-in forwards;
+  animation: tower-zoom-fade 1.7s ease-in forwards;
 }
 
 @keyframes tower-zoom-fade {
   0%,
-  65% {
+  72% {
     opacity: 0;
   }
   100% {

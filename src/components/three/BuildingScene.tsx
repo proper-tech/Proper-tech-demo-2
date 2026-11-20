@@ -14,6 +14,7 @@ import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
+import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -165,34 +166,50 @@ function WhenReady({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
+/** Rings round a floor at its slab and ceiling lines: the hovered floor's crisp outline. */
+function FloorFrame({ outline, y0, y1, color }: { outline: Pt[]; y0: number; y1: number; color: string }) {
+  const ring = useMemo(() => extrude(offsetPolygon(outline as [number, number][], 0.06), 0.14), [outline]);
+  return (
+    <>
+      {[y0, y1 - 0.14].map((y) => (
+        <mesh key={y} geometry={ring} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+          <meshBasicMaterial color={color} toneMapped={false} />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
+/** The tower's outline (chamfered corners), a little out from the facade. */
+function towerOutline(tower: TowerId, out: number): Pt[] {
+  const t = towerPlate(tower);
+  const [u0, u1, v0, v1, c] = [t.u0 - out, t.u1 + out, t.v0 - out, t.v1 + out, CHAMFER];
+  return [
+    [u0 + c, v0], [u1 - c, v0], [u1, v0 + c], [u1, v1 - c],
+    [u1 - c, v1], [u0 + c, v1], [u0, v1 - c], [u0, v0 + c],
+  ];
+}
+
 /**
- * One see-through, clickable band per floor, wrapped around the tower in the model.
- * Invisible until pointed at; the hovered floor lights up (blue when it has apartments for sale).
+ * One see-through, clickable band per floor, wrapped tight round the tower in the model from slab to slab.
+ * Invisible until pointed at; the hovered floor gets a light tint and a crisp frame at its slab and ceiling
+ * lines (blue when it has apartments for sale).
  */
 function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerId; floors: FloorSummary[] } & Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
-  const geometry = useMemo(() => {
-    const t = towerPlate(tower);
-    const [u0, u1, v0, v1, c] = [t.u0 - 0.3, t.u1 + 0.3, t.v0 - 0.3, t.v1 + 0.3, CHAMFER];
-    const outline = [
-      [u0 + c, v0], [u1 - c, v0], [u1, v0 + c], [u1, v1 - c],
-      [u1 - c, v1], [u0 + c, v1], [u0, v1 - c], [u0, v0 + c],
-    ];
-    return extrude(outline, FLOOR_HEIGHT - 0.12);
-  }, [tower]);
+  const outline = useMemo(() => towerOutline(tower, 0.18), [tower]);
+  const geometry = useMemo(() => extrude(outline, FLOOR_HEIGHT - 0.04), [outline]);
+  const current = hovered?.tower === tower ? floors.find((f) => f.floor === hovered.floor) : undefined;
 
   return (
     <>
       {floors.map((f) => {
         const forSale = f.available > 0;
-        const isHovered = hovered?.tower === tower && hovered.floor === f.floor;
-        const color = isHovered ? (forSale ? '#2F6FDE' : '#5B6672') : '#F2B632';
-        // No tint at rest, so the facade shows its real colours; the floor picker marks the floors for sale.
-        const opacity = isHovered ? (forSale ? 0.62 : 0.4) : 0;
+        const isHovered = current?.floor === f.floor;
         return (
           <mesh
             key={f.floor}
             geometry={geometry}
-            position={[0, PODIUM_HEIGHT + (f.floor - FLOOR_MIN) * FLOOR_HEIGHT + 0.06, 0]}
+            position={[0, floorLevel(f.floor) + 0.02, 0]}
             rotation={[-Math.PI / 2, 0, 0]}
             onPointerOver={(e) => {
               e.stopPropagation();
@@ -205,10 +222,14 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
               onOpen({ tower, floor: f.floor });
             }}
           >
-            <meshBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} />
+            {/* no tint at rest, so the facade shows its real colours */}
+            <meshBasicMaterial color={forSale ? '#2F6FDE' : '#5B6672'} transparent opacity={isHovered ? (forSale ? 0.34 : 0.26) : 0} depthWrite={false} />
           </mesh>
         );
       })}
+      {current && (
+        <FloorFrame outline={outline} y0={floorLevel(current.floor)} y1={floorLevel(current.floor) + FLOOR_HEIGHT} color={current.available > 0 ? '#5B95FF' : '#8D98A5'} />
+      )}
     </>
   );
 }
@@ -222,10 +243,8 @@ const aboveGround = podiumFloors.filter((f) => f.floor > 0);
  */
 function PodiumZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   // 0.6 m out from the walls, clear of the facade's mullions, slab edges and parapet
-  const geometries = useMemo(
-    () => aboveGround.map((f) => extrude(offsetPolygon(f.floor === 4 ? terraceOutline : podiumOutline, 0.6), f.z1 - f.z0 - 0.12)),
-    [],
-  );
+  const outlines = useMemo(() => aboveGround.map((f) => offsetPolygon(f.floor === 4 ? terraceOutline : podiumOutline, 0.6)), []);
+  const geometries = useMemo(() => aboveGround.map((f, i) => extrude(outlines[i], f.z1 - f.z0 - 0.12)), [outlines]);
 
   return (
     <>
@@ -248,10 +267,15 @@ function PodiumZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHo
               onOpen({ tower: 'A', floor: f.floor });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.5 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
           </mesh>
         );
       })}
+      {aboveGround.map((f, i) =>
+        hovered?.tower === 'A' && hovered.floor === f.floor ? (
+          <FloorFrame key={`frame-${f.floor}`} outline={outlines[i]} y0={f.z0} y1={f.z1} color="#5B95FF" />
+        ) : null,
+      )}
     </>
   );
 }
@@ -290,7 +314,7 @@ function RoofZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHove
               onOpen({ tower, floor: ROOF_FLOOR });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.5 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
           </mesh>
         );
       })}
@@ -304,10 +328,8 @@ const D_ABOVE = blockDFloors.filter((f) => f.z0 >= 0);
 
 function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   const above = D_ABOVE;
-  const geometries = useMemo(() => {
-    const outline = offsetPolygon(blockDOutline.map(blockDToSite), 0.4);
-    return above.map((f) => extrude(outline, f.z1 - f.z0 - 0.12));
-  }, [above]);
+  const outline = useMemo(() => offsetPolygon(blockDOutline.map(blockDToSite), 0.4), []);
+  const geometries = useMemo(() => above.map((f) => extrude(outline, f.z1 - f.z0 - 0.12)), [above, outline]);
 
   return (
     <>
@@ -330,10 +352,15 @@ function BlockDZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHo
               onOpen({ tower: 'D', floor: f.floor });
             }}
           >
-            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.5 : 0} depthWrite={false} />
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.3 : 0} depthWrite={false} />
           </mesh>
         );
       })}
+      {above.map((f) =>
+        hovered?.tower === 'D' && hovered.floor === f.floor ? (
+          <FloorFrame key={`frame-${f.floor}`} outline={outline} y0={f.z0} y1={f.z1} color="#5B95FF" />
+        ) : null,
+      )}
     </>
   );
 }
@@ -356,43 +383,59 @@ function floorPoint({ tower, floor }: FloorKey): Vector3 {
 }
 
 /** Zoom duration (seconds) when a floor is picked. */
-const ZOOM_TIME = 1.15;
+const ZOOM_TIME = 1.7;
+
+const smooth = (k: number) => k * k * (3 - 2 * k);
 
 /**
- * Flies the camera from wherever it is towards the picked floor, keeping the direction it was
- * looking from, and closes in until the floor fills the view; then tells the page to open it.
+ * Flies the camera to the picked floor in two moves: first round and down until it is level with the floor,
+ * square on to the side it was looking from, with the whole floor across the view; then straight in through
+ * the facade at the floor's height. The page fades over the second move and opens the floor, whose own view
+ * starts from the same side (ARRIVE_KEY).
  */
 function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
-  const start = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; t1: Vector3; f0: number; k: number; done: boolean } | null>(null);
+  const path = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; p2: Vector3; t1: Vector3; f0: number; k: number; done: boolean; dir: Vector3 } | null>(null);
   useEffect(() => {
     const t1 = floorPoint(to);
     const t0 = controls ? controls.target.clone() : t1.clone();
-    // approach from the side the camera is on, a little above the floor
-    const dir = camera.position.clone().sub(t1);
-    dir.y = Math.max(dir.y, dir.length() * 0.18);
-    const p1 = t1.clone().add(dir.normalize().multiplyScalar(16));
-    start.current = { p0: camera.position.clone(), t0, p1, t1, f0: camera.fov, k: 0, done: false };
+    // the side the camera is on, flattened: we end up facing the floor square on
+    const dir = camera.position.clone().sub(t1).setY(0);
+    if (dir.lengthSq() < 1) dir.set(-1, 0, 1);
+    dir.normalize();
+    // far enough that the whole floor plate (about 26 m) spans two thirds of the view
+    const half = MathUtils.degToRad(camera.fov / 2);
+    const d1 = 13 / Math.tan(half) / 0.66;
+    const p1 = t1.clone().add(dir.clone().multiplyScalar(d1)).add(new Vector3(0, 1.2, 0));
+    // into the floor: just inside the facade, at eye height over the slab
+    const p2 = t1.clone().add(dir.clone().multiplyScalar(4)).add(new Vector3(0, 0.3, 0));
+    path.current = { p0: camera.position.clone(), t0, p1, p2, t1, f0: camera.fov, k: 0, done: false, dir };
     if (controls) controls.enabled = false;
     return () => {
       if (controls) controls.enabled = true;
     };
   }, [to, camera, controls]);
   useFrame((_, dt) => {
-    const z = start.current;
+    const z = path.current;
     if (!z || z.done) return;
     z.k = Math.min(1, z.k + dt / ZOOM_TIME);
-    // ease in, then accelerate into the building
-    const e = z.k < 0.5 ? 4 * z.k ** 3 : 1 - (-2 * z.k + 2) ** 3 / 2;
-    camera.position.lerpVectors(z.p0, z.p1, e);
-    const target = z.t0.clone().lerp(z.t1, Math.min(1, e * 1.4));
+    const a = smooth(Math.min(1, z.k / 0.62)); // round and level with the floor
+    const b = z.k <= 0.62 ? 0 : smooth((z.k - 0.62) / 0.38); // straight in
+    const pos = new Vector3().lerpVectors(z.p0, z.p1, a).lerp(z.p2, b * b);
+    camera.position.copy(pos);
+    const target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15));
     if (controls) controls.target.copy(target);
     camera.lookAt(target);
-    camera.fov = MathUtils.lerp(z.f0, z.f0 * 0.8, e);
+    camera.fov = MathUtils.lerp(z.f0, 30, a) + 12 * b * b;
     camera.updateProjectionMatrix();
     if (z.k >= 1) {
       z.done = true;
+      try {
+        sessionStorage.setItem(ARRIVE_KEY, JSON.stringify({ x: z.dir.x, z: z.dir.z, at: Date.now() }));
+      } catch {
+        // storage blocked: the floor page just opens at its usual view
+      }
       onDone?.();
     }
   });
@@ -400,6 +443,12 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
 }
 
 export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress, zoomTo, onZoomed }: Props) {
+  const hoverAnchor = useMemo<Anchor[]>(() => {
+    if (!hovered || hovered.floor === 0) return [];
+    const p = floorPoint(hovered);
+    // just above the band, so the tag never hides the floor it names
+    return [{ id: 'hover', position: [p.x, p.y + FLOOR_HEIGHT * 1.4, p.z] }];
+  }, [hovered]);
   const anchors = useMemo<Anchor[]>(() => {
     // Block A, the podium: tag floats over the roof playground between the towers
     const a = bounds(terraceOutline);
@@ -442,7 +491,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       )}
 
       {zoomTo && <ZoomIn to={zoomTo} onDone={onZoomed} />}
-      <Projector anchors={anchors} layer={layer} />
+      <Projector anchors={zoomTo ? anchors : [...anchors, ...hoverAnchor]} layer={layer} />
     </Canvas>
   );
 }
