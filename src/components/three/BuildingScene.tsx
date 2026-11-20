@@ -175,6 +175,28 @@ const GROUND_COLORS: Record<string, string> = {
   'Env Lawn': '#7FA35A',
 };
 
+/** Street trees whose crowns ran into a facade (found with scripts/tree-clearance.py): moved
+ *  clear of the building along the street, metres in x and z, and the crown scaled where a move
+ *  alone would have taken it off the verge. Scale 0 takes the tree out. */
+const TREE_FIX: Record<string, [number, number, number]> = {
+  Env_Tree_04: [-1.95, 0, 1.0],
+  Env_Tree_04001: [0, -2.7, 1.0],
+  Env_Tree_05: [0, -2.7, 0.72],
+  Env_Tree_06: [0, -2.2, 1.0],
+  Env_Tree_06001: [0, -0.45, 1.0],
+  Env_Tree_07: [0, -1.2, 1.0],
+  Env_Tree_09: [1.7, 0, 1.0],
+  Env_Tree_14: [0.95, 0, 1.0],
+  Env_Tree_15: [1.7, 0, 1.0],
+  Env_Tree_17: [0, 0.45, 1.0],
+  Env_Tree_20: [0.45, 0, 1.0],
+  Env_Tree_21: [1.2, 0, 1.0],
+  Env_Tree_22: [1.45, 0, 1.0],
+  Env_Tree_23: [1.45, 0, 1.0],
+  Env_Tree_24: [1.2, 0, 1.0],
+  Env_Tree_08: [0, 0, 0], // between the buildings: no room for it
+};
+
 function Environment() {
   const { scene, animations } = useGLTF(ENV_URL, DRACO_URL);
   usePeopleMotion(scene, animations);
@@ -192,6 +214,15 @@ function Environment() {
     };
   }, [gl, camera, world, scene]);
   useMemo(() => {
+    for (const [name, [dx, dz, k]] of Object.entries(TREE_FIX)) {
+      const tree = scene.getObjectByName(name);
+      if (!tree || tree.userData.cleared) continue;
+      tree.userData.cleared = true;
+      if (k === 0) tree.visible = false;
+      tree.position.x += dx;
+      tree.position.z += dz;
+      tree.scale.multiplyScalar(k || 1);
+    }
     fixPeople(scene);
     scene.traverse((o) => {
       // skinned people must not be culled by their rest-pose bounds
