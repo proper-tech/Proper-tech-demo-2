@@ -25,7 +25,9 @@ OpenStreetMap, made by scripts/fetch-osm.py, in place of the generated blocks; t
 CC0 textures Facade018A, Facade019A, Facade020A and Facade006 (the 1K-JPG zips unpacked into DIR/<name>/; not in
 the repo, like the sky). --render writes DIR/0000.jpg ... and skips frames already there, so an
 interrupted render resumes. --encode joins DIR's frames into a silent H.264 MP4 (--crf: Blender's quality
-names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf LOW --width 1600.
+names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf VERYLOW --width 1280 (720p, about 5 MB).
+  blender -b -P scripts/build-film.py -- --city-glb public/models/blocks/city.glb --osm ... --facades DIR
+writes the same city for the website's 3D view.
 """
 import bpy, addon_utils, math, os, sys, time
 from mathutils import Vector
@@ -50,6 +52,19 @@ SHOTS = [
 # ---- photo facades for the real city (--facades): ambientCG texture, height of one tile in m (6 or 8 storeys of 3 m) ----
 FACADES_LOW = [("Facade018A", 18), ("Facade019A", 18), ("Facade020A", 18)]   # brick and concrete, most buildings
 FACADE_TALL = ("Facade006", 24)                                               # glass grid, buildings 30 m and up
+
+# ---- real buildings that overlap the street model by a few metres (the drawing's east street is 17 m wide, the map's
+# 5 m), so they would be left out: cut back along a line instead, keeping the part left of p -> q (site plan u, v) ----
+CLIP = {
+    219982200: ((36.90, 37.80), (43.14, -79.79)),   # Гэрэл төв: 4 m back from the east street's kerb
+}
+# ---- streets the map lacks, so that no street runs into a wall: the drawing's east street, which stops at v = -80, carried
+# on to the street behind it, whose two map pieces (ending at u = 0.5 and starting at u = 44.6) are joined. Any building a
+# street's middle line runs through is left out (here Керамик Арт Студи and the small building between the two pieces) ----
+EXTRA_ROADS = [
+    {"w": 10.5, "lanes": 2, "line": [(33.9, -80.0), (35.4, -107.6)]},   # the east street's last 28 m, as wide as drawn
+    {"w": 5, "line": [(0.5, -103.4), (44.6, -108.7)]},
+]
 
 
 def matte(name, rgb, rough=0.95):
@@ -145,6 +160,33 @@ def photo_facade(folder, asset):
     return m
 
 
+def uv_per_metre(ob):
+    """How finely a street-model surface's texture is laid: UV units per metre along its edges (the median)."""
+    me, r = ob.data, []
+    uv = me.uv_layers.active.data
+    for p in me.polygons:
+        li = list(p.loop_indices)
+        for a, b in zip(li, li[1:] + li[:1]):
+            d = (me.vertices[me.loops[a].vertex_index].co - me.vertices[me.loops[b].vertex_index].co).length
+            if d > 0.5:
+                r.append((uv[a].uv - uv[b].uv).length / d)
+    return sorted(r)[len(r) // 2]
+
+
+def clip(ring, p, q):
+    """The part of an outline left of the line p -> q (one half-plane of Sutherland-Hodgman)."""
+    side = lambda a: (q[0] - p[0]) * (a[1] - p[1]) - (q[1] - p[1]) * (a[0] - p[0])
+    out = []
+    for a, b in zip(ring, ring[1:] + ring[:1]):
+        sa, sb = side(a), side(b)
+        if sa >= 0:
+            out.append(a)
+        if (sa >= 0) != (sb >= 0):
+            t = sa / (sa - sb)
+            out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+    return out
+
+
 def camera_path():
     """Points along every shot's camera path (x, y, z), to keep real buildings out of the cameras' way."""
     pts = []
@@ -215,16 +257,36 @@ def osm_city(path):
         mats = [photo_facade(folder, a) for a, _ in looks] + [matte("Film Roof", (0.42, 0.42, 0.4), 0.9)]
     else:
         mats = [facade(f"Film City {i}", c) for i, c in enumerate([(0.62, 0.6, 0.56), (0.7, 0.66, 0.58), (0.55, 0.55, 0.55), (0.68, 0.62, 0.52)])]
-    bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "in a camera's way": 0}
+    roads = data["roads"] + EXTRA_ROADS
+    # points every 2 m along every street's middle line, by 25 m square: a building with one inside stands on a street
+    cell, mids = 25.0, {}
+    for r in roads:
+        for p, q in zip(r["line"], r["line"][1:]):
+            for x, y in along(p, q, 2.0):
+                mids.setdefault((math.floor(x / cell), math.floor(y / cell)), []).append((x, y))
+
+    def on_street(ring):
+        xs, ys = [p[0] for p in ring], [p[1] for p in ring]
+        return any(inside(x, y, ring)
+                   for i in range(math.floor(min(xs) / cell), math.floor(max(xs) / cell) + 1)
+                   for j in range(math.floor(min(ys) / cell), math.floor(max(ys) / cell) + 1)
+                   for x, y in mids.get((i, j), ()))
+
+    bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "on a street": 0, "in a camera's way": 0}
     uv = bm.loops.layers.uv.new("UVMap")
     for b in data["buildings"]:
         ring = [tuple(p) for i, p in enumerate(b["ring"]) if p != b["ring"][i - 1]]   # no repeated points
+        if b["id"] in CLIP:
+            ring = clip(ring, *CLIP[b["id"]])
         if len(ring) < 3:
             continue
         edge_pts = [pt for p, q in zip(ring, ring[1:] + ring[:1]) for pt in along(p, q)]
         cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
         if any(modelled(x, y) for x, y in edge_pts + [(cx, cy)]):
             dropped["on the model"] += 1
+            continue
+        if on_street(ring):
+            dropped["on a street"] += 1
             continue
         if any(z < b["h"] + 3 and near(x, y, ring, 4) for x, y, z in cams):
             dropped["in a camera's way"] += 1
@@ -261,30 +323,96 @@ def osm_city(path):
         me.materials.append(m)
     print(f"FILM OSM buildings: {kept} kept, left out {dropped}")
 
-    # streets: 4 m pieces of flat ribbon (round discs at the bends), just above the plain ground
-    bm, pieces = bmesh.new(), 0
-    for r in data["roads"]:
-        w, z = r["w"] / 2, 0.02
+    # streets, made like the street model's roads so they carry on past its edges: its asphalt in 4 m pieces of
+    # flat ribbon (round discs at the bends), a sidewalk each side and dashed lane lines; each piece left out
+    # where the model already is or where it would lie on another street's asphalt (junctions)
+    road_mat, walk_mat, paint_mat = (bpy.data.materials[n] for n in ("Env Street Asphalt", "Env Sidewalk", "Env Road Paint"))
+    s_road, s_walk = uv_per_metre(bpy.data.objects["Env_MainRoad"]), uv_per_metre(bpy.data.objects["Env_PublicSidewalk"])
+    grid = {}   # street segments by 25 m square, to find the streets near a point
+    for k, r in enumerate(roads):
+        hw = r["w"] / 2
+        for p, q in zip(r["line"], r["line"][1:]):
+            for i in range(math.floor((min(p[0], q[0]) - hw) / cell), math.floor((max(p[0], q[0]) + hw) / cell) + 1):
+                for j in range(math.floor((min(p[1], q[1]) - hw) / cell), math.floor((max(p[1], q[1]) + hw) / cell) + 1):
+                    grid.setdefault((i, j), []).append((k, p, q, hw))
+
+    def on_road(x, y, skip=-1):
+        """Does (x, y) lie on a street's asphalt (any but street number `skip`)?"""
+        for k, p, q, hw in grid.get((math.floor(x / cell), math.floor(y / cell)), ()):
+            vx, vy = q[0] - p[0], q[1] - p[1]
+            t = max(0, min(1, ((x - p[0]) * vx + (y - p[1]) * vy) / (vx * vx + vy * vy or 1)))
+            if k != skip and math.hypot(x - p[0] - t * vx, y - p[1] - t * vy) < hw:
+                return True
+        return False
+
+    bm, pieces = bmesh.new(), {"asphalt": 0, "sidewalk": 0, "dash": 0}
+    uv = bm.loops.layers.uv.new("UVMap")
+
+    def face(pts, z, mat, s):
+        """A flat face at height z (counter-clockwise, so it faces up), with UVs at s per metre."""
+        f = bm.faces.new([bm.verts.new((x, y, z)) for x, y in pts])
+        for loop, (x, y) in zip(f.loops, pts):
+            loop[uv].uv = (x * s, y * s)
+        f.material_index = mat
+
+    def strip(a, c, n, o0, o1):
+        """The corners of the band from offset o0 to o1 (o0 < o1) beside the line a -> c, n its unit left normal."""
+        return [(a[0] + n[0] * o1, a[1] + n[1] * o1), (a[0] + n[0] * o0, a[1] + n[1] * o0),
+                (c[0] + n[0] * o0, c[1] + n[1] * o0), (c[0] + n[0] * o1, c[1] + n[1] * o1)]
+
+    # heights: sidewalks under the asphalt (which hides them where they reach into a junction), paint on top
+    Z_WALK, Z_ROAD, Z_PAINT, WALK, DASH, GAP = 0.03, 0.08, 0.12, 2.5, 3.0, 6.0
+    for k, r in enumerate(roads):
+        hw = r["w"] / 2
+        lanes = r.get("lanes") or max(2, round(r["w"] / 3.5))   # lane lines between lanes about 3.5 m wide, on streets 7 m and wider
+        dividers = [(j - lanes / 2) * r["w"] / lanes for j in range(1, lanes)] if r["w"] >= 7 else []
+        run = 0.0   # distance along the street, so the dashes keep their rhythm round the bends
         for p, q in zip(r["line"], r["line"][1:]):
             d = math.dist(p, q)
             if d < 0.05:
                 continue
-            nx, ny = -(q[1] - p[1]) / d * w, (q[0] - p[0]) / d * w
+            n = (-(q[1] - p[1]) / d, (q[0] - p[0]) / d)
             pts = along(p, q)
             for a, c in zip(pts, pts[1:]):
-                if modelled((a[0] + c[0]) / 2, (a[1] + c[1]) / 2):
-                    continue
-                bm.faces.new([bm.verts.new(v) for v in ((a[0] + nx, a[1] + ny, z), (a[0] - nx, a[1] - ny, z), (c[0] - nx, c[1] - ny, z), (c[0] + nx, c[1] + ny, z))])
-                pieces += 1
+                mx, my = (a[0] + c[0]) / 2, (a[1] + c[1]) / 2
+                if not modelled(mx, my):
+                    face(strip(a, c, n, -hw, hw), Z_ROAD, 0, s_road)
+                    pieces["asphalt"] += 1
+                for o0, o1 in ((hw, hw + WALK), (-hw - WALK, -hw)):
+                    ox, oy = mx + n[0] * (o0 + o1) / 2, my + n[1] * (o0 + o1) / 2
+                    if not modelled(ox, oy) and not on_road(ox, oy):
+                        face(strip(a, c, n, o0, o1), Z_WALK, 1, s_walk)
+                        pieces["sidewalk"] += 1
+            t = (-run) % (DASH + GAP)   # the first dash on this stretch
+            while dividers and t + DASH <= d:
+                a = (p[0] + (q[0] - p[0]) * t / d, p[1] + (q[1] - p[1]) * t / d)
+                c = (p[0] + (q[0] - p[0]) * (t + DASH) / d, p[1] + (q[1] - p[1]) * (t + DASH) / d)
+                for o in dividers:
+                    ox, oy = (a[0] + c[0]) / 2 + n[0] * o, (a[1] + c[1]) / 2 + n[1] * o
+                    if not modelled(ox, oy) and not on_road(ox, oy, skip=k):
+                        face(strip(a, c, n, o - 0.075, o + 0.075), Z_PAINT, 2, 0)
+                        pieces["dash"] += 1
+                t += DASH + GAP
+            run += d
         for x, y in r["line"][1:-1]:
             if not modelled(x, y):
-                bm.faces.new([bm.verts.new((x + w * math.cos(k * math.pi / 4), y + w * math.sin(k * math.pi / 4), z)) for k in range(8)])
+                face([(x + hw * math.cos(j * math.pi / 4), y + hw * math.sin(j * math.pi / 4)) for j in range(8)], Z_ROAD, 0, s_road)
     me = bpy.data.meshes.new("Film OSM Streets")
     bm.to_mesh(me); bm.free()
     ob = bpy.data.objects.new("Film OSM Streets", me)
     scene.collection.objects.link(ob)
-    me.materials.append(matte("Film Street", (0.05, 0.05, 0.05), 0.9))
-    print(f"FILM OSM streets: {pieces} pieces")
+    for m in (road_mat, walk_mat, paint_mat):
+        me.materials.append(m)
+    print(f"FILM OSM streets: {pieces}")
+
+    # the street model's lawn east of the east street is really a building (Гэрэл төв, put back above, see CLIP):
+    # paved like the sidewalks instead, its texture scaled to theirs. After the rest, which takes it for open ground.
+    far = bpy.data.objects.get("Env_EastStreet_FarLawn")
+    if far:
+        k = s_walk / uv_per_metre(far)
+        for loop in far.data.uv_layers.active.data:
+            loop.uv *= k
+        far.data.materials[0] = walk_mat
 
 
 def build():
@@ -410,6 +538,35 @@ def build():
     return scene
 
 
+def export_city(path):
+    """The film's city (--osm, --facades) for the website's 3D view (three/BuildingScene.tsx): only the buildings
+    and streets, with only the colour maps, scaled to 512 px (the view never comes close enough to need more),
+    Draco-compressed. Same frame as the site's other models."""
+    obs = [bpy.data.objects["Film OSM Buildings"], bpy.data.objects["Film OSM Streets"]]
+    for m in obs[0].data.materials:
+        nt = m.node_tree
+        b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
+        for n in list(nt.nodes):
+            if n.type == "NORMAL_MAP" or (n.type == "TEX_IMAGE" and n.image.colorspace_settings.name == "Non-Color"):
+                nt.nodes.remove(n)   # roughness, metalness and normal maps: not worth their weight on the web
+            elif n.type == "TEX_IMAGE":
+                n.image.scale(512, 512)
+        b.inputs["Roughness"].default_value = 0.45 if FACADE_TALL[0] in m.name else 0.9   # glass a little glossy
+    # the streets wear the street model's own materials: plain stand-ins named after them here ("City Sidewalk" for
+    # "Env Sidewalk"), which the website swaps for the ones it already has from environment.glb (no second copy)
+    me = obs[1].data
+    for i, m in enumerate(me.materials):
+        me.materials[i] = matte(m.name.replace("Env ", "City ", 1), tuple(m.diffuse_color[:3]))
+    bpy.ops.object.select_all(action="DESELECT")
+    for ob in obs:
+        ob.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=os.path.abspath(path), export_format="GLB", use_selection=True,
+                              export_image_format="JPEG", export_jpeg_quality=80,
+                              export_draco_mesh_compression_enable=True, export_draco_position_quantization=16,
+                              export_draco_texcoord_quantization=16)   # street UVs run to ±200: finer, or the asphalt jumps between pieces
+    print("FILM wrote", path, os.path.getsize(path) // 1024, "KB")
+
+
 def render(scene, frames, out):
     os.makedirs(out, exist_ok=True)
     for f in frames:
@@ -458,3 +615,5 @@ else:
         render(sc, [int(x) for x in arg("--stills").split(",")], out)
     elif "--render" in args:
         render(sc, range(int(arg("--start", 0)), int(arg("--end", LAST)) + 1), out)
+    elif "--city-glb" in args:
+        export_city(arg("--city-glb"))

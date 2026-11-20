@@ -88,6 +88,30 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     return () => io.disconnect();
   }, []);
   const [progress, setProgress] = useState(0);
+  // full screen for the 3D view: the browser's own where it has one, else the stage fills the window
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const sync = () => setFull(document.fullscreenElement === stage.current);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+  useEffect(() => {
+    if (!full || document.fullscreenElement) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false);
+    window.addEventListener('keydown', esc);
+    document.documentElement.classList.add('has-full-stage');
+    return () => {
+      window.removeEventListener('keydown', esc);
+      document.documentElement.classList.remove('has-full-stage');
+    };
+  }, [full]);
+  const toggleFull = () => {
+    const el = stage.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else if (!full && el.requestFullscreen) el.requestFullscreen().catch(() => setFull(true));
+    else setFull(!full);
+  };
   const onReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
@@ -95,6 +119,13 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   }, []);
 
   const panel = floors.filter((f) => f.tower === tower).sort((a, b) => panelOrder(a.floor, b.floor));
+  // the figures over the lift panel: the picked tower's, or the whole complex's for the podium and block D
+  const statFloors = tower === 'B' || tower === 'C' ? floors.filter((f) => f.tower === tower) : floors;
+  const stats = {
+    units: statFloors.reduce((n, f) => n + f.available, 0),
+    floors: statFloors.filter((f) => f.available > 0).length,
+    layouts: new Set(statFloors.flatMap((f) => f.units.filter((u) => u.status === 'available').map((u) => layouts[u.layout].plan))).size,
+  };
   const current = hovered && floors.find((f) => f.tower === hovered.tower && f.floor === hovered.floor);
   const types = current
     ? [...new Set(current.units.filter((u) => u.status === 'available').map((u) => layouts[u.layout].bedrooms))]
@@ -117,6 +148,20 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     <div className="picker" id="floors">
       <div className="picker-side">
         {children}
+        <dl className="picker-stats">
+          <div>
+            <dt>{t.home.statUnits}</dt>
+            <dd>{stats.units}</dd>
+          </div>
+          <div>
+            <dt>{t.home.statFloors}</dt>
+            <dd>{stats.floors}</dd>
+          </div>
+          <div>
+            <dt>{t.home.statLayouts}</dt>
+            <dd>{stats.layouts}</dd>
+          </div>
+        </dl>
         <div className="lift">
           <div className="segmented" role="group">
             {(['A', ...towers, 'D'] as BlockId[]).map((id) => (
@@ -239,6 +284,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                     onBlur={() => hover(null)}
                   >
                     {f.floor}
+                    <i className="lift-count" aria-hidden="true">{f.available}</i>
                   </Link>
                 ) : (
                   <span
@@ -269,10 +315,14 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </li>
             )}
           </ol>
+          <p className="lift-legend" aria-hidden="true">
+            <span className="is-lit">{t.home.legendForSale}</span>
+            <span>{t.home.soldOut}</span>
+          </p>
         </div>
       </div>
 
-      <div ref={stage} className={`tower${zoom ? ' is-zooming' : ''}`} onPointerDown={() => setTouched(true)}>
+      <div ref={stage} className={`tower${zoom ? ' is-zooming' : ''}${full ? ' is-full' : ''}`} onPointerDown={() => setTouched(true)}>
         {near && (
           <BuildingScene
             floors={floors}
@@ -317,6 +367,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         </div>
         <TourBar tour={tour} setTour={setTour} />
         <SunPanel setSun={setSun} />
+        <button type="button" className="stage-full" onClick={toggleFull} aria-pressed={full} aria-label={full ? t.home.exitFullscreen : t.home.fullscreen} title={full ? t.home.exitFullscreen : t.home.fullscreen}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+          </svg>
+        </button>
         <div className={`stage-loader${ready ? ' is-done' : ''}`} role="status" aria-live="polite" aria-hidden={ready}>
           <div className="stage-loader-box">
             <span className="stage-loader-spinner" aria-hidden="true" />
@@ -326,7 +381,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-        <p className="stage-hint">{tour.kind === 'spot' ? t.tour.lookHint : t.home.towerHint}</p>
+        {/* the city round the complex is OpenStreetMap data (city.glb): the ODbL licence needs this credit */}
+        <p className="stage-hint">
+          {tour.kind === 'spot' ? t.tour.lookHint : t.home.towerHint}
+          <br />© OpenStreetMap contributors
+        </p>
       </div>
     </div>
   );
