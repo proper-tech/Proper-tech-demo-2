@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { clock, siteNow, sunPosition, sunTimes } from '@/lib/solar';
-import type { SunSettings } from './three/Sun';
+import type { SunSettings } from './three/sunSettings';
 
 /** Compass point (N, NE, E, ...) nearest to a direction in degrees. */
 const compass = (deg: number, points: readonly string[]) => points[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
@@ -20,7 +20,7 @@ const SEASONS = [
 ] as const;
 
 /** Clock times of the architect's sun study (sheet 11, БНбД 23-04-07 §3.2). */
-const STUDY_TIMES = [9 * 60, 12 * 60, 15 * 60, 17 * 60];
+const STUDY_TIMES = [9 * 60, 12 * 60, 15 * 60, 17 * 60, 21 * 60];
 
 /** A full day plays in this many seconds. */
 const DAY_SECONDS = 16;

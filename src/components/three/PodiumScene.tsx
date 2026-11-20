@@ -1,7 +1,7 @@
 'use client';
 
-import { Suspense, useCallback, useMemo, type ReactNode } from 'react';
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { ExtrudeGeometry, Group, Path, Shape, Vector3, type Mesh } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -10,6 +10,7 @@ import { defaultFinish } from '@/data/finishes';
 import { getPodiumFloor, listedSpaces, type Decor, type PodiumFloor, type PodiumSpace, type PodiumSpaceType } from '@/data/podium';
 import { bounds, inPolygon, offsetPolygon, polygonCentre, type Pt } from '@/lib/geometry';
 import { Lights } from './ApartmentScene';
+import { SafeCanvas } from './SafeCanvas';
 import { fixPeople, usePeopleMotion } from './people';
 import { Escalators, Lifts, Stairs, escalatorVoid, stairOpening, type EscalatorRun, type StairSpec } from './Cores';
 import { Furniture } from './Furniture';
@@ -143,16 +144,19 @@ function Walls({ pts, at, y = 0, h, color, opacity = 1, gaps }: { pts: Pt[]; at:
   );
 }
 
-function SpaceMesh({ space, at, holes, hovered, onHover, onOpen }: { space: PodiumSpace; at: Frame; holes?: Rect[]; hovered: boolean } & Pick<Props, 'onHover' | 'onOpen'>) {
-  const walls = WALLS[space.type];
+function SpaceMesh({ space, at, holes, hovered, onHover, onOpen, ghost }: { space: PodiumSpace; at: Frame; holes?: Rect[]; hovered: boolean; ghost?: boolean } & Pick<Props, 'onHover' | 'onOpen'>) {
+  // a space drawn by the interior model keeps an invisible tile for the pointer, tinted when pointed at
+  const walls = ghost ? undefined : WALLS[space.type];
   return (
     <>
       <Prism
         pts={space.outline}
         at={at}
         holes={holes}
-        h={SOLID[space.type] ?? (BACKGROUND.has(space.type) ? 0.03 : 0.06)}
+        y={ghost ? 0.02 : 0}
+        h={ghost ? 0.02 : (SOLID[space.type] ?? (BACKGROUND.has(space.type) ? 0.03 : 0.06))}
         color={hovered ? HOVER : COLOR[space.type]}
+        opacity={ghost ? (hovered ? 0.45 : 0) : 1}
         events={{
           onPointerOver: (e) => {
             e.stopPropagation();
@@ -244,6 +248,25 @@ function RoofGarden({ cu, cv, z0 }: { cu: number; cv: number; z0: number }) {
   usePeopleMotion(garden, animations);
   // lifted onto the playground's floor tile (3 cm) so the paving is not hidden under it
   return <primitive object={garden} position={[-cu, -z0 + 0.03, cv]} />;
+}
+
+/** Floors with a furnished interior modelled in Blender (the scene of their 360° tour, exported by
+ *  interior/tools/export_a1_web.py) and the spaces it draws: hall, supermarket and escalators. */
+const INTERIORS: Partial<Record<number, { url: string; spaces: string[] }>> = {
+  1: { url: '/models/interior/A1.glb', spaces: ['101', '102', 'escalators'] },
+};
+
+function Interior({ url, cu, cv, z0, onReady }: { url: string; cu: number; cv: number; z0: number; onReady: () => void }) {
+  const { scene } = useGLTF(url, DRACO_URL);
+  useMemo(() => {
+    // the floor tiles underneath keep the hover and the click
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) o.raycast = noRay;
+    });
+  }, [scene]);
+  useEffect(onReady, [onReady]);
+  // site plan (Blender x = u, y = v) -> this floor's frame
+  return <primitive object={scene} position={[-cu, -z0, cv]} />;
 }
 
 /** Simple playground furniture on the roof (floor 4), shown while the detailed model loads. */
@@ -352,6 +375,15 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
   const terrace = floor.spaces.find((s) => s.type === 'playground');
   const planting = useMemo(() => (terrace ? offsetPolygon(terrace.outline, -1.6) : null), [terrace]);
   const isRoof = floor.spaces.some((s) => s.type === 'roof');
+  const interior = !isRoof && !terrace ? INTERIORS[floor.floor] : undefined;
+  const [interiorReady, setInteriorReady] = useState(false);
+  const ready = useCallback(() => setInteriorReady(true), []);
+  /** Spaces the interior model draws once it has loaded. */
+  const modelled = useMemo(() => new Set(interior && interiorReady ? interior.spaces : []), [interior, interiorReady]);
+  const inModelled = useCallback(
+    (x: number, z: number) => floor.spaces.some((s) => modelled.has(s.id) && inPolygon([x + cu, cv - z], s.outline)),
+    [floor, modelled, cu, cv],
+  );
   // the camera stands back in proportion to the floor: the whole podium, or one tower roof
   const k = Math.max(0.4, Math.max(b.u1 - b.u0, b.v1 - b.v0) / 63);
   // the roof playground can be walked through at eye level (Tour.tsx); site plan -> this floor
@@ -398,7 +430,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
   );
 
   return (
-    <Canvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.5, far: 600, position: [48 * k, 70 * k, 62 * k] }}>
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 0.5, far: 600, position: [48 * k, 70 * k, 62 * k] }}>
       <Lights />
       {terrace ? (
         <CameraRig
@@ -420,7 +452,7 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
           // up to ground level: the top of this storey
           <RampMesh key={s.id} space={s} r={rectOf(s.outline)} rise={floor.z1 - floor.z0} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} />
         ) : (
-          <SpaceMesh key={s.id} space={s} at={at} holes={holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} />
+          <SpaceMesh key={s.id} space={s} at={at} holes={holesIn(s)} hovered={hovered === s.id} onHover={onHover} onOpen={onOpen} ghost={modelled.has(s.id)} />
         ),
       )}
       {/* parking spaces: white lines painted on the car park floor */}
@@ -443,12 +475,28 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
         ))}
       {cores.own && (
         <CoreMesh space={cores.own} r={rectOf(cores.own.outline)} hovered={hovered === cores.own.id} onHover={onHover} onOpen={onOpen}>
-          {cores.runs.map((run, i) => (
-            <Escalators key={i} run={run} cut={CUT} />
-          ))}
+          {modelled.has(cores.own.id) ? (
+            // modelled: an invisible box keeps the pointer
+            (() => {
+              const r = rectOf(cores.own.outline);
+              return (
+                <mesh position={[r.x + r.w / 2, 1.2, r.z + r.d / 2]}>
+                  <boxGeometry args={[r.w, 2.4, r.d]} />
+                  <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+                </mesh>
+              );
+            })()
+          ) : (
+            cores.runs.map((run, i) => <Escalators key={i} run={run} cut={CUT} />)
+          )}
         </CoreMesh>
       )}
-      <Furniture items={furniture} finish={defaultFinish} />
+      <Furniture items={modelled.size ? furniture.filter((f) => !inModelled(f.x, f.z)) : furniture} finish={defaultFinish} />
+      {interior && (
+        <Suspense fallback={null}>
+          <Interior url={interior.url} cu={cu} cv={cv} z0={floor.z0} onReady={ready} />
+        </Suspense>
+      )}
 
       {terrace && planting ? (
         <>
@@ -462,8 +510,8 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
       ) : floor.floor === 0 ? (
         // the basement's concrete walls, open where the ramps start
         <Walls pts={floor.outline} at={at} h={1.2} color="#B9C1CA" gaps={floor.spaces.filter((s) => s.type === 'ramp').map(rampMouth)} />
-      ) : (
-        // the facade, cut away low so the rooms stay visible
+      ) : modelled.size ? null : (
+        // the facade, cut away low so the rooms stay visible (the interior model has its own glazing)
         <Walls pts={floor.outline} at={at} h={1.2} color="#8FB0C8" opacity={0.45} />
       )}
       {/* the towers standing on the roof: white tops, blue glazing on their sides as in the renders */}
@@ -481,6 +529,6 @@ export default function PodiumScene({ floor, layer, hovered, onHover, onOpen, to
       )}
 
       <Projector anchors={anchors} layer={layer} />
-    </Canvas>
+    </SafeCanvas>
   );
 }

@@ -13,13 +13,15 @@ a[:int((13.9-N)*sy), int((12.12-L)*sx):, 3]=0
 Image.fromarray(a).save('tour2/D/top_masked.png')
 PY
 cp tour2/D/top.png tour2/D/top_raw.png; cp tour2/D/top_masked.png tour2/D/top.png
-python3 -I repanos.py $R/public/tour/D/index.html $R/interior/renders/D tour2/D $MAP
-python3 -I retop.py $R/public/tour/D/index.html tour2/D $MAP
-python3 -I mirror_tour.py $R/public/tour/D/index.html $R/public/tour/C/index.html D C
+python3 -I repanos.py $R/interior/tours/D/index.html $R/interior/renders/D tour2/D $MAP
+python3 -I retop.py $R/interior/tours/D/index.html tour2/D $MAP
+python3 -I mirror_tour.py $R/interior/tours/D/index.html $R/interior/tours/C/index.html D C
 for P in F E; do
-  python3 -I build_tour.py $R/public/tour/D/index.html $P $R/interior/renders/$P tour2/$P $MAP $R/public/tour/$P/index.html
+  python3 -I build_tour.py $R/interior/tours/D/index.html $P $R/interior/renders/$P tour2/$P $MAP $R/interior/tours/$P/index.html
 done
-python3 -I mirror_tour.py $R/public/tour/F/index.html $R/public/tour/A/index.html F A
-python3 -I mirror_tour.py $R/public/tour/E/index.html $R/public/tour/B/index.html E B
+python3 -I mirror_tour.py $R/interior/tours/F/index.html $R/interior/tours/A/index.html F A
+python3 -I mirror_tour.py $R/interior/tours/E/index.html $R/interior/tours/B/index.html E B
 python3 -I $R/interior/tools/make_plans.py $R /tmp/plans.json
 echo FINAL_DONE
+# publish the light versions (pictures as separate WebP files) to public/tour
+python3 -I split_tours.py $R

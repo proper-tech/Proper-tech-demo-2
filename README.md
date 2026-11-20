@@ -56,14 +56,14 @@ npm run build && npm start
   tour on apartment pages of the plans listed in `PHOTO_TOURS` (`ApartmentExperience.tsx`); A4 uses A's.
   D, F and E are rendered from the Blender scenes; C, A and B are D, F and E mirrored. How they are made:
   `interior/README.md`. They do not use the site's code or data.
-- **Film**: `public/media/film.mp4` and `film-poster.jpg` are rendered in Blender (EEVEE) from the site's
+- **Film**: `public/media/film.mp4` and `film-poster.webp` are rendered in Blender (EEVEE) from the site's
   own model by `scripts/build-film.py` (six shots, about 1.5-2 hours for 912 frames on a 2019 MacBook Pro;
   keep it plugged in with the lid open, a sleeping Mac stalls the render):
 
   ```bash
   B=/Applications/Blender.app/Contents/MacOS/Blender
   $B -b -P scripts/build-film.py -- --render --out film_frames --res 1920 --samples 32 --sky SKY.hdr --osm scripts/osm-surroundings.json --facades FACADES
-  $B -b -P scripts/build-film.py -- --encode --out film_frames --mp4 public/media/film.mp4 --crf LOW --width 1600
+  $B -b -P scripts/build-film.py -- --encode --out film_frames --mp4 public/media/film.mp4 --crf VERYLOW --width 1280
   ```
 
   The city round the site is the real one from OpenStreetMap (`scripts/osm-surroundings.json`, made by
@@ -79,7 +79,7 @@ npm run build && npm start
   `$B -b -P scripts/build-film.py -- --city-glb public/models/blocks/city.glb --osm scripts/osm-surroundings.json --facades FACADES`.
   `SKY.hdr` is optional (without it Blender's own sky is used); the film used Poly Haven's
   `kloofendal_48d_partly_cloudy_puresky_2k.hdr` (CC0). The Sun Position add-on, if installed, places the sun over
-  Ulaanbaatar. The poster is frame 0000 resized to 1600 px. `public/media/intro.mp4` is no longer used.
+  Ulaanbaatar. The poster is frame 0000 resized to 1600 px, saved as WebP. `public/media/intro.mp4` is no longer used.
 - **The building model**: one GLB per block in `public/models/blocks/`, in the architect's block key:
   `A.glb` podium (floors 1-3 under the whole complex, roof playground, media screen), `B.glb` the
   north tower on the main road, `C.glb` the south tower (both floors 4-16, standing on A, with the

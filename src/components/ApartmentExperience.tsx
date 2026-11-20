@@ -11,6 +11,7 @@ import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { doorLinks, hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
 import { ApartmentPlan } from './Plan2D';
+import { fitTourFrame } from './tourFrame';
 import type { RoomLabel } from './three/ApartmentScene';
 
 const ApartmentScene = dynamic(() => import('./three/ApartmentScene'), {
@@ -239,16 +240,3 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
  * on this page the heading and the mode switch already cover those, so hide them and move the
  * tour's room title and colour panel below this page's heading. Same origin, so this is allowed.
  */
-function fitTourFrame(frame: HTMLIFrameElement) {
-  const doc = frame.contentDocument;
-  if (!doc || doc.getElementById('apt-embed-style')) return;
-  const style = doc.createElement('style');
-  style.id = 'apt-embed-style';
-  style.textContent = `
-    #panoBack, .tour-heading { display: none !important; }
-    .tour-header { justify-content: flex-end; }
-    .tour-intro { top: 224px !important; }
-    #tourDesignPanel { top: 310px !important; max-height: calc(100dvh - 480px) !important; }
-  `;
-  doc.head.appendChild(style);
-}

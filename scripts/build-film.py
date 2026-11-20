@@ -25,7 +25,7 @@ OpenStreetMap, made by scripts/fetch-osm.py, in place of the generated blocks; t
 CC0 textures Facade018A, Facade019A, Facade020A and Facade006 (the 1K-JPG zips unpacked into DIR/<name>/; not in
 the repo, like the sky). --render writes DIR/0000.jpg ... and skips frames already there, so an
 interrupted render resumes. --encode joins DIR's frames into a silent H.264 MP4 (--crf: Blender's quality
-names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf LOW --width 1600.
+names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf VERYLOW --width 1280 (720p, about 5 MB).
   blender -b -P scripts/build-film.py -- --city-glb public/models/blocks/city.glb --osm ... --facades DIR
 writes the same city for the website's 3D view.
 """

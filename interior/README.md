@@ -33,3 +33,39 @@ Only some stops, or another sample count: `render_all.bat 128` or
 
 `tools/build_unit.py F|E <outdir>` (Blender's Python module `bpy`, needs the plan-D scene) rebuilds a scene;
 `tools/preview.py` renders a quick top view or low-resolution panoramas to check it.
+
+## Block D: floor 1 (car parts shop and repair shop) and the car parks B1, 2, 3 — Монгол заавар
+
+`D1.blend` is block D's first floor, furnished (shop shelves, counter, office, waiting room, two car lifts, the
+inspection pit, cars); `D0.blend` (B1), `D2.blend` and `D3.blend` are the car parks (bays with cars, markings, the
+ramps and the opening over them, strip windows, the store room). Built from the site's block D data by
+`tools/build_blockd.py` (floor 1) and `tools/build_blockd_parking.py <floor>` (0, 2, 3), with F's materials and the
+site's car; `D<floor>_cams.json` holds each floor's tour stops (block metres: x = u east, y = -v, height).
+
+1. Рендер эхлүүлнэ (давхар товшиж болно, эсвэл PowerShell-д `.\interior\render_blockd.bat`):
+   ```
+   interior\render_blockd.bat          (B1, 2, 3 давхар)
+   interior\render_blockd.bat 0        (зөвхөн B1)
+   interior\render_blockd.bat 1        (1-р давхар дахин)
+   ```
+   Панорамууд (4096×2048) болон дээрээс харсан зураг `interior\renders\D<давхар>` хавтсанд гарна.
+   Хурдан болгох бол эхлээд `set SAMPLES=64` гэж бичнэ (cmd), PowerShell-д `$env:SAMPLES=64`.
+2. Сайтад тавина: `python3 -I interior/tools/publish_blockd.py . <давхар>` → `public/tour-d/<давхар>`.
+
+Rebuild the scenes: `python3 -I interior/tools/build_blockd.py interior/F.blend <car.glb> interior` and
+`python3 -I interior/tools/build_blockd_parking.py interior/F.blend <car.glb> interior <0|2|3>` (bpy as a module;
+car.glb is `Env_Car_01` cut out of `public/models/blocks/environment.glb`).
+
+## Block A, 1st floor (podium ground floor) — `A1.blend`
+
+The hall, escalators and supermarket of the podium's ground floor, for the 360° tour at
+`/floors/A/1` (button «360° аялал»). Built entirely by script from the site data, so it can be rebuilt:
+
+1. `A1_floor.json` is floor 1 of `src/data/podium.ts` (walls, rooms, furniture), dumped with esbuild.
+2. Download the HDRI seen through the glass (Poly Haven, CC0):
+   `curl -L -o interior/hdri/modern_buildings_2_4k.hdr https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/modern_buildings_2_4k.hdr`
+3. In Blender with `A1.blend` open, run `tools/build_a1.py` (architecture, fittings and stock, plants).
+4. Render the stops of `A1_cams.json`: `blender -b interior/A1.blend -P interior/render_panos.py -- A1 96`
+   (about 4 minutes each on an Apple M-series GPU). The top view (`renders/A1/topdown.jpg`) is an
+   orthographic render from camera `TopCam`, clipped at 2.9 m.
+5. `python3 -I interior/tools/make_tour_a1.py` writes `public/tour/A1/index.html` from the plan-D tour's viewer.
