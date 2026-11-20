@@ -59,12 +59,17 @@ CLIP = {
     219982200: ((36.90, 37.80), (43.14, -79.79)),   # Гэрэл төв: 4 m back from the east street's kerb
 }
 # ---- streets the map lacks, so that no street runs into a wall: the drawing's east street, which stops at v = -80, carried
-# on to the street behind it, whose two map pieces (ending at u = 0.5 and starting at u = 44.6) are joined. Any building a
-# street's middle line runs through is left out (here Керамик Арт Студи and the small building between the two pieces) ----
+# on 31 m and round the corner into the street behind it, out to the secondary street (along a map service lane, made a
+# 7 m street). Any building a street's middle line runs through is left out (here Керамик Арт Студи and one more) ----
 EXTRA_ROADS = [
-    {"w": 10.5, "lanes": 2, "line": [(33.9, -80.0), (35.4, -107.6)]},   # the east street's last 28 m, as wide as drawn
-    {"w": 5, "line": [(0.5, -103.4), (44.6, -108.7)]},
+    {"w": 10.5, "lanes": 2, "line": [(33.9, -80.0), (35.6, -111.2)]},   # the east street's last metres, as wide as drawn
+    {"w": 7, "line": [(30.0, -107.0), (44.6, -108.7), (81.4, -106.9), (96.8, -105.8)]},
 ]
+# ---- tidying round the site: map buildings within CLEAR m of the site or street model are left out (they crowd it; the
+# cut-back ones in CLIP stay), and so are the service lanes (driveways, parking aisles: the narrowest streets) within
+# SERVICE_CLEAR m of the site, which mostly ran into the plot. Bits of street shorter than MIN_RUN m, left where the model
+# cuts a street, are dropped too. Service lanes further out are drawn without sidewalks. ----
+CLEAR, SERVICE_W, SERVICE_CLEAR, SITE, MIN_RUN = 6.0, 5, 150.0, (0.0, -15.0), 25.0
 
 
 def matte(name, rgb, rough=0.95):
@@ -257,9 +262,52 @@ def osm_city(path):
         mats = [photo_facade(folder, a) for a, _ in looks] + [matte("Film Roof", (0.42, 0.42, 0.4), 0.9)]
     else:
         mats = [facade(f"Film City {i}", c) for i, c in enumerate([(0.62, 0.6, 0.56), (0.7, 0.66, 0.58), (0.55, 0.55, 0.55), (0.68, 0.62, 0.52)])]
-    roads = data["roads"] + EXTRA_ROADS
+    cell = 25.0
+
+    def road_grid(rs):
+        """The streets' segments by 25 m square, to find the streets near a point."""
+        g = {}
+        for k, r in enumerate(rs):
+            hw = r["w"] / 2
+            for p, q in zip(r["line"], r["line"][1:]):
+                for i in range(math.floor((min(p[0], q[0]) - hw) / cell), math.floor((max(p[0], q[0]) + hw) / cell) + 1):
+                    for j in range(math.floor((min(p[1], q[1]) - hw) / cell), math.floor((max(p[1], q[1]) + hw) / cell) + 1):
+                        g.setdefault((i, j), []).append((k, p, q, hw))
+        return g
+
+    def on_road(x, y, skip=-1):
+        """Does (x, y) lie on a street's asphalt (any but street number `skip`)?"""
+        for k, p, q, hw in grid.get((math.floor(x / cell), math.floor(y / cell)), ()):
+            vx, vy = q[0] - p[0], q[1] - p[1]
+            t = max(0, min(1, ((x - p[0]) * vx + (y - p[1]) * vy) / (vx * vx + vy * vy or 1)))
+            if k != skip and math.hypot(x - p[0] - t * vx, y - p[1] - t * vy) < hw:
+                return True
+        return False
+
+    def model_street(x, y):
+        """Is (x, y) on one of the street model's roads?"""
+        hit, _, _, i, ob, _ = scene.ray_cast(depsgraph, Vector((x, y, 300)), Vector((0, 0, -1)))
+        m = hit and ob.material_slots and ob.material_slots[ob.data.polygons[i].material_index].material
+        return bool(m) and m.name.startswith("Env Street Asphalt")
+
+    def dead_end_at_site(k, r):
+        """Does the street stop near the site without meeting another street or one of the model's roads (it ran
+        into the plot)?"""
+        for x, y in (r["line"][0], r["line"][-1]):
+            if on_road(x, y, skip=k) or model_street(x, y):
+                continue
+            if any(modelled(x + rad * math.cos(a * math.pi / 8), y + rad * math.sin(a * math.pi / 8))
+                   for rad in (5, 10, 15, 20, 25) for a in range(16)):
+                return True
+        return False
+
+    service_near = lambda r: r["w"] <= SERVICE_W and any(math.dist(p, SITE) < SERVICE_CLEAR for p in r["line"])
+    roads = [r for r in data["roads"] if not service_near(r)]
+    grid = road_grid(roads + EXTRA_ROADS)
+    roads = [r for k, r in enumerate(roads) if not dead_end_at_site(k, r)] + EXTRA_ROADS
+    grid = road_grid(roads)
     # points every 2 m along every street's middle line, by 25 m square: a building with one inside stands on a street
-    cell, mids = 25.0, {}
+    mids = {}
     for r in roads:
         for p, q in zip(r["line"], r["line"][1:]):
             for x, y in along(p, q, 2.0):
@@ -272,7 +320,22 @@ def osm_city(path):
                    for j in range(math.floor(min(ys) / cell), math.floor(max(ys) / cell) + 1)
                    for x, y in mids.get((i, j), ()))
 
-    bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "on a street": 0, "in a camera's way": 0}
+    def crowds_site(ring):
+        """Is the site or street model within CLEAR metres outside this outline?"""
+        ccw = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1])) > 0
+        for p, q in zip(ring, ring[1:] + ring[:1]):
+            d = math.dist(p, q)
+            if d < 0.1:
+                continue
+            nx, ny = (q[1] - p[1]) / d, -(q[0] - p[0]) / d   # outward for a counter-clockwise outline
+            if not ccw:
+                nx, ny = -nx, -ny
+            for x, y in along(p, q, 2.0):
+                if any(modelled(x + nx * o, y + ny * o) for o in (CLEAR / 3, CLEAR * 2 / 3, CLEAR)):
+                    return True
+        return False
+
+    bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "on a street": 0, "against the site": 0, "in a camera's way": 0}
     uv = bm.loops.layers.uv.new("UVMap")
     for b in data["buildings"]:
         ring = [tuple(p) for i, p in enumerate(b["ring"]) if p != b["ring"][i - 1]]   # no repeated points
@@ -287,6 +350,9 @@ def osm_city(path):
             continue
         if on_street(ring):
             dropped["on a street"] += 1
+            continue
+        if b["id"] not in CLIP and math.dist((cx, cy), SITE) < 300 and crowds_site(ring):
+            dropped["against the site"] += 1
             continue
         if any(z < b["h"] + 3 and near(x, y, ring, 4) for x, y, z in cams):
             dropped["in a camera's way"] += 1
@@ -328,23 +394,6 @@ def osm_city(path):
     # where the model already is or where it would lie on another street's asphalt (junctions)
     road_mat, walk_mat, paint_mat = (bpy.data.materials[n] for n in ("Env Street Asphalt", "Env Sidewalk", "Env Road Paint"))
     s_road, s_walk = uv_per_metre(bpy.data.objects["Env_MainRoad"]), uv_per_metre(bpy.data.objects["Env_PublicSidewalk"])
-    grid = {}   # street segments by 25 m square, to find the streets near a point
-    for k, r in enumerate(roads):
-        hw = r["w"] / 2
-        for p, q in zip(r["line"], r["line"][1:]):
-            for i in range(math.floor((min(p[0], q[0]) - hw) / cell), math.floor((max(p[0], q[0]) + hw) / cell) + 1):
-                for j in range(math.floor((min(p[1], q[1]) - hw) / cell), math.floor((max(p[1], q[1]) + hw) / cell) + 1):
-                    grid.setdefault((i, j), []).append((k, p, q, hw))
-
-    def on_road(x, y, skip=-1):
-        """Does (x, y) lie on a street's asphalt (any but street number `skip`)?"""
-        for k, p, q, hw in grid.get((math.floor(x / cell), math.floor(y / cell)), ()):
-            vx, vy = q[0] - p[0], q[1] - p[1]
-            t = max(0, min(1, ((x - p[0]) * vx + (y - p[1]) * vy) / (vx * vx + vy * vy or 1)))
-            if k != skip and math.hypot(x - p[0] - t * vx, y - p[1] - t * vy) < hw:
-                return True
-        return False
-
     bm, pieces = bmesh.new(), {"asphalt": 0, "sidewalk": 0, "dash": 0}
     uv = bm.loops.layers.uv.new("UVMap")
 
@@ -366,36 +415,54 @@ def osm_city(path):
         hw = r["w"] / 2
         lanes = r.get("lanes") or max(2, round(r["w"] / 3.5))   # lane lines between lanes about 3.5 m wide, on streets 7 m and wider
         dividers = [(j - lanes / 2) * r["w"] / lanes for j in range(1, lanes)] if r["w"] >= 7 else []
-        run = 0.0   # distance along the street, so the dashes keep their rhythm round the bends
+        # the street's 4 m pieces in order along it, each [a, c, unit left normal, drawn?]: drawn where the model isn't
+        segs, parts = [], []
         for p, q in zip(r["line"], r["line"][1:]):
             d = math.dist(p, q)
             if d < 0.05:
                 continue
             n = (-(q[1] - p[1]) / d, (q[0] - p[0]) / d)
             pts = along(p, q)
-            for a, c in zip(pts, pts[1:]):
-                mx, my = (a[0] + c[0]) / 2, (a[1] + c[1]) / 2
-                if not modelled(mx, my):
-                    face(strip(a, c, n, -hw, hw), Z_ROAD, 0, s_road)
-                    pieces["asphalt"] += 1
-                for o0, o1 in ((hw, hw + WALK), (-hw - WALK, -hw)):
-                    ox, oy = mx + n[0] * (o0 + o1) / 2, my + n[1] * (o0 + o1) / 2
-                    if not modelled(ox, oy) and not on_road(ox, oy):
-                        face(strip(a, c, n, o0, o1), Z_WALK, 1, s_walk)
-                        pieces["sidewalk"] += 1
+            segs.append((p, q, d, n, len(parts), len(pts) - 1))
+            parts += [[a, c, n, not modelled((a[0] + c[0]) / 2, (a[1] + c[1]) / 2)] for a, c in zip(pts, pts[1:])]
+        i = 0   # a run of drawn pieces shorter than MIN_RUN is a scrap the model cut off a street: not drawn
+        while i < len(parts):
+            j = i
+            while j < len(parts) and parts[j][3]:
+                j += 1
+            if j > i and sum(math.dist(pc[0], pc[1]) for pc in parts[i:j]) < MIN_RUN:
+                for pc in parts[i:j]:
+                    pc[3] = False
+            i = j + 1
+        for a, c, n, drawn in parts:
+            if not drawn:
+                continue
+            face(strip(a, c, n, -hw, hw), Z_ROAD, 0, s_road)
+            pieces["asphalt"] += 1
+            if r["w"] <= SERVICE_W:
+                continue   # service lanes: no sidewalks
+            mx, my = (a[0] + c[0]) / 2, (a[1] + c[1]) / 2
+            for o0, o1 in ((hw, hw + WALK), (-hw - WALK, -hw)):
+                ox, oy = mx + n[0] * (o0 + o1) / 2, my + n[1] * (o0 + o1) / 2
+                if not modelled(ox, oy) and not on_road(ox, oy):
+                    face(strip(a, c, n, o0, o1), Z_WALK, 1, s_walk)
+                    pieces["sidewalk"] += 1
+        run = 0.0   # distance along the street, so the dashes keep their rhythm round the bends
+        for p, q, d, n, first, count in segs:
             t = (-run) % (DASH + GAP)   # the first dash on this stretch
             while dividers and t + DASH <= d:
-                a = (p[0] + (q[0] - p[0]) * t / d, p[1] + (q[1] - p[1]) * t / d)
-                c = (p[0] + (q[0] - p[0]) * (t + DASH) / d, p[1] + (q[1] - p[1]) * (t + DASH) / d)
-                for o in dividers:
-                    ox, oy = (a[0] + c[0]) / 2 + n[0] * o, (a[1] + c[1]) / 2 + n[1] * o
-                    if not modelled(ox, oy) and not on_road(ox, oy, skip=k):
-                        face(strip(a, c, n, o - 0.075, o + 0.075), Z_PAINT, 2, 0)
-                        pieces["dash"] += 1
+                if parts[first + min(count - 1, int((t + DASH / 2) / (d / count)))][3]:   # only on drawn asphalt
+                    a = (p[0] + (q[0] - p[0]) * t / d, p[1] + (q[1] - p[1]) * t / d)
+                    c = (p[0] + (q[0] - p[0]) * (t + DASH) / d, p[1] + (q[1] - p[1]) * (t + DASH) / d)
+                    for o in dividers:
+                        ox, oy = (a[0] + c[0]) / 2 + n[0] * o, (a[1] + c[1]) / 2 + n[1] * o
+                        if not modelled(ox, oy) and not on_road(ox, oy, skip=k):
+                            face(strip(a, c, n, o - 0.075, o + 0.075), Z_PAINT, 2, 0)
+                            pieces["dash"] += 1
                 t += DASH + GAP
             run += d
-        for x, y in r["line"][1:-1]:
-            if not modelled(x, y):
+        for (_, (x, y), _, _, first, count), nxt in zip(segs, segs[1:]):   # round discs at the bends, where drawn both sides
+            if parts[first + count - 1][3] and parts[nxt[4]][3]:
                 face([(x + hw * math.cos(j * math.pi / 4), y + hw * math.sin(j * math.pi / 4)) for j in range(8)], Z_ROAD, 0, s_road)
     me = bpy.data.meshes.new("Film OSM Streets")
     bm.to_mesh(me); bm.free()
