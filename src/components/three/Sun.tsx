@@ -2,9 +2,10 @@
 
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { interiorNight, nightFactor } from './interiorGlass';
 import site from '@/data/site.json';
 import type { SunSettings } from './sunSettings';
-import { BackSide, CanvasTexture, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type Group, type PerspectiveCamera, type Sprite } from 'three';
+import { BackSide, CanvasTexture, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type ShaderMaterial, type Group, type PerspectiveCamera, type Sprite } from 'three';
 
 export { DEFAULT_SUN, type SunSettings } from './sunSettings';
 
@@ -147,6 +148,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   const texture = useMemo(() => sunTexture(SKY_SUN), []);
   const domeTexture = useMemo(() => sunTexture(DOME_SUN), []);
   const sky = useRef<Group>(null);
+  const skyMat = useRef<ShaderMaterial>(null);
   const uniforms = useMemo(
     () => ({ sunDir: { value: new Vector3() }, low: { value: 0 }, brightness: { value: 1 }, night: { value: 0 } }),
     [],
@@ -155,6 +157,8 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   uniforms.low.value = low;
   uniforms.brightness.value = b;
   uniforms.night.value = 1 - day;
+  // lights come on in the shops, offices and homes as the sun gets low, full by dusk
+  interiorNight.value = nightFactor(sun.elevation);
 
   // the overview sun: placed in front of the camera each frame, at the distance of the complex
   const arcSun = useRef<Sprite>(null);
@@ -167,6 +171,14 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   // keep the sky centred on the camera, so the sun sits at the same angle from every viewpoint
   useFrame(({ camera }) => {
     sky.current?.position.copy(camera.position);
+    // the dome's material holds its own copy of the uniforms: hand the current values over
+    const u = skyMat.current?.uniforms;
+    if (u && u !== uniforms) {
+      u.sunDir.value.copy(uniforms.sunDir.value);
+      u.low.value = uniforms.low.value;
+      u.brightness.value = uniforms.brightness.value;
+      u.night.value = uniforms.night.value;
+    }
     const disc = arcSun.current;
     if (!disc || !showArc || f === undefined) return;
     const cam = camera as PerspectiveCamera;
@@ -195,7 +207,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
         {/* sky dome */}
         <mesh renderOrder={-2} frustumCulled={false}>
           <sphereGeometry args={[SKY_RADIUS, 48, 24]} />
-          <shaderMaterial side={BackSide} depthWrite={false} uniforms={uniforms} vertexShader={SKY_VERTEX} fragmentShader={SKY_FRAGMENT} />
+          <shaderMaterial ref={skyMat} side={BackSide} depthWrite={false} uniforms={uniforms} vertexShader={SKY_VERTEX} fragmentShader={SKY_FRAGMENT} />
         </mesh>
         {/* the sun itself: a glowing disc that buildings and trees pass in front of */}
         <sprite visible={SHOW_SUN_DISC && !overview && up} position={[dx * DISC_DISTANCE, dy * DISC_DISTANCE, dz * DISC_DISTANCE]} scale={[DISC_SIZE, DISC_SIZE, 1]} renderOrder={-1} frustumCulled={false}>

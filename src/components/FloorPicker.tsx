@@ -302,7 +302,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </div>
           ))}
           {/* the pointed floor, pinned to it in the 3D view */}
-          {hovered && hovered.floor > 0 && (
+          {hovered && hovered.floor > 0 && !zoom && (
             <div className={`floor-hover-tag${current && current.available > 0 ? ' is-for-sale' : ''}`} data-anchor="hover">
               <strong>
                 {hovered.tower === 'A' || hovered.tower === 'D'

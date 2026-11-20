@@ -153,9 +153,10 @@ function FitCamera() {
     // just zoomed in from the building (BuildingScene's ZoomIn): come down from the side the zoom came from
     let from: Vector3 | null = null;
     try {
-      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number } | null;
+      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number; inside?: boolean } | null;
       sessionStorage.removeItem(ARRIVE_KEY);
-      if (a && Date.now() - a.at < 8000) from = new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
+      // came in through the glass: start just inside that facade at eye height, then rise over the plan
+      if (a && Date.now() - a.at < 8000) from = a.inside ? new Vector3(a.x * 11, 1.7, a.z * 9) : new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
     } catch {
       // no storage: plain view
     }
@@ -168,7 +169,7 @@ function FitCamera() {
   useFrame((_, dt) => {
     const a = arrive.current;
     if (!a) return;
-    a.k = Math.min(1, a.k + dt / 1.2);
+    a.k = Math.min(1, a.k + dt / 1.6);
     const e = 1 - (1 - a.k) ** 3;
     // swing up over the floor on an arc rather than a straight line
     const p = new Vector3().lerpVectors(a.from, a.to, e);

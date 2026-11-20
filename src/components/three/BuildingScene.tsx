@@ -15,6 +15,8 @@ import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, type Tour } from './Tour';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
+import { interiorFocus, interiorGlass, nightFactor } from './interiorGlass';
+import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
 import { ARRIVE_KEY } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
@@ -87,6 +89,9 @@ function Model() {
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
       for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        // The podium's baked occlusion (PodiumA_AO) is black over most of its outer walls, which then
+        // turn black wherever the sun is not on them, so it is left off.
+        if (m.name.endsWith('PodiumAO')) (m as MeshStandardMaterial).aoMap = null;
         const g = GLASS[m.name];
         if (g && 'color' in m) {
           (m as MeshStandardMaterial).color.set(g.color);
@@ -95,6 +100,31 @@ function Model() {
         }
       }
     });
+    // the podium's glass shows lit shops and offices behind it (interiorGlass.ts)
+    const shopGlass = interiorGlass('shop');
+    const officeGlass = interiorGlass('office');
+    scene.getObjectByName('Podium')?.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      if (mesh.material.name === 'Glass Shopfront') mesh.material = shopGlass;
+      else if (mesh.material.name === 'Glass') mesh.material = officeGlass;
+    });
+    // block D: its store on the ground floor, parking decks above (storeys from data/blockD.ts)
+    const dGlass = interiorGlass('shop', { storeys: [4.5, 7.8, 10.8, 0.3], shopType: 0, parking: true });
+    scene.getObjectByName('Annex')?.traverse((o) => {
+      const mesh = o as Mesh;
+      if (mesh.isMesh && !Array.isArray(mesh.material) && mesh.material.name === 'D Glass') mesh.material = dGlass;
+    });
+    // the towers' glass shows homes behind it (interiorGlass.ts)
+    const homeGlass = interiorGlass('home');
+    for (const name of ['Tower_B', 'Tower_C']) {
+      scene.getObjectByName(name)?.traverse((o) => {
+        const mesh = o as Mesh;
+        if (mesh.isMesh && !Array.isArray(mesh.material) && mesh.material.name.startsWith('TB Glass')) mesh.material = homeGlass;
+      });
+    }
+    registerNightGlow(scene);
+    registerFacadeWash(scene);
     fixPeople(scene);
     // skinned people on the roof must not be culled by their rest-pose bounds
     scene.traverse((o) => {
@@ -113,6 +143,7 @@ const PODIUM_DETAIL_URL = '/models/blocks/A-detail.glb';
 function PodiumDetail() {
   const { scene } = useGLTF(PODIUM_DETAIL_URL, DRACO_URL);
   useMemo(() => {
+    registerNightGlow(scene);
     scene.traverse((o) => {
       if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
     });
@@ -120,6 +151,40 @@ function PodiumDetail() {
   return <primitive object={scene} />;
 }
 useGLTF.preload(PODIUM_DETAIL_URL, DRACO_URL);
+
+/** Facade detail of block D (scripts/blockD-detail.py): plinth, slab bands, coping, framed windows, a lit
+ *  canopy and name sign over the shopfront, framed garage doors, faceted metal panels on the blank west
+ *  wall, roof plant. */
+const D_DETAIL_URL = '/models/blocks/D-detail.glb';
+
+function BlockDDetail() {
+  const { scene } = useGLTF(D_DETAIL_URL, DRACO_URL);
+  useMemo(() => {
+    registerNightGlow(scene);
+    registerFacadeWash(scene);
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) o.castShadow = o.receiveShadow = true;
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(D_DETAIL_URL, DRACO_URL);
+
+/** Glass of the podium's curtain walls (scripts/podium-glass.py): in complex.glb the infill behind the
+ *  dark metal glazing grid is modelled in the facade material, so these panes sit just in front of it. */
+const PODIUM_GLASS_URL = '/models/blocks/A-glass.glb';
+
+function PodiumGlass() {
+  const { scene } = useGLTF(PODIUM_GLASS_URL, DRACO_URL);
+  useMemo(() => {
+    const glass = interiorGlass('office');
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh) (o as Mesh).material = glass;
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+useGLTF.preload(PODIUM_GLASS_URL, DRACO_URL);
 
 /** Everything around the buildings, modelled in Blender (environment.blend): ground, roads,
  *  parking with cars, trees, hedges, street lights, furniture and people. Same site-plan frame
@@ -136,6 +201,28 @@ const GROUND_COLORS: Record<string, string> = {
   'Env Sidewalk': '#CFCDC8',
   'Env Concrete': '#D9D6D0',
   'Env Lawn': '#7FA35A',
+};
+
+/** Street trees whose crowns ran into a facade (found with scripts/tree-clearance.py): moved
+ *  clear of the building along the street, metres in x and z, and the crown scaled where a move
+ *  alone would have taken it off the verge. Scale 0 takes the tree out. */
+const TREE_FIX: Record<string, [number, number, number]> = {
+  Env_Tree_04: [-1.95, 0, 1.0],
+  Env_Tree_04001: [0, -2.7, 1.0],
+  Env_Tree_05: [0, -2.7, 0.72],
+  Env_Tree_06: [0, -2.2, 1.0],
+  Env_Tree_06001: [0, -0.45, 1.0],
+  Env_Tree_07: [0, -1.2, 1.0],
+  Env_Tree_09: [1.7, 0, 1.0],
+  Env_Tree_14: [0.95, 0, 1.0],
+  Env_Tree_15: [1.7, 0, 1.0],
+  Env_Tree_17: [0, 0.45, 1.0],
+  Env_Tree_20: [0.45, 0, 1.0],
+  Env_Tree_21: [1.2, 0, 1.0],
+  Env_Tree_22: [1.45, 0, 1.0],
+  Env_Tree_23: [1.45, 0, 1.0],
+  Env_Tree_24: [1.2, 0, 1.0],
+  Env_Tree_08: [0, 0, 0], // between the buildings: no room for it
 };
 
 function Environment() {
@@ -155,6 +242,16 @@ function Environment() {
     };
   }, [gl, camera, world, scene]);
   useMemo(() => {
+    for (const [name, [dx, dz, k]] of Object.entries(TREE_FIX)) {
+      const tree = scene.getObjectByName(name);
+      if (!tree || tree.userData.cleared) continue;
+      tree.userData.cleared = true;
+      if (k === 0) tree.visible = false;
+      tree.position.x += dx;
+      tree.position.z += dz;
+      tree.scale.multiplyScalar(k || 1);
+    }
+    registerNightGlow(scene);
     fixPeople(scene);
     scene.traverse((o) => {
       // skinned people must not be culled by their rest-pose bounds
@@ -173,7 +270,12 @@ function Environment() {
       }
     });
   }, [scene]);
-  return <primitive object={scene} visible={shown} />;
+  return (
+    <>
+      <primitive object={scene} visible={shown} />
+      {shown && <StreetLights root={scene} />}
+    </>
+  );
 }
 // not preloaded: the street loads after the buildings are on screen (see BuildingScene)
 
@@ -436,56 +538,88 @@ function floorPoint({ tower, floor }: FloorKey): Vector3 {
 }
 
 /** Zoom duration (seconds) when a floor is picked. */
-const ZOOM_TIME = 1.7;
+const ZOOM_TIME = 2.8;
 
 const smooth = (k: number) => k * k * (3 - 2 * k);
 
 /**
- * Flies the camera to the picked floor in two moves: first round and down until it is level with the floor,
- * square on to the side it was looking from, with the whole floor across the view; then straight in through
- * the facade at the floor's height. The page fades over the second move and opens the floor, whose own view
- * starts from the same side (ARRIVE_KEY).
+ * Flies the camera to the picked floor. For the towers, in three moves: round and down until it is level
+ * with the floor, square on to the facade it was looking at, with the whole floor across the view; then
+ * straight at that facade until a window fills the view and the rooms behind the glass show (interiorGlass);
+ * then on through the glass, while the page fades and opens the floor, whose own view starts inside that
+ * facade (ARRIVE_KEY). The podium and block D take the first and last moves only.
  */
 function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
-  const path = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; p2: Vector3; t1: Vector3; f0: number; k: number; done: boolean; dir: Vector3 } | null>(null);
+  type Path = { p0: Vector3; t0: Vector3; p1: Vector3; p2: Vector3; p3: Vector3; t1: Vector3; t3: Vector3; f0: number; k: number; done: boolean; dir: Vector3; near: number };
+  const path = useRef<Path | null>(null);
   useEffect(() => {
     const t1 = floorPoint(to);
     const t0 = controls ? controls.target.clone() : t1.clone();
-    // the side the camera is on, flattened: we end up facing the floor square on
+    // the side the camera is on, flattened
     const dir = camera.position.clone().sub(t1).setY(0);
     if (dir.lengthSq() < 1) dir.set(-1, 0, 1);
     dir.normalize();
-    // far enough that the whole floor plate (about 26 m) spans two thirds of the view
     const half = MathUtils.degToRad(camera.fov / 2);
+    // far enough that the whole floor plate (about 26 m) spans two thirds of the view
     const d1 = 13 / Math.tan(half) / 0.66;
-    const p1 = t1.clone().add(dir.clone().multiplyScalar(d1)).add(new Vector3(0, 1.2, 0));
-    // into the floor: just inside the facade, at eye height over the slab
-    const p2 = t1.clone().add(dir.clone().multiplyScalar(4)).add(new Vector3(0, 0.3, 0));
-    path.current = { p0: camera.position.clone(), t0, p1, p2, t1, f0: camera.fov, k: 0, done: false, dir };
+    let p1: Vector3, p2: Vector3, p3: Vector3, t3: Vector3;
+    if (to.tower === 'B' || to.tower === 'C') {
+      // square on to the nearest facade of the plate
+      const t = towerPlate(to.tower);
+      const hx = (t.u1 - t.u0) / 2;
+      const hz = (t.v1 - t.v0) / 2;
+      if (Math.abs(dir.x) * hz > Math.abs(dir.z) * hx) dir.set(Math.sign(dir.x), 0, 0);
+      else dir.set(0, 0, Math.sign(dir.z));
+      const face = dir.x !== 0 ? hx : hz;
+      // a little off the middle of the facade, onto a window bay rather than the core
+      const side = new Vector3(-dir.z, 0, dir.x).multiplyScalar(face * 0.18);
+      const eye = new Vector3(0, -0.1, 0);
+      p1 = t1.clone().add(dir.clone().multiplyScalar(face + d1 * 0.55)).add(side).add(new Vector3(0, 0.6, 0));
+      p2 = t1.clone().add(dir.clone().multiplyScalar(face + 3.6)).add(side).add(eye);
+      p3 = t1.clone().add(dir.clone().multiplyScalar(face - 1.5)).add(side).add(eye);
+      const y0 = floorLevel(to.floor);
+      interiorFocus.value.set(y0, y0 + FLOOR_HEIGHT);
+      t3 = t1.clone().add(side).add(eye);
+    } else {
+      p1 = t1.clone().add(dir.clone().multiplyScalar(d1)).add(new Vector3(0, 1.2, 0));
+      p2 = p1.clone();
+      p3 = t1.clone().add(dir.clone().multiplyScalar(4)).add(new Vector3(0, 0.3, 0));
+      t3 = t1.clone();
+    }
+    path.current = { p0: camera.position.clone(), t0, p1, p2, p3, t1, t3, f0: camera.fov, k: 0, done: false, dir, near: camera.near };
     if (controls) controls.enabled = false;
     return () => {
       if (controls) controls.enabled = true;
+      interiorFocus.value.set(-1, -1);
+      if (path.current) {
+        camera.near = path.current.near;
+        camera.updateProjectionMatrix();
+      }
     };
   }, [to, camera, controls]);
   useFrame((_, dt) => {
     const z = path.current;
     if (!z || z.done) return;
     z.k = Math.min(1, z.k + dt / ZOOM_TIME);
-    const a = smooth(Math.min(1, z.k / 0.62)); // round and level with the floor
-    const b = z.k <= 0.62 ? 0 : smooth((z.k - 0.62) / 0.38); // straight in
-    const pos = new Vector3().lerpVectors(z.p0, z.p1, a).lerp(z.p2, b * b);
+    // 0 – 0.45 round and level with the floor; 0.45 – 0.8 up to the glass; 0.8 – 1 through it
+    const a = smooth(Math.min(1, z.k / 0.45));
+    const b = smooth(MathUtils.clamp((z.k - 0.45) / 0.35, 0, 1));
+    const c = MathUtils.clamp((z.k - 0.8) / 0.2, 0, 1);
+    const pos = new Vector3().lerpVectors(z.p0, z.p1, a).lerp(z.p2, b).lerp(z.p3, c * c);
     camera.position.copy(pos);
-    const target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15));
+    const target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15)).lerp(z.t3, b);
     if (controls) controls.target.copy(target);
     camera.lookAt(target);
-    camera.fov = MathUtils.lerp(z.f0, 30, a) + 12 * b * b;
+    camera.fov = MathUtils.lerp(z.f0, 30, a) + 14 * b + 10 * c * c;
+    // close to the glass the near plane must not cut it away before the camera reaches it
+    camera.near = MathUtils.lerp(z.near, 0.05, b);
     camera.updateProjectionMatrix();
     if (z.k >= 1) {
       z.done = true;
       try {
-        sessionStorage.setItem(ARRIVE_KEY, JSON.stringify({ x: z.dir.x, z: z.dir.z, at: Date.now() }));
+        sessionStorage.setItem(ARRIVE_KEY, JSON.stringify({ x: z.dir.x, z: z.dir.z, at: Date.now(), inside: to.tower === 'B' || to.tower === 'C' }));
       } catch {
         // storage blocked: the floor page just opens at its usual view
       }
@@ -531,6 +665,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   return (
     <SafeCanvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
+      <NightDriver />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
       {/* The buildings come first, so the view appears as soon as they are in; the street and the
@@ -538,13 +673,16 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       <Suspense fallback={null}>
         <Model />
         <PodiumDetail />
+        <PodiumGlass />
+        <BlockDDetail />
         <WhenReady onReady={ready} />
       </Suspense>
       {streetOn && (
         <Suspense fallback={null}>
           {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
               see stays the Sun component's dome */}
-          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
+          {/* the HDRI is a day sky: dimmed in the evening, so the facades go dark and the lit windows carry */}
+          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35 * (1 - 0.75 * nightFactor(sun.elevation))} />
           <Environment />
         </Suspense>
       )}
@@ -552,10 +690,10 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
           would otherwise update it mid-render */}
       {!buildingsIn && <Progress onProgress={onProgress} />}
 
-      {tour.kind === 'overview' && towers.map((tower) => (
+      {tour.kind === 'overview' && !zoomTo && towers.map((tower) => (
         <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
       ))}
-      {tour.kind === 'overview' && (
+      {tour.kind === 'overview' && !zoomTo && (
         <>
           <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
           <RoofZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
