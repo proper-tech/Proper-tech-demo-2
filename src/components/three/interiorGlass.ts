@@ -194,6 +194,70 @@ vec3 curtains(vec3 room, vec3 glow, float u, float y, float rid, float cu, float
   return c;
 }
 
+// ---- furniture and people for the shops and offices: cards facing the glass, some way in ----
+vec3 person(float x, float y, float seed) {
+  float k = (1.62 + 0.22 * ih2(vec2(seed, 1.0))) / 1.75;
+  float c1 = ih2(vec2(seed, 2.0)), c2 = ih2(vec2(seed, 3.0));
+  vec3 top = c1 < 0.25 ? vec3(0.75, 0.74, 0.7) : c1 < 0.5 ? vec3(0.2, 0.28, 0.42) : c1 < 0.75 ? vec3(0.55, 0.22, 0.2) : vec3(0.35, 0.4, 0.3);
+  vec3 legs = c2 < 0.5 ? vec3(0.12, 0.14, 0.2) : c2 < 0.8 ? vec3(0.08) : vec3(0.55, 0.5, 0.42);
+  vec3 skin = mix(vec3(0.62, 0.46, 0.36), vec3(0.42, 0.3, 0.22), ih2(vec2(seed, 4.0)));
+  float ax = abs(x);
+  if (y < 0.86 * k && ax < 0.15 * k && abs(ax - 0.075 * k) < 0.06 * k) return legs;
+  if (y >= 0.84 * k && y < 1.46 * k && ax < mix(0.16, 0.2, (y / k - 0.84) / 0.62) * k) return top;
+  if (y >= 0.86 * k && y < 1.42 * k && ax > 0.2 * k && ax < 0.26 * k) return top * 0.8;
+  if (y >= 0.8 * k && y < 0.88 * k && ax > 0.2 * k && ax < 0.26 * k) return skin;
+  if (ax < 0.05 * k && y >= 1.45 * k && y < 1.53 * k) return skin;
+  vec2 q = vec2(x, y - 1.63 * k) / (vec2(0.095, 0.115) * k);
+  if (length(q) < 1.0) return q.y > 0.25 || (ax > 0.07 * k && q.y > -0.4) ? vec3(0.1, 0.08, 0.06) : skin;
+  return vec3(-1.0);
+}
+
+vec3 furniture(float type, float a, float y, float W, float rid) {
+  float c = W * (0.5 + 0.25 * (fract(rid * 9.7) - 0.5));
+  float x = a - c;
+  if (type < 0.5) {                                   // gondola shelving
+    if (abs(x) > 1.3 || y > 1.6) return vec3(-1.0);
+    if (abs(x) > 1.24 || y > 1.54) return vec3(0.88, 0.88, 0.86);
+    if (y < 0.18) return vec3(0.25);
+    vec3 p = shopProducts(x + 8.0, y + 0.05, rid + 11.0);
+    return p.x >= 0.0 ? p : vec3(0.82, 0.81, 0.78);
+  } else if (type < 1.5) {                            // cafe tables and chairs
+    float tx = abs(x) - 1.1;                          // two tables, either side of the middle
+    if (abs(tx) < 0.45 && y > 0.72 && y < 0.77) return vec3(0.32, 0.21, 0.13);
+    if (abs(tx) < 0.035 && y < 0.72) return vec3(0.12);
+    float cx = abs(abs(tx) - 0.62);
+    if (cx < 0.2 && y > 0.44 && y < 0.48) return vec3(0.18, 0.16, 0.15);
+    if (abs(tx) > 0.6 && cx < 0.2 && cx > 0.16 && y < 0.92) return vec3(0.18, 0.16, 0.15);
+    if (abs(tx) > 0.6 && cx < 0.2 && y > 0.62 && y < 0.92) return vec3(0.22, 0.19, 0.17);
+    return vec3(-1.0);
+  } else if (type < 2.5) {                            // clothes rail
+    if (abs(x) > 1.22 || y > 1.56) return vec3(-1.0);
+    if (y > 1.5) return vec3(0.65);
+    if (abs(x) > 1.18) return vec3(0.6);
+    float i = floor(x / 0.085);
+    float hem = 0.62 + 0.3 * ih2(vec2(i, rid));
+    if (y < hem) return y < 0.05 ? vec3(0.6) : vec3(-1.0);
+    float k = ih2(vec2(i * 1.7, rid + 2.0));
+    vec3 cl = k < 0.3 ? vec3(0.85, 0.82, 0.76) : k < 0.55 ? vec3(0.18, 0.2, 0.26) : k < 0.75 ? vec3(0.62, 0.48, 0.36) : vec3(0.48, 0.18, 0.2);
+    return cl * (fract(x / 0.085) < 0.12 ? 0.55 : 1.0);
+  } else if (type < 3.5) {                            // reception desk and a plant
+    if (abs(x) < 1.3 && y < 1.08) return y > 1.0 ? vec3(0.86, 0.84, 0.8) : vec3(0.45, 0.3, 0.18);
+    float px = x - 2.1;
+    if (abs(px) < 0.24 && y < 0.5) return vec3(0.3, 0.29, 0.28);
+    if (length(vec2(px, (y - 1.0) * 0.8)) < 0.48) return vec3(0.18, 0.36, 0.16) * (0.85 + 0.15 * sin(px * 23.0) * sin(y * 19.0) - 0.25 * smoothstep(0.2, 0.48, length(vec2(px, (y - 1.0) * 0.8))));
+    return vec3(-1.0);
+  } else {                                            // office desks with screens
+    if (abs(x) > 1.7) return vec3(-1.0);
+    if (y > 0.72 && y < 0.76) return vec3(0.82, 0.8, 0.76);
+    if (abs(x) > 1.64 && y < 0.72) return vec3(0.3);
+    float m = abs(abs(x) - 0.75);
+    if (m < 0.28 && y > 0.88 && y < 1.22) return (m > 0.26 || y < 0.9 || y > 1.2) ? vec3(0.04) : mix(vec3(0.3, 0.42, 0.6), vec3(0.5, 0.6, 0.75), ih2(vec2(floor(x * 3.0), rid)));
+    if (m < 0.03 && y > 0.76 && y < 0.88) return vec3(0.1);
+    if (m < 0.24 && y > 0.48 && y < 0.72 && abs(x) < 1.6) return vec3(0.12, 0.12, 0.14);    // chair backs below the desk line
+    return vec3(-1.0);
+  }
+}
+
 vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   // storeys of the podium: ground 0 – 4.1, second 4.7 – 7.7, third 8.3 – 11.3 (slabs between)
   float y = P.y;
@@ -216,7 +280,14 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   float D = shop ? 9.0 : 5.5;
   float cu = floor(u / W);
   float u0 = cu * W;
-  float tS = abs(du) < 1e-5 ? 1e5 : ((du > 0.0 ? u0 + W : u0) - u) / du;
+  float rid = ih(vec3(cu, fi, s + (alongX ? 3.0 : 0.0)));
+  vec3 light = shop ? vec3(1.0, 0.9, 0.76) : vec3(0.95, 0.97, 1.0);
+  float lit = shop ? 1.0 : (rid < mix(0.22, 0.55, uNight) ? mix(0.35, 0.04, uNight) : 0.85);
+  // the walls between units have a thickness: their ends show behind the glass
+  float pt = shop ? 0.16 : 0.1;
+  float fu = u - u0;
+  if (fu < pt || fu > W - pt) return vec3(0.78, 0.77, 0.74) * light * lit * 0.5;
+  float tS = abs(du) < 1e-5 ? 1e5 : ((du > 0.0 ? u0 + W - pt : u0 + pt) - u) / du;
   float tV = abs(d.y) < 1e-5 ? 1e5 : ((d.y > 0.0 ? lv1 : lv0) - y) / d.y;
   float tB = D / dw;
   float t = min(tB, min(tS, tV));
@@ -224,10 +295,6 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   float hu = clamp((alongX ? H.z : H.x) - u0, 0.0, W);
   float hy = clamp(H.y - lv0, 0.0, h);
   float hw = clamp(t * dw, 0.0, D);
-  float rid = ih(vec3(cu, fi, s + (alongX ? 3.0 : 0.0)));
-
-  vec3 light = shop ? vec3(1.0, 0.9, 0.76) : vec3(0.95, 0.97, 1.0);
-  float lit = shop ? 1.0 : (rid < mix(0.22, 0.55, uNight) ? mix(0.35, 0.04, uNight) : 0.85);
   vec3 col;
   float ao;
 
@@ -253,7 +320,12 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
     } else {
       // floor: polished stone in shops, carpet in offices; furniture blocks as dark patches
       col = shop ? vec3(0.62, 0.58, 0.53) : vec3(0.3, 0.31, 0.33);
-      if (shop) col *= 0.9 + 0.1 * step(0.5, fract(floor(hu / 0.8) * 0.5 + floor(hw / 0.8) * 0.5));
+      if (shop) {
+        col *= 0.9 + 0.1 * step(0.5, fract(floor(hu / 0.8) * 0.5 + floor(hw / 0.8) * 0.5));
+        // the polished floor mirrors the downlights, blurred
+        vec2 g = fract(vec2(hu, hw) / 1.6) - 0.5;
+        col += vec3(0.55) * smoothstep(0.3, 0.0, length(g));
+      }
       vec2 desk = abs(fract(vec2(hu / 2.1, hw / 2.4)) - 0.5);
       if (!shop && desk.x < 0.25 && desk.y < 0.18) col = vec3(0.55, 0.5, 0.44);
     }
@@ -292,6 +364,28 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
   }
 
   col *= light * lit * ao * mix(1.0, 0.75, hw / D);
+
+  // furniture: one piece per unit, a few metres in
+  float tBest = t;
+  float dl = shop ? 2.6 + 2.4 * fract(rid * 5.3) : 2.3;
+  float tl = dl / dw;
+  if (tl < tBest) {
+    vec3 c = furniture(type, u + du * tl - u0, y + d.y * tl - lv0, W, rid);
+    if (c.x >= 0.0) { col = c * light * lit * mix(1.0, 0.8, dl / D); tBest = tl; }
+  }
+  // people walking slowly across, one nearer the glass than the furniture, one further in
+  for (int k = 0; k < 2; k++) {
+    float fk = float(k);
+    float dp = shop ? (k == 0 ? 1.3 + 1.1 * fract(rid * 3.1) : 5.4 + 2.5 * fract(rid * 6.7))
+                    : (k == 0 ? 1.1 + 0.9 * fract(rid * 3.1) : 3.2 + 1.4 * fract(rid * 6.7));
+    if (fract(rid * (17.0 + 6.0 * fk)) > (shop ? 0.8 : 0.5) || lit < 0.5) continue;
+    float tp = dp / dw;
+    if (tp >= tBest) continue;
+    float speed = (fract(rid * 29.0 + fk * 0.31) - 0.5) * 0.6;
+    float px = 0.5 + (W - 1.0) * fract(fract(rid * 13.0 + fk * 0.37) + speed * uTime / W);
+    vec3 c = person(u + du * tp - u0 - px, y + d.y * tp - lv0, rid * 10.0 + fk);
+    if (c.x >= 0.0) { col = c * light * lit * 0.95; tBest = tp; }
+  }
   return col;
 }
 `;
