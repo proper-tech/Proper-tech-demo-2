@@ -2508,14 +2508,16 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 40;
   background: var(--board);
   pointer-events: none;
-  animation: tower-zoom-fade 1.7s ease-in forwards;
+  animation: tower-zoom-fade 2.8s ease-in forwards;
 }
 
 @keyframes tower-zoom-fade {
   0%,
-  72% {
+  80% {
     opacity: 0;
   }
+  /* opaque by the time the camera passes the glass (ZoomIn in BuildingScene.tsx) */
+  91%,
   100% {
     opacity: 1;
   }

@@ -1,4 +1,4 @@
-import { Color, MeshStandardMaterial } from 'three';
+import { Color, MeshStandardMaterial, Vector2 } from 'three';
 
 /**
  * Glass that shows lit rooms behind it, without any extra geometry:
@@ -40,6 +40,7 @@ uniform vec3 uTint;
 uniform float uHome;
 uniform float uNight;
 uniform float uTime;
+uniform vec2 uFocus;
 uniform vec3 uFarColor;
 uniform vec3 uFar;
 
@@ -70,8 +71,7 @@ vec3 shopProducts(float hu, float hy, float rid) {
 
 // ---- homes in the towers: storeys of 3.0 m from the podium roof (11.7), ceiling 2.75 m up ----
 // Lit by a ceiling lamp (and a floor lamp in living rooms) with a pool of light and darker
-// corners, each room in its own colour of light; a TV flickers in some living rooms at night and
-// someone moves about in a few rooms.
+// corners, each room in its own colour of light; a TV flickers in some living rooms at night.
 vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float wOut, out vec3 glow) {
   float fi = floor((P.y - 11.7) / 3.0);
   float lv0 = 11.7 + fi * 3.0;
@@ -92,6 +92,8 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
   vec3 lightCol = r3 < 0.45 ? vec3(1.0, 0.72, 0.45) : r3 < 0.8 ? vec3(1.0, 0.82, 0.6) : vec3(1.0, 0.93, 0.84);
   // how bright: some rooms dark, a few only dimly lit (lamp or TV), most with the lights on
   float on = rid < mix(0.24, 0.36, uNight) ? 0.0 : rid < 0.42 ? 0.35 : 1.0;
+  bool focus = P.y > uFocus.x && P.y < uFocus.y;   // the floor the view is flying into: all lit, curtains open
+  if (focus) on = 1.0;
   float lit = mix(mix(0.2, 0.03, uNight), 1.0, on);
   glow = lightCol * lit;
   if (P.y > lv1) return vec3(0.03);
@@ -115,9 +117,6 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
   vec3 col; float ao;
   vec3 extra = vec3(0.0);   // light of its own (lamps, TV), not lit by the room
 
-  // someone in the room, drifting slowly across it
-  float px = W * (0.3 + 0.4 * fract(rid * 13.0)) + 0.6 * sin(uTime * 0.17 + rid * 40.0);
-  bool person = on > 0.5 && fract(rid * 7.0) < 0.22;
 
   if (t == tV) {
     if (d.y > 0.0) {
@@ -161,11 +160,6 @@ vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float
       float fl = 0.65 + 0.35 * sin(uTime * 2.7 + rid * 31.0) * sin(uTime * 7.9 + rid * 7.0);
       extra += vec3(0.35, 0.5, 0.95) * fl * 1.3 * uNight * step(0.5, r3) * step(0.24, rid);
     }
-    if (back && person && abs(a - px) < 0.55) {
-      vec2 q = vec2(a - px, hy);
-      bool body = (abs(q.x) < 0.19 && hy > 0.85 && hy < 1.5) || (abs(q.x) < 0.13 && hy < 0.9) || length((q - vec2(0.0, 1.66)) / vec2(0.11, 0.13)) < 1.0;
-      if (body) col = vec3(0.16, 0.13, 0.12);
-    }
     if (hy < 0.07) col = vec3(0.85);
     ao = edgeAo(a, hy, aw, h);
   }
@@ -183,6 +177,7 @@ vec3 curtains(vec3 room, vec3 glow, float u, float y, float rid, float cu, float
   float hy = y - (11.7 + fi * 3.0);
   float a = u - cu * W;
   float open = 0.1 + 0.8 * ih(vec3(rid * 3.7, cu, 1.0));
+  if (y > uFocus.x && y < uFocus.y) return room;
   float side = min(a, W - a) / (W * 0.5);       // 0 at the room's edges, 1 in the middle
   float fold = 0.85 + 0.15 * sin(a * 40.0);
   float k = ih(vec3(rid, 4.0, 2.0));
@@ -194,24 +189,7 @@ vec3 curtains(vec3 room, vec3 glow, float u, float y, float rid, float cu, float
   return c;
 }
 
-// ---- furniture and people for the shops and offices: cards facing the glass, some way in ----
-vec3 person(float x, float y, float seed) {
-  float k = (1.62 + 0.22 * ih2(vec2(seed, 1.0))) / 1.75;
-  float c1 = ih2(vec2(seed, 2.0)), c2 = ih2(vec2(seed, 3.0));
-  vec3 top = c1 < 0.25 ? vec3(0.75, 0.74, 0.7) : c1 < 0.5 ? vec3(0.2, 0.28, 0.42) : c1 < 0.75 ? vec3(0.55, 0.22, 0.2) : vec3(0.35, 0.4, 0.3);
-  vec3 legs = c2 < 0.5 ? vec3(0.12, 0.14, 0.2) : c2 < 0.8 ? vec3(0.08) : vec3(0.55, 0.5, 0.42);
-  vec3 skin = mix(vec3(0.62, 0.46, 0.36), vec3(0.42, 0.3, 0.22), ih2(vec2(seed, 4.0)));
-  float ax = abs(x);
-  if (y < 0.86 * k && ax < 0.15 * k && abs(ax - 0.075 * k) < 0.06 * k) return legs;
-  if (y >= 0.84 * k && y < 1.46 * k && ax < mix(0.16, 0.2, (y / k - 0.84) / 0.62) * k) return top;
-  if (y >= 0.86 * k && y < 1.42 * k && ax > 0.2 * k && ax < 0.26 * k) return top * 0.8;
-  if (y >= 0.8 * k && y < 0.88 * k && ax > 0.2 * k && ax < 0.26 * k) return skin;
-  if (ax < 0.05 * k && y >= 1.45 * k && y < 1.53 * k) return skin;
-  vec2 q = vec2(x, y - 1.63 * k) / (vec2(0.095, 0.115) * k);
-  if (length(q) < 1.0) return q.y > 0.25 || (ax > 0.07 * k && q.y > -0.4) ? vec3(0.1, 0.08, 0.06) : skin;
-  return vec3(-1.0);
-}
-
+// ---- furniture for the shops and offices: cards facing the glass, some way in ----
 vec3 furniture(float type, float a, float y, float W, float rid) {
   float c = W * (0.5 + 0.25 * (fract(rid * 9.7) - 0.5));
   float x = a - c;
@@ -373,19 +351,6 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
     vec3 c = furniture(type, u + du * tl - u0, y + d.y * tl - lv0, W, rid);
     if (c.x >= 0.0) { col = c * light * lit * mix(1.0, 0.8, dl / D); tBest = tl; }
   }
-  // people walking slowly across, one nearer the glass than the furniture, one further in
-  for (int k = 0; k < 2; k++) {
-    float fk = float(k);
-    float dp = shop ? (k == 0 ? 1.3 + 1.1 * fract(rid * 3.1) : 5.4 + 2.5 * fract(rid * 6.7))
-                    : (k == 0 ? 1.1 + 0.9 * fract(rid * 3.1) : 3.2 + 1.4 * fract(rid * 6.7));
-    if (fract(rid * (17.0 + 6.0 * fk)) > (shop ? 0.8 : 0.5) || lit < 0.5) continue;
-    float tp = dp / dw;
-    if (tp >= tBest) continue;
-    float speed = (fract(rid * 29.0 + fk * 0.31) - 0.5) * 0.6;
-    float px = 0.5 + (W - 1.0) * fract(fract(rid * 13.0 + fk * 0.37) + speed * uTime / W);
-    vec3 c = person(u + du * tp - u0 - px, y + d.y * tp - lv0, rid * 10.0 + fk);
-    if (c.x >= 0.0) { col = c * light * lit * 0.95; tBest = tp; }
-  }
   return col;
 }
 `;
@@ -425,6 +390,8 @@ const FRAG_EMISSIVE = /* glsl */ `
   float fres = 0.04 + 0.96 * pow(1.0 - cosT, 5.0);
   // evening and night: the rooms' lights carry against the dark, through a less coloured glass
   vec3 iTint = mix(uTint, vec3(0.92, 0.95, 1.0), 0.6 * uNight);
+  // the floor being flown into: seen up close, through clear glass
+  if (vIPos.y > uFocus.x && vIPos.y < uFocus.y) iTint = mix(iTint, vec3(1.0), 0.75);
   totalEmissiveRadiance += iCol * iTint * uGlow * mix(1.0, 2.6, uNight) * (1.0 - fres) * (1.0 - 0.85 * iFar);
 }
 `;
@@ -445,8 +412,11 @@ const LOOKS: Record<InteriorKind, Look> = {
 
 /** 0 by day, 1 at night: set from the sun (Sun.tsx), shared by every interior glass material. */
 export const interiorNight = { value: 0 };
-/** Seconds, for the TVs and the people moving about in the homes (BuildingScene.tsx). */
+/** Seconds, for the flickering TVs in the homes (set in nightLights.tsx). */
 export const interiorTime = { value: 0 };
+/** Heights [from, to] of the floor the building view is zooming into: its homes are lit with the
+ *  curtains open, so the rooms show as the camera reaches the glass (BuildingScene's ZoomIn). */
+export const interiorFocus = { value: new Vector2(-1, -1) };
 
 /** How far into the evening it is for a sun this high (degrees): lights come on as it gets low, full by dusk. */
 export function nightFactor(elevation: number) {
@@ -464,6 +434,7 @@ export function interiorGlass(kind: InteriorKind) {
     shader.uniforms.uGlow = { value: look.glow };
     shader.uniforms.uNight = interiorNight;
     shader.uniforms.uTime = interiorTime;
+    shader.uniforms.uFocus = interiorFocus;
     shader.uniforms.uReflBoost = { value: look.refl };
     shader.uniforms.uTint = { value: look.tint };
     shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };
