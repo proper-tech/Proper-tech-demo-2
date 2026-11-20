@@ -1,18 +1,21 @@
 import { Color, MeshStandardMaterial } from 'three';
 
 /**
- * Glass for the podium (block A) that shows lit rooms behind it, without any extra geometry:
+ * Glass that shows lit rooms behind it, without any extra geometry:
  * "interior mapping". For each pixel of the glass the view ray is carried on into a virtual room
  * behind the pane (box: floor and ceiling at the podium's storey levels, side walls every few
  * metres, a back wall some metres in), and the wall it hits is shaded procedurally: shops with
  * shelves, a cafe, a boutique and a lobby on the ground floor; offices with ceiling light strips and
- * blinds upstairs. The glass itself is a dark, glossy dielectric whose sky reflection is stronger
+ * blinds upstairs; in the towers (blocks B and C) homes: living rooms with a sofa and a picture,
+ * bedrooms, kitchens, parquet floors, ceiling lights, and curtains drawn to a different width in
+ * each room. The glass itself is a dark, glossy dielectric whose sky reflection is stronger
  * at grazing angles (Fresnel), so the rooms show best when looked at straight on, as with real glass.
  *
- * Works in the mesh's object space, where the podium's facades are aligned to the x and z axes.
+ * Works in the mesh's object space, where the facades are aligned to the x and z axes (the towers'
+ * rounded corners take the nearer axis).
  */
 
-export type InteriorKind = 'shop' | 'office';
+export type InteriorKind = 'shop' | 'office' | 'home';
 
 const VERT_HEAD = /* glsl */ `
 varying vec3 vIPos;
@@ -34,9 +37,9 @@ uniform float uShop;
 uniform float uGlow;
 uniform float uReflBoost;
 uniform vec3 uTint;
-uniform float uCut;
-uniform vec3 uAboveColor;
-uniform float uAboveRough;
+uniform float uHome;
+uniform vec3 uFarColor;
+uniform vec2 uFar;
 
 float ih(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
 float ih2(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 15731.743); }
@@ -60,6 +63,100 @@ vec3 shopProducts(float hu, float hy, float rid) {
   if (fr > 0.07 + top || fract(hu / 0.24) < 0.08) return vec3(0.18, 0.17, 0.16);
   vec3 a = vec3(0.85, 0.25, 0.18), b = vec3(0.95, 0.75, 0.25), c = vec3(0.2, 0.45, 0.75), d = vec3(0.9, 0.9, 0.86);
   return k < 0.25 ? a : k < 0.5 ? b : k < 0.75 ? c : d;
+}
+
+
+// ---- homes in the towers: storeys of 3.0 m from the podium roof (11.7), ceiling 2.75 m up ----
+vec3 homeColor(vec3 P, vec3 d, vec3 N, out float rid, out float cuOut, out float wOut) {
+  float fi = floor((P.y - 11.7) / 3.0);
+  float lv0 = 11.7 + fi * 3.0;
+  float h = 2.75;
+  float lv1 = lv0 + h;
+  bool alongX = abs(N.x) > abs(N.z);
+  float s = alongX ? -sign(N.x) : -sign(N.z);
+  float u = alongX ? P.z : P.x;
+  float W = 3.9;
+  float cu = floor(u / W);
+  rid = ih(vec3(cu, fi, s + (alongX ? 3.0 : 0.0)));
+  cuOut = cu; wOut = W;
+  if (P.y > lv1) return vec3(0.04);
+
+  float dw = max(s * (alongX ? d.x : d.z), 1e-4);
+  float du = alongX ? d.z : d.x;
+  float D = 4.8;
+  float u0 = cu * W;
+  float tS = abs(du) < 1e-5 ? 1e5 : ((du > 0.0 ? u0 + W : u0) - u) / du;
+  float tV = abs(d.y) < 1e-5 ? 1e5 : ((d.y > 0.0 ? lv1 : lv0) - P.y) / d.y;
+  float tB = D / dw;
+  float t = min(tB, min(tS, tV));
+  vec3 H = P + d * t;
+  float hu = clamp((alongX ? H.z : H.x) - u0, 0.0, W);
+  float hy = clamp(H.y - lv0, 0.0, h);
+  float hw = clamp(t * dw, 0.0, D);
+
+  // room: 0 living, 1 bedroom, 2 kitchen; palette, light
+  float type = floor(ih(vec3(cu * 2.3, fi * 1.7, s)) * 3.0);
+  float r2 = ih(vec3(rid * 9.1, 2.0, 5.0));
+  vec3 wall = r2 < 0.35 ? vec3(0.86, 0.83, 0.77) : r2 < 0.6 ? vec3(0.74, 0.7, 0.64) : r2 < 0.8 ? vec3(0.78, 0.79, 0.8) : vec3(0.58, 0.62, 0.55);
+  vec3 wood = r2 < 0.5 ? vec3(0.56, 0.4, 0.25) : r2 < 0.8 ? vec3(0.72, 0.6, 0.45) : vec3(0.34, 0.24, 0.16);
+  float lit = rid < 0.28 ? 0.22 : 0.65 + 0.35 * r2;
+  vec3 light = r2 < 0.75 ? vec3(1.0, 0.86, 0.68) : vec3(1.0, 0.95, 0.88);
+  vec3 col; float ao;
+
+  if (t == tV) {
+    if (d.y > 0.0) {
+      col = vec3(0.6);
+      float lamp = length(vec2(hu - W * 0.5, hw - D * 0.45));
+      col += vec3(1.3) * smoothstep(0.35, 0.1, lamp) * step(0.28, rid) + vec3(0.3) * smoothstep(2.2, 0.0, lamp);
+    } else {
+      col = wood * (0.92 + 0.08 * step(0.5, fract(hu / 0.19)));
+      if (type < 0.5) { vec2 rg = abs(vec2(hu - W * 0.5, hw - D * 0.55)); if (rg.x < 1.1 && rg.y < 0.8) col = mix(vec3(0.75, 0.72, 0.68), vec3(0.45, 0.47, 0.52), r2); }
+      if (type > 0.5 && type < 1.5 && abs(hu - W * 0.5) < 0.85 && hw > D - 2.1) col = vec3(0.9, 0.9, 0.88); // bed
+    }
+    ao = edgeAo(hu, hw, W, D);
+  } else {
+    bool back = t == tB;
+    float a = back ? hu : hw;
+    float aw = back ? W : D;
+    float mid = abs(a - aw * 0.5);
+    col = wall;
+    if (back && type < 0.5) {
+      if (hy < 0.85 && mid < 1.25) col = hy > 0.62 ? vec3(0.42, 0.42, 0.44) * (0.8 + 0.4 * r2) : mix(vec3(0.62, 0.6, 0.56), vec3(0.28, 0.36, 0.4), r2); // sofa
+      if (hy > 1.3 && hy < 1.95 && mid < 0.5) col = mix(vec3(0.85, 0.5, 0.3), vec3(0.25, 0.45, 0.6), ih2(vec2(floor(a * 3.0), floor(hy * 4.0) + rid))); // picture
+      if (hy > 1.26 && hy < 1.99 && mid < 0.54 && (mid > 0.5 || hy < 1.3 || hy > 1.95)) col = vec3(0.12);
+    } else if (back && type < 1.5) {
+      if (hy < 1.1 && mid < 0.95) col = hy < 0.55 ? vec3(0.92, 0.92, 0.9) : vec3(0.36, 0.3, 0.26); // bed, headboard
+      if (hy > 1.6 && hy < 1.85 && mid > 1.1 && mid < 1.35) col = vec3(2.0, 1.7, 1.2);           // wall lamps
+    } else if (type > 1.5) {
+      // kitchen units along the back and one side
+      if (hy < 0.9) col = r2 < 0.5 ? vec3(0.9, 0.89, 0.86) : wood;
+      if (hy > 0.88 && hy < 0.93) col = vec3(0.2);
+      if (hy > 1.45 && hy < 2.25) col = r2 < 0.5 ? vec3(0.88, 0.87, 0.84) : vec3(0.3, 0.3, 0.32);
+      if (hy > 0.93 && hy < 1.45) col = vec3(0.8, 0.78, 0.74);
+    } else if (!back && hy < 2.05 && abs(a - 3.6) < 0.45) {
+      col = vec3(0.45, 0.33, 0.24); // door
+    }
+    if (hy < 0.07) col = vec3(0.85);
+    ao = edgeAo(a, hy, aw, h);
+  }
+  return col * light * lit * ao * mix(1.0, 0.8, hw / D);
+}
+
+// curtains on the inside of the pane: sheers and drapes drawn in from both sides of each room
+vec3 curtains(vec3 room, float u, float y, float rid, float cu, float W) {
+  float fi = floor((y - 11.7) / 3.0);
+  float hy = y - (11.7 + fi * 3.0);
+  float a = u - cu * W;
+  float open = 0.1 + 0.8 * ih(vec3(rid * 3.7, cu, 1.0));
+  float side = min(a, W - a) / (W * 0.5);       // 0 at the room's edges, 1 in the middle
+  float fold = 0.85 + 0.15 * sin(a * 40.0);
+  float k = ih(vec3(rid, 4.0, 2.0));
+  vec3 drape = k < 0.4 ? vec3(0.78, 0.74, 0.66) : k < 0.7 ? vec3(0.55, 0.55, 0.56) : vec3(0.42, 0.36, 0.3);
+  vec3 c = room;
+  if (k > 0.25 && side < 1.0 - open) c = mix(room, vec3(0.9, 0.89, 0.86), 0.55);      // sheer
+  if (side < 0.22 * (1.0 - open) + 0.08) c = drape * fold * 0.75;                    // drape
+  if (hy > 2.62) c = vec3(0.18);                                                     // pelmet
+  return c;
 }
 
 vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
@@ -166,24 +263,27 @@ vec3 interiorColor(vec3 P, vec3 d, vec3 N) {
 
 const FRAG_COLOR = /* glsl */ `
 #include <color_fragment>
-bool iAbove = vIPos.y > uCut;
-if (iAbove) diffuseColor.rgb = uAboveColor;
-`;
-
-const FRAG_ROUGH = /* glsl */ `
-#include <roughnessmap_fragment>
-if (iAbove) roughnessFactor = uAboveRough;
+// seen from afar the glass reads as the towers' blue; up close the rooms behind it show
+float iFar = smoothstep(uFar.x, uFar.y, length(vIPos - vICam));
+diffuseColor.rgb = mix(diffuseColor.rgb, uFarColor, iFar);
 `;
 
 const FRAG_EMISSIVE = /* glsl */ `
 #include <emissivemap_fragment>
-if (!iAbove) {
+{
   vec3 iRay = vIPos - vICam;
   vec3 iN = normalize(vINrm);
   if (dot(iN, iRay) > 0.0) iN = -iN;
-  vec3 iCol = interiorColor(vIPos, iRay, iN);
+  vec3 iCol;
+  if (uHome > 0.5) {
+    float rid, cu, W;
+    iCol = homeColor(vIPos, iRay, iN, rid, cu, W);
+    iCol = curtains(iCol, abs(iN.x) > abs(iN.z) ? vIPos.z : vIPos.x, vIPos.y, rid, cu, W);
+  } else {
+    iCol = interiorColor(vIPos, iRay, iN);
+  }
   // blinds in the offices' windows: pulled down to a different height in each room
-  if (uShop < 0.5 && vIPos.y > 4.4) {
+  if (uHome < 0.5 && uShop < 0.5 && vIPos.y > 4.4) {
     float top = vIPos.y < 7.7 ? 7.3 : 10.9;
     bool alongX = abs(iN.x) > abs(iN.z);
     float u = alongX ? vIPos.z : vIPos.x;
@@ -192,38 +292,45 @@ if (!iAbove) {
   }
   float cosT = abs(dot(normalize(-iRay), iN));
   float fres = 0.04 + 0.96 * pow(1.0 - cosT, 5.0);
-  totalEmissiveRadiance += iCol * uTint * uGlow * (1.0 - fres);
+  totalEmissiveRadiance += iCol * uTint * uGlow * (1.0 - fres) * (1.0 - 0.85 * iFar);
 }
 `;
 
 const FRAG_REFL = /* glsl */ `
-if (!iAbove) reflectedLight.indirectSpecular *= uReflBoost;
+reflectedLight.indirectSpecular *= uReflBoost;
 #include <aomap_fragment>
 `;
 
-/** `above`: for a tower's glass, which also runs down through the podium storeys: above the
- *  podium (y > cut) it keeps the tower glass's own colour and roughness, without rooms. */
-export function interiorGlass(kind: InteriorKind, above?: { cut: number; color: Color; roughness: number }) {
-  const m = new MeshStandardMaterial({ color: new Color('#05080C'), roughness: 0.04, metalness: 0 });
+type Look = { base: Color; roughness: number; glow: number; tint: Color; refl: number; far?: { color: Color; from: number; to: number } };
+
+const LOOKS: Record<InteriorKind, Look> = {
+  shop: { base: new Color('#05080C'), roughness: 0.04, glow: 0.75, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
+  office: { base: new Color('#05080C'), roughness: 0.04, glow: 0.7, tint: new Color(0.82, 0.9, 0.92), refl: 2.2 },
+  // the towers keep their blue glass: a darker blue base, the rooms seen through a blue tint
+  home: { base: new Color('#0B2347'), roughness: 0.06, glow: 0.55, tint: new Color(0.46, 0.62, 0.95), refl: 1.6, far: { color: new Color(0.07, 0.19, 0.43), from: 45, to: 140 } },
+};
+
+export function interiorGlass(kind: InteriorKind) {
+  const look = LOOKS[kind];
+  const m = new MeshStandardMaterial({ color: look.base.clone(), roughness: look.roughness, metalness: 0 });
   m.name = `Glass ${kind} (interior)`;
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uShop = { value: kind === 'shop' ? 1 : 0 };
-    shader.uniforms.uGlow = { value: kind === 'shop' ? 0.75 : 0.7 };
-    shader.uniforms.uReflBoost = { value: 2.2 };
-    shader.uniforms.uTint = { value: new Color(0.82, 0.9, 0.92) };
-    shader.uniforms.uCut = { value: above?.cut ?? 1e6 };
-    shader.uniforms.uAboveColor = { value: above?.color ?? new Color() };
-    shader.uniforms.uAboveRough = { value: above?.roughness ?? 0.1 };
+    shader.uniforms.uHome = { value: kind === 'home' ? 1 : 0 };
+    shader.uniforms.uGlow = { value: look.glow };
+    shader.uniforms.uReflBoost = { value: look.refl };
+    shader.uniforms.uTint = { value: look.tint };
+    shader.uniforms.uFarColor = { value: look.far?.color ?? look.base };
+    shader.uniforms.uFar = { value: [look.far?.from ?? 1e5, look.far?.to ?? 2e5] };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
       .replace('#include <project_vertex>', `#include <project_vertex>\n${VERT_BODY}`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <color_fragment>', FRAG_COLOR)
-      .replace('#include <roughnessmap_fragment>', FRAG_ROUGH)
       .replace('#include <emissivemap_fragment>', FRAG_EMISSIVE)
       .replace('#include <aomap_fragment>', FRAG_REFL);
   };
-  m.customProgramCacheKey = () => `interior-glass-${kind}${above ? '-tower' : ''}`;
+  m.customProgramCacheKey = () => `interior-glass-${kind}`;
   return m;
 }
