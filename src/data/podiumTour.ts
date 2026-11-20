@@ -19,18 +19,18 @@ const tour = (base: string, top: [number, number, number, number], stops: PanoSt
   ),
 });
 
-export const podiumTours: Partial<Record<number, PanoTourData>> = {
-  // floor 2: hall 201, an empty rental hall round the escalators
-  2: tour(
-    '/tour-a/2',
+/** An empty rental hall (floors 2 and 3 share the plan); only the escalator stop differs. */
+const hall = (base: string, room: string, esc: [number, number], escHeading: number) =>
+  tour(
+    base,
     [-19.0, -32.2, 18.8, 32.4],
     [
-      { id: 'hall', at: [7.0, -4.6], heading: 300, room: '201' },
-      { id: 'escalator', at: [1.0, -0.8], heading: 0, room: '201' },
-      { id: 'west', at: [-12.6, 13.6], heading: 110, room: '201' },
-      { id: 'north', at: [6.6, 17.6], heading: 200, room: '201' },
-      { id: 'east', at: [13.8, 0.6], heading: 260, room: '201' },
-      { id: 'south', at: [0.4, -24.4], heading: 10, room: '201' },
+      { id: 'hall', at: [7.0, -4.6], heading: 300, room },
+      { id: 'escalator', at: esc, heading: escHeading, room },
+      { id: 'west', at: [-12.6, 13.6], heading: 110, room },
+      { id: 'north', at: [6.6, 17.6], heading: 200, room },
+      { id: 'east', at: [13.8, 0.6], heading: 260, room },
+      { id: 'south', at: [0.4, -24.4], heading: 10, room },
     ],
     {
       hall: ['escalator', 'east', 'south'],
@@ -40,5 +40,11 @@ export const podiumTours: Partial<Record<number, PanoTourData>> = {
       east: ['hall', 'north'],
       south: ['hall', 'escalator'],
     },
-  ),
+  );
+
+export const podiumTours: Partial<Record<number, PanoTourData>> = {
+  // floor 2: hall 201, an empty rental hall round the escalators
+  2: hall('/tour-a/2', '201', [1.0, -0.8], 0),
+  // floor 3: hall 120, the same under the roof; the escalators arrive from floor 2
+  3: hall('/tour-a/3', '120', [-2.2, 8.0], 180),
 };

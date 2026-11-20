@@ -1,7 +1,8 @@
 @echo off
-rem Renders the podium's (block A's) floor 2, the empty rental hall: the 360 panoramas of its 6 tour stops
-rem and the top view, into interior\renders\A2. Uses the newest Blender in "C:\Program Files\Blender Foundation",
-rem or BLENDER if set.   set SAMPLES=64 before it for fewer samples (faster).
+rem Renders the podium's (block A's) empty rental halls: the 360 panoramas of the 6 tour stops and the
+rem top view of each floor, into interior\renders\A<floor>.   render_a2.bat (floors 2 and 3), render_a2.bat 3 (only 3)
+rem Uses the newest Blender in "C:\Program Files\Blender Foundation", or BLENDER if set.
+rem set SAMPLES=64 before it for fewer samples (faster).
 setlocal
 cd /d "%~dp0"
 if not defined BLENDER (
@@ -12,11 +13,15 @@ if not exist "%BLENDER%" (
   pause
   exit /b 1
 )
+set "FLOORS=%*"
+if "%FLOORS%"=="" set "FLOORS=2 3"
 echo Using %BLENDER%
+for %%F in (%FLOORS%) do (
+  echo.
+  echo ===== Block A, floor %%F =====
+  "%BLENDER%" -b A%%F.blend -P render_panos.py -- A%%F %SAMPLES%
+  "%BLENDER%" -b A%%F.blend -P render_top.py -- renders\A%%F\top 40 64
+)
 echo.
-echo ===== Block A, floor 2 =====
-"%BLENDER%" -b A2.blend -P render_panos.py -- A2 %SAMPLES%
-"%BLENDER%" -b A2.blend -P render_top.py -- renders\A2\top 40 64
-echo.
-echo Done. The pictures are in interior\renders\A2 (6 panoramas and top.png).
+echo Done. The pictures are in interior\renders\A2 and A3 (6 panoramas and top.png each).
 pause
