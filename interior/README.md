@@ -56,6 +56,19 @@ Rebuild the scenes: `python3 -I interior/tools/build_blockd.py interior/F.blend 
 `python3 -I interior/tools/build_blockd_parking.py interior/F.blend <car.glb> interior <0|2|3>` (bpy as a module;
 car.glb is `Env_Car_01` cut out of `public/models/blocks/environment.glb`).
 
+## Block A, 2nd floor (empty rental hall 201) — `A2.blend` — Монгол заавар
+
+`A2.blend` is the podium's 2nd floor as an empty shell to let: porcelain floor, white ceiling at 3.0 m with LED
+panels, round columns on the grid, glass all round, the escalators up from floor 1 through a void and on to floor 3,
+the stair, lift and toilet cores. Built by `tools/build_podium2.py` from `A1_floor.json` (outline and grid) and the
+cores of `src/data/podium.ts`; `A2_cams.json` holds the 6 tour stops (site metres: x = u east, y = -v, height).
+
+1. Рендер: `interior\render_a2.bat` (давхар товшино). Хурдан болгох бол `set SAMPLES=64`.
+   6 панорам ба дээрээс харсан зураг `interior\renders\A2` хавтсанд гарна.
+2. Сайтад тавина: `python3 -I interior/tools/publish_blockd.py . A2` → `public/tour-a/2`.
+
+Rebuild the scene: `python3 -I interior/tools/build_podium2.py interior/F.blend none interior`.
+
 ## Block A, 1st floor (podium ground floor) — `A1.blend`
 
 The hall, escalators and supermarket of the podium's ground floor, for the 360° tour at

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { FLOOR_MAX, FLOOR_MIN } from '@/data/building';
 import { blockDFloors, blockDLabel, blockDOutline, blockDWalk, getBlockDFloor } from '@/data/blockD';
 import { blockDTours } from '@/data/blockDTour';
+import { podiumTours } from '@/data/podiumTour';
 import { floorName, getPodiumFloor, listedSpaces, podiumFloors, type Decor, type PodiumFloor, type PodiumSpace } from '@/data/podium';
 import { getRoofFloor } from '@/data/roof';
 import type { TowerId } from '@/data/types';
@@ -133,13 +134,14 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
     const q = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse());
     jumpTo.current?.([q.x, -q.y]);
   };
-  // ?view=360 opens a block D floor straight in the 360° view (the floor buttons in it use this)
+  // ?view=360 opens a block D floor (or a podium floor with a rendered tour) straight in the 360° view
   // ?at=u,v&look=u,v starts it at a given spot (block metres), so a view can be shared as a link
   const [spot, setSpot] = useState<{ start: [number, number]; look: [number, number] } | null>(null);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const v = q.get('view');
     if (block === 'D' && (v === '360' || v === 'walk')) setView('walk');
+    if (!block && !tower && podiumTours[floor] && (v === '360' || v === 'walk')) setView('walk');
     if (!block && !tower && PHOTO_TOURS[floor] && (v === '360' || v === 'tour')) setView('photo');
     const pair = (k: string) => {
       const n = (q.get(k) ?? '').split(',').map(Number);
@@ -151,8 +153,8 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
   const [hovered, setHovered] = useState<string | null>(null);
   const layer = useRef<HTMLDivElement>(null);
   const isD = block === 'D';
-  // block D floors rendered in Blender: a 360° tour of photos and the furnished top view
-  const pano = isD ? blockDTours[floor] : undefined;
+  // floors rendered in Blender (block D, podium floor 2): a 360° tour of photos and the top view
+  const pano = isD ? blockDTours[floor] : !tower ? podiumTours[floor] : undefined;
   const dTour = !!pano && view === 'walk';
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   const pf = tower ? getRoofFloor(tower) : isD ? getBlockDFloor(floor)! : getPodiumFloor(floor)!;
@@ -206,7 +208,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
   return (
     <div className="floor">
       <section className={dTour ? 'floor-stage is-tour' : isD && view === 'walk' ? 'floor-stage is-walk' : 'floor-stage'}>
-        {pano && dTour && <PanoTour tour={pano} floorLabel={blockDLabel(floor)} />}
+        {pano && dTour && <PanoTour tour={pano} floorLabel={isD ? blockDLabel(floor) : floorName(floor)} />}
         <div className={view === '2d' || photo || dTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
           {isD ? (
             view !== '2d' &&
@@ -234,6 +236,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
               onHover={(id) => !walking && setHovered(id)}
               onOpen={(s) => !walking && open(s)}
               tour={walkable ? tour : undefined}
+              photo={pano?.top}
             />
           )}
           <div className={`label-layer${walking || view === 'walk' ? ' is-hidden' : ''}`} ref={layer}>
@@ -305,7 +308,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
                 {t.apt.modeTour}
               </button>
             )}
-            {isD && (
+            {(isD || pano) && (
               <button type="button" aria-pressed={view === 'walk'} onClick={() => setView('walk')}>
                 {t.blockD.walk}
               </button>

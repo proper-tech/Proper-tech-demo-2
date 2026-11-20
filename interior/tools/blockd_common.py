@@ -368,7 +368,8 @@ def load_car():
     xs = [mesh.data.vertices[v].co.x for p in mesh.data.polygons if p.material_index in hl for v in p.vertices]
     nose = 1 if sum(xs) / max(1, len(xs)) > 0 else -1
     car_src = (mesh, nose)
-load_car()
+if CAR_GLB != "none":  # the podium scene has no cars
+    load_car()
 PAINTS = {}
 def car(name, cx, cy, heading, z=0.0, paint='#d8d9db'):
     """The site's car, nose towards `heading` (radians, 0 = east), centred on (cx, cy), wheels at z."""
