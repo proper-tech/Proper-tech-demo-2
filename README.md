@@ -68,8 +68,10 @@ npm run build && npm start
 
   The city round the site is the real one from OpenStreetMap (`scripts/osm-surroundings.json`, made by
   `python3 scripts/fetch-osm.py scripts/osm-surroundings.json`): footprints and streets within 800 m, placed from
-  a Google Maps pin between the towers (the drawing's own coordinates are on a local grid). Buildings standing on
-  the site or the street model are left out. The licence (ODbL) needs the credit "Map data © OpenStreetMap
+  a Google Maps pin between the towers (the drawing's own coordinates are on a local grid). Left out, so the site
+  stands clear: buildings on or within 6 m of the site and street model or on a street, service lanes within 150 m,
+  streets that stop at the site without joining a road, and scraps of street under 25 m (rules and the few streets
+  added by hand at the top of `scripts/build-film.py`). The licence (ODbL) needs the credit "Map data © OpenStreetMap
   contributors", which is in the video note under the film. Without `--osm` the film gets generated blocks.
   `FACADES` is a folder with ambientCG's CC0 textures `Facade018A`, `Facade019A`, `Facade020A` and `Facade006`
   (the `1K-JPG` zips from ambientcg.com, about 24 MB, each unpacked into `FACADES/<name>/`; not in the repo):

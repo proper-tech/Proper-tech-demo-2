@@ -12,12 +12,12 @@ const REACH = 450;
 /** The real secondary street two blocks east of the east street, from the main road south (scene x, z; from
  *  scripts/osm-surroundings.json, map data © OpenStreetMap contributors), 11 m wide. */
 const SOUTH_STREET: P[] = [[102, -38], [102, -25], [97, 100], [97, 106], [95, 155], [95, 160], [92, 251], [92, 270]];
-/** The 5 m street behind the east street's end, from west of it east to the secondary street: two map pieces
- *  joined across (EXTRA_ROADS in scripts/build-film.py, which also carries the east street on to it). */
-const SIDE_STREET: P[] = [[0.5, 103.4], [44.6, 108.7], [81.4, 106.9], [96.8, 105.8]];
+/** The 7 m street the east street turns into at its south end, east to the secondary street (EXTRA_ROADS in
+ *  scripts/build-film.py, which also carries the east street on to it). */
+const SIDE_STREET: P[] = [[30.0, 107.0], [44.6, 108.7], [81.4, 106.9], [96.8, 105.8]];
 /** Lanes: a quarter of the street's width right of its middle (right-hand traffic). */
 const SOUTH_LANE = 11 / 4;
-const SIDE_LANE = 5 / 4;
+const SIDE_LANE = 7 / 4;
 /** Each moving car drives with copies of itself (sharing its mesh), spread evenly along its route: the routes
  *  run far past the site, so on their own the cars would seldom be in view. Each copy is another car to draw
  *  (about 31k triangles). */
