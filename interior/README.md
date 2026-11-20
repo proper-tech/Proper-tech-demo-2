@@ -33,3 +33,17 @@ Only some stops, or another sample count: `render_all.bat 128` or
 
 `tools/build_unit.py F|E <outdir>` (Blender's Python module `bpy`, needs the plan-D scene) rebuilds a scene;
 `tools/preview.py` renders a quick top view or low-resolution panoramas to check it.
+
+## Block A, 1st floor (podium ground floor) — `A1.blend`
+
+The hall, escalators and supermarket of the podium's ground floor, for the 360° tour at
+`/floors/A/1` (button «360° аялал»). Built entirely by script from the site data, so it can be rebuilt:
+
+1. `A1_floor.json` is floor 1 of `src/data/podium.ts` (walls, rooms, furniture), dumped with esbuild.
+2. Download the HDRI seen through the glass (Poly Haven, CC0):
+   `curl -L -o interior/hdri/modern_buildings_2_4k.hdr https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/modern_buildings_2_4k.hdr`
+3. In Blender with `A1.blend` open, run `tools/build_a1.py` (architecture, fittings and stock, plants).
+4. Render the stops of `A1_cams.json`: `blender -b interior/A1.blend -P interior/render_panos.py -- A1 96`
+   (about 4 minutes each on an Apple M-series GPU). The top view (`renders/A1/topdown.jpg`) is an
+   orthographic render from camera `TopCam`, clipped at 2.9 m.
+5. `python3 -I interior/tools/make_tour_a1.py` writes `public/tour/A1/index.html` from the plan-D tour's viewer.
