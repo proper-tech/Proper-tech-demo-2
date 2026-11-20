@@ -51,11 +51,8 @@ export function unitPlacement(layout: Layout): [number, number, number] {
   return [sx(layout.origin[0]), 0, sz(layout.origin[1])];
 }
 
-/** The middle of the apartment's living room, where its tag goes. */
-export function unitCentre(layout: Layout): [number, number] {
-  const r = layout.rooms.find((room) => room.id === 'living') ?? layout.rooms[0];
-  return [layout.origin[0] + r.x + r.w / 2, layout.origin[1] - r.z - r.d / 2];
-}
+import { unitCentre } from '@/lib/unitCentre';
+export { unitCentre };
 
 function roundedRect(x0: number, y0: number, x1: number, y1: number, r: number) {
   const s = new Shape();

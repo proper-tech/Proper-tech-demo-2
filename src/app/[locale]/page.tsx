@@ -1,6 +1,7 @@
 import type React from 'react';
 import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
+import { HeroFilm } from '@/components/HeroFilm';
 import { Motion } from '@/components/Motion';
 import { VideoSection } from '@/components/VideoSection';
 import { SitePlan } from '@/components/SitePlan';
@@ -17,7 +18,7 @@ import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
 /** The cinematic flight round the complex, and its first frame, shown before it plays. */
 const FILM = '/media/film.mp4';
-const FILM_POSTER = '/media/film-poster.jpg';
+const FILM_POSTER = '/media/film-poster.webp';
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -54,7 +55,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="story">
         {/* pinned while the chapters scroll over it; the dots show which chapter you are in */}
         <div className="story-stage">
-          <video className="story-film" src={FILM} poster={FILM_POSTER} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
+          <HeroFilm src={FILM} poster={FILM_POSTER} />
           <ol className="story-dots" aria-hidden="true">
             {['intro', ...chapters.map((c) => c.key)].map((k) => (
               <li key={k} data-dot={k} />
@@ -119,7 +120,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             return (
               <li key={key} className="fx">
                 <Link className="explore-card" href={href}>
-                  <img src={`/media/renders/${img}.jpg`} alt="" width={1179} height={663} loading="lazy" />
+                  <img src={`/media/renders/${img}.webp`} alt="" width={1179} height={663} loading="lazy" />
                   <span className="explore-n">{String(i + 1).padStart(2, '0')}</span>
                   <span className="explore-body">
                     <b>{item.title}</b>

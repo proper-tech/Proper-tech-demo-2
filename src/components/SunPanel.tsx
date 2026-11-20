@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { clock, siteNow, sunPosition, sunTimes } from '@/lib/solar';
-import type { SunSettings } from './three/Sun';
+import type { SunSettings } from './three/sunSettings';
 
 /** Compass point (N, NE, E, ...) nearest to a direction in degrees. */
 const compass = (deg: number, points: readonly string[]) => points[Math.round((((deg % 360) + 360) % 360) / 45) % 8];

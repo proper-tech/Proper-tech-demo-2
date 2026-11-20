@@ -12,7 +12,7 @@ import type { TowerId } from '@/data/types';
 import { fmt, type Dict } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { bounds, m, polygonCentre, type Pt } from '@/lib/geometry';
-import { ROOF_SPOTS, type Tour } from './three/Tour';
+import { ROOF_SPOTS, type Tour } from './three/spots';
 import { TourBar } from './TourBar';
 import { fitTourFrame } from './tourFrame';
 

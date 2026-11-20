@@ -13,10 +13,10 @@ import type { BlockId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { FloorKey } from './three/BuildingScene';
-import type { Tour } from './three/Tour';
+import type { Tour } from './three/spots';
 import { TourBar } from './TourBar';
 import { SunPanel } from './SunPanel';
-import { DEFAULT_SUN, type SunSettings } from './three/Sun';
+import { DEFAULT_SUN, type SunSettings } from './three/sunSettings';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
   ssr: false,
@@ -63,6 +63,18 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [sun, setSun] = useState<SunSettings>(DEFAULT_SUN);
   // the 3D view stays under a loader until its models are in and drawn (see BuildingScene)
   const [ready, setReady] = useState(false);
+  // The 3D view (three.js and about 10 MB of models) starts loading only when the picker comes
+  // within a screen of the viewport, so the rest of the page doesn't wait for it.
+  const stage = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || near) return;
+    if (!('IntersectionObserver' in window)) return setNear(true);
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: '100% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
   const [progress, setProgress] = useState(0);
   const onReady = useCallback(() => setReady(true), []);
 
@@ -248,24 +260,26 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <div className={`tower${zoom ? ' is-zooming' : ''}`} onPointerDown={() => setTouched(true)}>
-        <BuildingScene
-          floors={floors}
-          hovered={hovered}
-          onHover={(key) => {
-            setHovered(key);
-            if (key) setTower(key.tower);
-          }}
-          onOpen={(key) => open(key, `/${locale}/floors/${key.tower}/${key.tower === 'A' || key.tower === 'D' ? (key.floor === 0 ? 'B1' : key.floor) : key.floor}`)}
-          autoRotate={ready && !touched && !reducedMotion && hovered === null && !zoom}
-          zoomTo={zoom?.key ?? null}
-          onZoomed={() => zoom && router.push(zoom.href)}
-          layer={layer}
-          tour={tour}
-          sun={sun}
-          onReady={onReady}
-          onProgress={setProgress}
-        />
+      <div ref={stage} className={`tower${zoom ? ' is-zooming' : ''}`} onPointerDown={() => setTouched(true)}>
+        {near && (
+          <BuildingScene
+            floors={floors}
+            hovered={hovered}
+            onHover={(key) => {
+              setHovered(key);
+              if (key) setTower(key.tower);
+            }}
+            onOpen={(key) => open(key, `/${locale}/floors/${key.tower}/${key.tower === 'A' || key.tower === 'D' ? (key.floor === 0 ? 'B1' : key.floor) : key.floor}`)}
+            autoRotate={ready && !touched && !reducedMotion && hovered === null && !zoom}
+            zoomTo={zoom?.key ?? null}
+            onZoomed={() => zoom && router.push(zoom.href)}
+            layer={layer}
+            tour={tour}
+            sun={sun}
+            onReady={onReady}
+            onProgress={setProgress}
+          />
+        )}
         <div className={`label-layer${tour.kind === 'spot' ? ' is-hidden' : ''}`} ref={layer}>
           {(['A', ...towers, 'D'] as BlockId[]).map((id) => (
             <div key={id} className={`tower-tag${tower === id ? ' is-selected' : ''}`} data-anchor={`tower:${id}`}>

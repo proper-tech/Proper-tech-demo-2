@@ -8,9 +8,11 @@ for P in F E; do
   mkdir -p $W/$P && cp $ROOT/interior/${P}_cams.json $W/$P/cams.json
   python3 -I $T/passes.py top $ROOT/interior/$P.blend $W/$P 128 48
   python3 -I $T/passes.py ids $ROOT/interior/$P.blend $ROOT/interior/${P}_cams.json $W/$P 2048 1024
-  mkdir -p $ROOT/public/tour/$P
-  python3 -I $T/build_tour.py $ROOT/public/tour/D/index.html $P $ROOT/interior/renders/$P $W/$P $MAP $ROOT/public/tour/$P/index.html
+  mkdir -p $ROOT/interior/tours/$P
+  python3 -I $T/build_tour.py $ROOT/interior/tours/D/index.html $P $ROOT/interior/renders/$P $W/$P $MAP $ROOT/interior/tours/$P/index.html
 done
-mkdir -p $ROOT/public/tour/A $ROOT/public/tour/B
-python3 -I $T/mirror_tour.py $ROOT/public/tour/F/index.html $ROOT/public/tour/A/index.html F A
-python3 -I $T/mirror_tour.py $ROOT/public/tour/E/index.html $ROOT/public/tour/B/index.html E B
+mkdir -p $ROOT/interior/tours/A $ROOT/interior/tours/B
+python3 -I $T/mirror_tour.py $ROOT/interior/tours/F/index.html $ROOT/interior/tours/A/index.html F A
+python3 -I $T/mirror_tour.py $ROOT/interior/tours/E/index.html $ROOT/interior/tours/B/index.html E B
+# publish the light versions (pictures as separate WebP files) to public/tour
+python3 -I $T/split_tours.py $ROOT

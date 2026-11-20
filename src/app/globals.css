@@ -2511,7 +2511,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 0;
   height: 100svh;
   overflow: hidden;
-  background: var(--ink) url('/media/film-poster.jpg') center / cover; /* the film's first frame */
+  background: var(--ink) url('/media/film-poster.webp') center / cover; /* the film's first frame */
 }
 
 .story-film {

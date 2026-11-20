@@ -13,7 +13,7 @@ import { useI18n } from '@/i18n/I18nProvider';
 import { layoutArea, m } from '@/lib/geometry';
 import { PlanGroup, type PlanTx } from './Plan2D';
 import { photoModels } from '@/data/photoModels';
-import { unitCentre } from './three/FloorScene';
+import { unitCentre } from '@/lib/unitCentre';
 
 const FloorScene = dynamic(() => import('./three/FloorScene'), {
   ssr: false,

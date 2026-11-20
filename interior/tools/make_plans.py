@@ -17,7 +17,7 @@ CREAM = (246, 243, 236)
 MIRROR_OF = {'C': 'D', 'B': 'E', 'A': 'F'}
 out = {}
 for P in 'DEF':
-    s = open(f'{R}/public/tour/{P}/index.html', encoding='utf-8').read()
+    s = open(f'{R}/interior/tours/{P}/index.html', encoding='utf-8').read()
     i = s.index('window.__TOPDOWN__ = ') + len('window.__TOPDOWN__ = '); j = s.index('};', i) + 1
     t = json.loads(s[i:j]); L, N, W, H = t['viewBox']
     im = Image.open(io.BytesIO(base64.b64decode(t['images']['neutral'].split(',', 1)[1]))).convert('RGB')

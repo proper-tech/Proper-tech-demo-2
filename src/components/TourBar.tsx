@@ -1,7 +1,7 @@
 'use client';
 
 import { useI18n } from '@/i18n/I18nProvider';
-import { SPOTS, type SpotDef, type SpotId, type Tour } from './three/Tour';
+import { SPOTS, type SpotDef, type SpotId, type Tour } from './three/spots';
 
 /** Controls of the 360° tour, over the 3D stage: eye-level viewpoints, back. */
 export function TourBar({ tour, setTour, spots = SPOTS, label }: { tour: Tour; setTour: (t: Tour) => void; spots?: SpotDef[]; label?: string }) {

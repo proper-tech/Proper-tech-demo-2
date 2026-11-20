@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
 import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Shape, Vector3, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
@@ -155,7 +155,7 @@ function Environment() {
   }, [scene]);
   return <primitive object={scene} />;
 }
-useGLTF.preload(ENV_URL, DRACO_URL);
+// not preloaded: the street loads after the buildings are on screen (see BuildingScene)
 
 /** Reports download progress of the models to the page's loader. */
 function Progress({ onProgress }: { onProgress?: (percent: number) => void }) {
@@ -497,20 +497,32 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
     ];
   }, []);
 
+  const [buildingsIn, setBuildingsIn] = useState(false);
+  const ready = useCallback(() => {
+    setBuildingsIn(true);
+    onReady?.();
+  }, [onReady]);
+
   return (
     <Canvas shadows dpr={[1, 2]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: [-175, 95, 95] }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
+      {/* The buildings come first, so the view appears as soon as they are in; the street and the
+          sky reflections (about 7 MB more) load right after, without holding it up. */}
       <Suspense fallback={null}>
-        {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
-            see stays the Sun component's dome */}
-        <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
-        <Environment />
         <Model />
         <PodiumDetail />
-        <WhenReady onReady={onReady} />
+        <WhenReady onReady={ready} />
       </Suspense>
+      {buildingsIn && (
+        <Suspense fallback={null}>
+          {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
+              see stays the Sun component's dome */}
+          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35} />
+          <Environment />
+        </Suspense>
+      )}
       <Progress onProgress={onProgress} />
 
       {tour.kind === 'overview' && towers.map((tower) => (
