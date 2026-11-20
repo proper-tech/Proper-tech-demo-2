@@ -182,15 +182,15 @@ if FLOOR == 2:
         box(f'Head_UpPanel{i}', (u0 + u1) / 2 - 0.3, (u0 + u1) / 2 + 0.3, v - 0.3, v + 0.3, STOREY + H - 0.01, STOREY + H, MAT['panel_light'])
         area_light(f'UpL_{i}', (u0 + u1) / 2, v, STOREY + H - 0.03, 0.6, 0.6, 40)
     # floor 1 under the void: its floor; the underside of this slab is its ceiling
-    box('Lower_Floor', -12.0, 12.0, -4.0, 20.0, -BELOW - 0.05, -BELOW, MAT['lower_floor'])
+    prism('Lower_Floor', OUTLINE, -BELOW - 0.05, [-BELOW] * len(OUTLINE), MAT['lower_floor'])  # inside the walls only
     for i, (x, y) in enumerate(((-3.0, 5.0), (5.0, 5.0), (1.0, 12.5), (1.0, -1.5), (-6.0, 12.0), (8.0, 12.0))):
         area_light(f'LowL_{i}', x, y, -0.35, 0.3, 0.3, 140)
     # glass on the three sides the escalators don't arrive on
     void_edge(VOID, -0.3, 'NWE')
 else:
     # floor 2 under the void: its porcelain floor, its ceiling 0.6 below this floor, its lights
-    box('Lower_Floor', -14.0, 10.0, -12.0, 16.0, -STOREY - 0.05, -STOREY, MAT['hall_floor'])
-    lc = box('Lower_Ceiling', -14.0, 10.0, -12.0, 16.0, -0.62, -0.6, MAT['ceiling'])
+    prism('Lower_Floor', OUTLINE, -STOREY - 0.05, [-STOREY] * len(OUTLINE), MAT['hall_floor'])  # inside the walls only
+    lc = prism('Lower_Ceiling', OUTLINE, -0.62, [-0.6] * len(OUTLINE), MAT['ceiling'])
     cut(lc, [VOID3], -1.0, 0.0)
     for i, (x, y) in enumerate(((-5.72, -1.29), (-2.12, -4.89), (1.48, 2.31), (-5.72, 5.91), (-2.12, 9.51), (1.48, -1.29))):
         box(f'LowPanel_{i}', x - 0.3, x + 0.3, y - 0.3, y + 0.3, -0.612, -0.6, MAT['panel_light'])
