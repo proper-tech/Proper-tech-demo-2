@@ -134,7 +134,7 @@ const en = {
     videoHeading: 'Sebotse in 38 seconds',
     videoLead: 'A flight round the complex, rendered from the same 3D model as this site: the towers, the podium, the roof playground and the streets around them.',
     playVideo: 'Play video',
-    videoNote: 'Rendered from the 3D model. The buildings around the site are only indicated.',
+    videoNote: 'Rendered from the 3D model. The buildings around the site come from OpenStreetMap, with approximate heights. Map data © OpenStreetMap contributors.',
     galleryHeading: 'The building',
     galleryLead: 'Architect\'s renders of the two towers, the podium and the site.',
     captions: {
