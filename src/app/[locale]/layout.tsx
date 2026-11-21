@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: { default: t.site.name, template: `%s | ${t.site.name}` }, description: t.site.description };
 }
 
-export default async function LocaleLayout({ children, modal, params }: { children: ReactNode; modal: ReactNode; params: Params }) {
+export default async function LocaleLayout({ children, params }: { children: ReactNode; params: Params }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
@@ -39,7 +39,6 @@ export default async function LocaleLayout({ children, modal, params }: { childr
         <I18nProvider locale={locale} dict={getDict(locale)}>
           <Header />
           {children}
-          {modal}
         </I18nProvider>
       </body>
     </html>

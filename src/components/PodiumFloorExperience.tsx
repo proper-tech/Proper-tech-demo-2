@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useBackToBuilding, useInOverlay } from './FloorOverlay';
 import { FLOOR_MAX, FLOOR_MIN } from '@/data/building';
 import { blockDFloors, blockDLabel, blockDOutline, blockDWalk, getBlockDFloor } from '@/data/blockD';
 import { blockDTours } from '@/data/blockDTour';
@@ -110,8 +109,6 @@ const PHOTO_TOURS: Partial<Record<number, string>> = { 1: 'A1' };
 export function PodiumFloorExperience({ floor, tower, block }: { floor: number; tower?: TowerId; block?: 'D' }) {
   const { locale, t } = useI18n();
   const router = useRouter();
-  const inOverlay = useInOverlay();
-  const backToBuilding = useBackToBuilding();
   const [view, setView] = useState<'3d' | 'walk' | '2d' | 'photo'>('3d');
   const [room, setRoom] = useState<string | null>(null);
   const [spots, setSpots] = useState<Pt[]>([]);
@@ -297,16 +294,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
           <iframe className="apt-tour-frame" src={`/tour/${photoTour}/index.html`} title={t.apt.modeTour} allow="fullscreen" onLoad={(e) => fitTourFrame(e.currentTarget)} />
         )}
         <div className={photo ? 'apt-head is-over-photo' : 'apt-head'}>
-          <Link
-            className="back"
-            href={`/${locale}#floors`}
-            onClick={(e) => {
-              // over the home page: just close, the building stays as it was
-              if (!inOverlay) return;
-              e.preventDefault();
-              backToBuilding();
-            }}
-          >
+          <Link className="back" href={`/${locale}#floors`}>
             {t.floor.back}
           </Link>
           <h1>{title}</h1>
