@@ -3650,28 +3650,3 @@ html.js-motion .fx.rv.is-in {
 .has-full-stage body {
   overflow: hidden;
 }
-
-/* a floor opened from the home page, over it (app/[locale]/@modal): the building stays underneath */
-.floor-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--board);
-  animation: floor-overlay-in 0.35s ease-out both;
-}
-
-@keyframes floor-overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.has-floor-overlay,
-.has-floor-overlay body {
-  overflow: hidden;
-}
