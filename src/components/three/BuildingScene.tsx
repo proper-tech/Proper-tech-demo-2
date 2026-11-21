@@ -733,9 +733,15 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
     return () => {
       if (controls) controls.enabled = true;
       interiorFocus.value.set(-1, -1);
-      if (path.current) {
-        camera.near = path.current.near;
+      const z = path.current;
+      if (z) {
+        // back from the floor (it showed over the page): the view returns to where it was before the zoom
+        camera.position.copy(z.p0);
+        camera.fov = z.f0;
+        camera.near = z.near;
         camera.updateProjectionMatrix();
+        if (controls) controls.target.copy(z.t0);
+        camera.lookAt(z.t0);
       }
     };
   }, [to, camera, controls, scene]);
