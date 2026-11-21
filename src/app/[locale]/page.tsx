@@ -2,6 +2,7 @@ import type React from 'react';
 import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
 import { HeroFilm } from '@/components/HeroFilm';
+import { LocationMap } from '@/components/LocationMap';
 import { Motion } from '@/components/Motion';
 import { VideoSection } from '@/components/VideoSection';
 import { SitePlan } from '@/components/SitePlan';
@@ -72,6 +73,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="location" id="location">
+        <div className="centre-head fx">
+          <h2>{t.location.heading}</h2>
+          <p className="lead">{t.location.lead}</p>
+        </div>
+        <LocationMap />
       </section>
 
       <FloorPicker>
