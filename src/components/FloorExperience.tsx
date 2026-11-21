@@ -4,6 +4,7 @@ import { Fragment, useCallback, useMemo, useRef, useState, type CSSProperties, t
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useBackToBuilding, useInOverlay } from './FloorOverlay';
 import { FLOOR_MAX, FLOOR_MIN, PLATE, coreFor, getFloor, type CoreSpace } from '@/data/building';
 import { flatColors, layouts } from '@/data/layouts';
 import { ROOF_FLOOR } from '@/data/roof';
@@ -109,6 +110,8 @@ const flat = (plan: PlanId) => ({ '--flat': flatColors[plan] }) as CSSProperties
 export function FloorExperience({ tower, floor }: { tower: TowerId; floor: number }) {
   const { locale, t } = useI18n();
   const router = useRouter();
+  const inOverlay = useInOverlay();
+  const backToBuilding = useBackToBuilding();
   const [view, setView] = useState<'3d' | '2d'>('3d');
   // until the 3D view has drawn its first frames, the 2D plan stands in for it
   const [drawn, setDrawn] = useState(false);
@@ -234,7 +237,16 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
         )}
 
         <div className="apt-head">
-          <Link className="back" href={`/${locale}#floors`}>
+          <Link
+            className="back"
+            href={`/${locale}#floors`}
+            onClick={(e) => {
+              // over the home page: just close, the building stays as it was
+              if (!inOverlay) return;
+              e.preventDefault();
+              backToBuilding();
+            }}
+          >
             {t.floor.back}
           </Link>
           <h1>{fmt(t.floor.title, { t: tower, n: floor })}</h1>

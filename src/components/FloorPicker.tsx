@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { floors, towers } from '@/data/building';
 import { blockDFloors, blockDLabel } from '@/data/blockD';
 import { layouts } from '@/data/layouts';
@@ -41,6 +41,15 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   // a picked floor: the 3D view zooms in to it, then the floor page opens
   const [zoom, setZoom] = useState<{ key: FloorKey; href: string } | null>(null);
+  // a floor opened from here shows over this page (app/[locale]/@modal): while it does, the
+  // building stops drawing; when it closes, the zoom is undone and the view is as it was
+  const pathname = usePathname();
+  const atHome = pathname === `/${locale}` || pathname === `/${locale}/`;
+  useEffect(() => {
+    if (!atHome) return;
+    setZoom(null);
+    setHovered(null);
+  }, [atHome]);
   const open = (key: FloorKey, href: string) => {
     // the floor's 3D view downloads during the zoom animation
     preloadFloor3D(key.tower);
@@ -90,29 +99,36 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     return () => io.disconnect();
   }, []);
   const [progress, setProgress] = useState(0);
-  // full screen for the 3D view: the browser's own where it has one, else the stage fills the window
+  // full screen for the 3D view: the whole page goes full screen (so a floor opened from here, which
+  // shows over the page, is in full screen too) and the stage fills it; where the browser has no
+  // full screen for pages (iPhone) the stage just fills the window
   const [full, setFull] = useState(false);
   useEffect(() => {
-    const sync = () => setFull(document.fullscreenElement === stage.current);
+    const sync = () => {
+      if (!document.fullscreenElement) setFull(false);
+    };
     document.addEventListener('fullscreenchange', sync);
     return () => document.removeEventListener('fullscreenchange', sync);
   }, []);
   useEffect(() => {
-    if (!full || document.fullscreenElement) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false);
+    if (!full) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && !document.fullscreenElement && atHome && setFull(false);
     window.addEventListener('keydown', esc);
     document.documentElement.classList.add('has-full-stage');
     return () => {
       window.removeEventListener('keydown', esc);
       document.documentElement.classList.remove('has-full-stage');
     };
-  }, [full]);
+  }, [full, atHome]);
   const toggleFull = () => {
-    const el = stage.current;
-    if (!el) return;
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else if (!full && el.requestFullscreen) el.requestFullscreen().catch(() => setFull(true));
-    else setFull(!full);
+    const root = document.documentElement;
+    if (full) {
+      setFull(false);
+      if (document.fullscreenElement) void document.exitFullscreen();
+      return;
+    }
+    setFull(true);
+    if (root.requestFullscreen) root.requestFullscreen().catch(() => {});
   };
   const onReady = useCallback(() => setReady(true), []);
 
@@ -344,7 +360,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             sun={sun}
             onReady={onReady}
             onProgress={setProgress}
-            active={onScreen}
+            active={onScreen && atHome}
           />
         )}
         <div className={`label-layer${tour.kind === 'spot' ? ' is-hidden' : ''}`} ref={layer}>
