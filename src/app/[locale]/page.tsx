@@ -9,6 +9,7 @@ import { SitePlan } from '@/components/SitePlan';
 import { PlanGroup } from '@/components/Plan2D';
 import { FLOOR_MAX, FLOOR_MIN, availableUnits, capacity, units } from '@/data/building';
 import { apartmentTypes, flatColors, layouts } from '@/data/layouts';
+import { planPhotos } from '@/data/planPhotos';
 import { fmt, getDict } from '@/i18n/config';
 import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
@@ -28,6 +29,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   // the three plans are drawn at one scale, so their sizes compare at a glance
   const planW = Math.max(...apartmentTypes.map(({ layout }) => layouts[layout].w));
   const planD = Math.max(...apartmentTypes.map(({ layout }) => layouts[layout].d));
+  // ...and so are their furnished top views (sizes in metres, src/data/planPhotos.ts)
+  const picW = Math.max(...apartmentTypes.map(({ plans }) => planPhotos[plans[0]]?.w ?? 0));
+  const picH = Math.max(...apartmentTypes.map(({ plans }) => planPhotos[plans[0]]?.h ?? 0));
   // an apartment with the rendered 360° photo tour (plan D), for the "walk through" card
   const showUnit = availableUnits.find((u) => u.layout === 'D') ?? availableUnits[0];
 
@@ -123,13 +127,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             const layout = layouts[id];
             const forSale = availableUnits.filter((u) => plans.includes(u.plan));
             const example = forSale.find((u) => u.layout === id) ?? forSale[0];
+            const photo = planPhotos[plans[0]];
             return (
               <li key={id} className="type fx" style={{ '--flat': flatColors[plans[0]] } as React.CSSProperties}>
-                {/* the apartment's own plan, from the architect's floor plans, all three at one scale */}
+                {/* the apartment furnished, seen from above (the rendered 360° tour's top view), all three at one
+                    scale; the architect's drawn plan if there is no render */}
                 <div className="type-plan" aria-hidden="true">
-                  <svg className="plan-svg" viewBox={`-0.6 -0.6 ${planW + 1.2} ${planD + 1.2}`}>
-                    <PlanGroup layout={layout} tx={{ ox: (planW - layout.w) / 2, sx: 1, oz: (planD - layout.d) / 2, sz: 1 }} />
-                  </svg>
+                  {photo ? (
+                    <svg className="plan-svg" viewBox={`0 0 ${picW} ${picH}`}>
+                      <image href={photo.src} x={(picW - photo.w) / 2} y={(picH - photo.h) / 2} width={photo.w} height={photo.h} />
+                    </svg>
+                  ) : (
+                    <svg className="plan-svg" viewBox={`-0.6 -0.6 ${planW + 1.2} ${planD + 1.2}`}>
+                      <PlanGroup layout={layout} tx={{ ox: (planW - layout.w) / 2, sx: 1, oz: (planD - layout.d) / 2, sz: 1 }} />
+                    </svg>
+                  )}
                 </div>
                 <div className="type-body">
                   <h3>
