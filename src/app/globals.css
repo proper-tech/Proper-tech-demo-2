@@ -2068,10 +2068,16 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   display: grid;
   gap: 0.7rem;
   width: min(15rem, calc(100vw - 2rem));
-  padding: 0.85rem 0.95rem;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 0.95);
-  box-shadow: 0 4px 16px rgb(20 35 59 / 0.15);
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  /* frosted glass: the 3D view shows through, blurred, behind a bright edge like a pane of glass */
+  border: 1px solid rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px rgb(255 255 255 / 0.25),
+    0 8px 24px rgb(20 35 59 / 0.22);
 }
 
 .sun-controls label {
@@ -2103,10 +2109,10 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   box-shadow: none;
 }
 
+/* one panel at its full size, everything in view: no scrolling inside it */
 .sun-controls {
-  width: min(17.5rem, calc(100vw - 2rem));
-  max-height: calc(100% - 4rem);
-  overflow-y: auto;
+  width: min(19.5rem, calc(100vw - 2rem));
+  gap: 0.55rem;
 }
 
 .sun-modes,
@@ -2119,6 +2125,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 .sun-study {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
 }
 
