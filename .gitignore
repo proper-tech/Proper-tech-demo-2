@@ -31,3 +31,6 @@ interior/assets
 interior/assets.zip
 interior/*_day.blend
 interior/*_evening.blend
+
+# copied from node_modules by scripts/copy-maplibre-worker.mjs
+public/maplibre-gl-worker.mjs
