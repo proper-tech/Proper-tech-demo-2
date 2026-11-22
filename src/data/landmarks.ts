@@ -10,7 +10,13 @@ export const landmarks = {
   square: [106.9176, 47.9189] as [number, number],
   // Wikidata Q33309063, Zaluuchuudyn Örgön Chölöö 5 / Beijing Street 2
   embassy: [106.92423, 47.92336] as [number, number],
+  // School No. 3 (3-р сургууль) on Ikh Toiruu, OpenStreetMap way 1008809194
+  school: [106.91929, 47.92971] as [number, number],
+  // Bayanburd roundabout, by the Bayanburd shop and bus stop on Ikh Toiruu: "Чингэлтэйн тойрог" on
+  // OpenStreetMap (ways 58269120, 1527901564)
+  roundabout: [106.90522, 47.92834] as [number, number],
 };
+export type LandmarkId = keyof typeof landmarks;
 
 /** The complex: the point between the two towers, and its blocks as map polygons with heights (m). */
 export const sebotse = {

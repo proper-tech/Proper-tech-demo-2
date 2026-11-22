@@ -29,6 +29,8 @@ const zh: Dict = {
     cityLine: '俯瞰首都',
     square: '成吉思汗广场',
     embassy: '中国驻蒙古国大使馆',
+    school: '第3学校',
+    roundabout: '巴彦布尔德环岛',
     sebotse: 'Sebotse',
     sebotseLine: '青格尔泰区，主干道旁',
     away: '{km} 公里 · 车程 {min} 分钟',

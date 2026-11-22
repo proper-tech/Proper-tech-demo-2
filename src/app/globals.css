@@ -3805,14 +3805,19 @@ html.js-motion .fx.rv.is-in {
   opacity: 1;
 }
 
-.map-tag-square.is-on,
-.map-tag-embassy.is-on {
+.map-tag-place.is-on {
   background: var(--sky);
   color: var(--paper);
 }
 
-.map-tag-square.is-on span,
-.map-tag-embassy.is-on span {
+/* places close to the complex: not over the whole city, where they would pile up on it (visibility, as
+   MapLibre sets the markers' opacity itself on a tilted map) */
+.location-canvas:not([data-step]) .map-tag-near,
+.location-canvas[data-step="city"] .map-tag-near {
+  visibility: hidden;
+}
+
+.map-tag-place.is-on span {
   color: #dbe6fb;
 }
 
@@ -3830,3 +3835,14 @@ html.js-motion .fx.rv.is-in {
     display: none;
   }
 }
+
+  /* one row to swipe through, so the steps don't stack over the map */
+  .location-steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .location-steps li {
+    flex: none;
+  }
