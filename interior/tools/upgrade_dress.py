@@ -255,6 +255,11 @@ def floor_plants():
         a, b = _bbox(o)
         if (b.x - a.x) * (b.y - a.y) < 30:
             blocks.append((a.x, a.y, b.x, b.y))
+    # keep clear of the 360° camera stops
+    import json
+    cams = json.load(open(os.path.join(os.path.dirname(ASSETS), f'{PLAN}_cams.json')))
+    for x, y, _ in cams.values():
+        blocks.append((x - 0.75, -y - 0.75, x + 0.75, -y + 0.75))
     plants = ['pachira_aquatica_01', 'potted_plant_02', 'calathea_orbifolia_01', 'potted_plant_01']
     k = 0
     for g in glass:
@@ -309,9 +314,13 @@ def props():
     print('props placed:', n)
 
 
+PLAN = ''
+
+
 def run(plan, mood, assets):
-    global ASSETS
+    global ASSETS, PLAN
     ASSETS = assets
+    PLAN = plan
     random.seed(sum(map(ord, plan)))
     textures()
     props()

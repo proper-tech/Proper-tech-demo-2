@@ -21,6 +21,7 @@ if not bpy.data.filepath or os.path.basename(bpy.data.filepath) != f'{plan}.blen
     bpy.ops.wm.open_mainfile(filepath=os.path.join(here, f'{plan}.blend'))
 sc = bpy.context.scene
 random.seed(7)
+SUNNY = True
 
 
 def asset(*p):
@@ -138,7 +139,9 @@ def sun_rotation():
                 south += b.x - a.x
             if b.x - a.x < 0.1 and abs(b.x - hi.x) < 0.6:
                 east += b.y - a.y
-    if south >= 1.0:
+    global SUNNY
+    SUNNY = south >= 1.0
+    if SUNNY:
         return (math.radians(62), 0, math.radians(-28))  # 28° high
     return (math.radians(68), 0, math.radians(68))  # 22° high, morning
 
@@ -156,7 +159,7 @@ def lights(m):
         elif n.startswith('pointlight_firefly') or n == 'Key Light':
             o.hide_render = True
         elif n.startswith('Downlight'):
-            o.data.energy = 10 if m == 'day' else 30
+            o.data.energy = 40 if m == 'day' else 30
             o.data.color = (1.0, 0.84, 0.66)
         elif n.startswith('LampPt'):
             o.data.energy = 0 if m == 'day' else o.data.energy * 1.6
@@ -184,7 +187,7 @@ def render_settings(m):
     vs = sc.view_settings
     vs.view_transform = 'AgX'
     vs.look = 'AgX - Medium High Contrast'
-    vs.exposure = 1.7 if m == 'day' else 0.9
+    vs.exposure = (1.7 if SUNNY else 1.15) if m == 'day' else 0.9
     cy = sc.cycles
     cy.max_bounces = 10
     cy.diffuse_bounces = 5
@@ -196,7 +199,26 @@ def render_settings(m):
     cy.sample_clamp_indirect = 8.0
 
 
+def clear_camera_stops():
+    """A pot plant standing right where a 360° camera stands (under the lens) is hidden."""
+    cams = json.load(open(os.path.join(here, f'{plan}_cams.json')))
+    for o in bpy.data.objects:
+        if o.type != 'MESH' or o.hide_render or not (o.parent and 'Plant' in o.parent.name):
+            continue
+        a, b = bbox(o)
+        if a.z > 0.05 or b.z > 1.2:
+            continue
+        cx, cy = (a.x + b.x) / 2, (a.y + b.y) / 2
+        if any(math.hypot(cx - x, cy + y) < 0.5 for x, y, _ in cams.values()):
+            o.hide_render = True
+            # the rest of the same plant (leaves, soil) shares its parent
+            for c in (o.parent.children if o.parent else []):
+                c.hide_render = True
+            print('hidden at a camera stop:', o.name)
+
+
 thin_glass()
+clear_camera_stops()
 open_curtains()
 world(mood)
 lights(mood)
