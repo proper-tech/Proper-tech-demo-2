@@ -25,3 +25,7 @@ interior/renders/**/*.log
 # Block A 1st-floor scene: 430 MB with the product scans packed in, over GitHub's file limit;
 # rebuild it with interior/tools/build_a1.py (see interior/README.md)
 interior/A1.blend
+
+# Poly Haven assets for the upgraded interiors (interior\fetch_assets.bat downloads them)
+interior/assets/
+interior/assets.zip
