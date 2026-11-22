@@ -96,3 +96,10 @@ vases, books, bowls, kitchen things), placed by rule. The assets are not in git:
    Зөвхөн заримыг нь: `set PLANS=F E` эсвэл `set PLANS=D` + `set STOPS=entry,hall`.
 3. Tours: run `tools/passes.py ids|top` on `<plan>_day.blend`, then repanos / retop / build_tour / mirror_tour /
    make_plans / split_tours as in `tools/finalize.sh`.
+
+### Evening (Орой) panoramas
+
+`interior\render_evening.bat` renders the same 22 stops at dusk (lamps on, twilight outside) into
+`interior\renders\D_evening`, `F_evening`, `E_evening` (~1 h 15 min). `tools/make_all_tours.sh` then adds them to the
+tours as `D_<stop>@eve` (`tools/add_evening.py`), and the tour's **☾ Орой / ☀ Өдөр** button
+(`tools/add_mood_toggle.py`) switches between the two; it stays hidden while a tour has no evening pictures.

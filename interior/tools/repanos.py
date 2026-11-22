@@ -40,7 +40,7 @@ def block(var, end):
     j = html.index(end, i) + (1 if end == '};' else 0)
     return i, j, json.loads(html[i:j])
 i, j, panos = block('__PANOS__', '; window.__PLAN__')
-stops = [k[2:] for k in panos if k.startswith('D_')]
+stops = [k[2:] for k in panos if k.startswith('D_') and '@' not in k]
 for st in stops:
     im = Image.open(f'{rdir}/{st}.jpg').convert('RGB')
     if im.size != (4096, 2048): im = im.resize((4096, 2048), Image.LANCZOS)

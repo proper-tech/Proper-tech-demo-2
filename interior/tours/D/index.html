@@ -178,6 +178,7 @@ body.collapsed .panel { transform:translateX(-350px); }
 @media(prefers-reduced-motion:reduce) { *, *::before, *::after { transition:none !important; scroll-behavior:auto !important; } }
 
 
+#tourMood[aria-pressed=true]{background:#1c2433;color:#f3d9a6;border-color:#f3d9a6}#pano.is-evening #panoFade{background:#05070c}
 /* BEGIN PALETTE CSS */
 #tourDesignPanel {position:absolute;z-index:5;left:24px;top:226px;width:246px;max-height:calc(100dvh - 400px);overflow:auto;color:#f5f3ed;background:#17231eea;border:1px solid #ffffff35;border-radius:14px;box-shadow:0 12px 36px #0003;backdrop-filter:blur(18px)}
 #tourPaletteToggle {width:100%;display:grid;grid-template-columns:1fr auto;gap:5px 10px;text-align:left;border:0;padding:14px;background:transparent;color:inherit;cursor:pointer}
@@ -302,6 +303,7 @@ body.collapsed .panel { transform:translateX(-350px); }
       <button id="tourZoomOut" class="tour-tool" type="button" aria-label="Холдуулах" title="Холдуулах (-)">−</button>
       <button id="tourZoomIn" class="tour-tool" type="button" aria-label="Ойртуулах" title="Ойртуулах (+)">+</button>
       <button id="tourRotate" class="tour-tool" type="button" aria-pressed="false">↻ Тойрох</button>
+      <button id="tourMood" class="tour-tool" type="button" aria-pressed="false" hidden title="Өдөр / Орой">☾ Орой</button>
       <button id="tourMapToggle" class="tour-tool" type="button" aria-pressed="true" aria-controls="tourPlan">Top view</button>
       <button id="tourFullscreen" class="tour-tool" type="button" aria-label="Бүтэн дэлгэц" title="Бүтэн дэлгэц">⛶</button>
     </div>
@@ -4601,7 +4603,7 @@ const tourRoomShortNames = {
 const tourMapPoints = Object.fromEntries(Object.entries(vf.D.pts).map(([room,point])=>[room,[...point]]));
 const interiorTour = {
   active: false, renderer: null, camera: null, scene: null, sphere: null,
-  selection: null, room: null, requestedRoom: null, yaw: 0, pitch: -3, autoRotate: false,
+  selection: null, room: null, requestedRoom: null, yaw: 0, pitch: -3, autoRotate: false, mood: 'day',
   requestId: 0, transitionTimer: null, feedbackTimer: null, textureCache: new Map(),
   pendingTextures: new Map(), pointers: new Map(), gesture: null, hotspots: [],
   mapOpen: innerWidth > 900, mapExpanded: false, returnFocus: null
@@ -4690,7 +4692,7 @@ function getTourTexture(source) {
 
 function loadTourRoom(room) {
   const requestId = ++interiorTour.requestId;
-  const asset = Mf[`D_${room}`];
+  const asset = (interiorTour.mood === 'evening' && Mf[`D_${room}@eve`]) || Mf[`D_${room}`];
   if (!asset) {
     setTourStatus('Энэ өрөөний зураг олдсонгүй. Өөр өрөө сонгоно уу.');
     tourElement('panoFade').classList.remove('on');
@@ -5059,6 +5061,31 @@ function initializeInteriorTour() {
   tourElement('tourZoomOut').onclick = () => zoomInteriorTour(8);
   tourElement('tourPrevious').onclick = () => stepTourRoom(-1);
   tourElement('tourNext').onclick = () => stepTourRoom(1);
+  // BEGIN DAY/EVENING
+  {
+    const moodButton = tourElement('tourMood');
+    const hasEvening = Object.keys(Mf).some(key => key.endsWith('@eve'));
+    moodButton.hidden = !hasEvening;
+    const showMood = () => {
+      const evening = interiorTour.mood === 'evening';
+      moodButton.setAttribute('aria-pressed', String(evening));
+      moodButton.textContent = evening ? '☀ Өдөр' : '☾ Орой';
+      moodButton.title = evening ? 'Өдрийн гэрэлтэй харах' : 'Оройн гэрэлтэй харах';
+      tourElement('pano').classList.toggle('is-evening', evening);
+    };
+    try { if (hasEvening && localStorage.getItem('sebotse-tour-mood') === 'evening') interiorTour.mood = 'evening'; } catch (_) {}
+    showMood();
+    moodButton.onclick = () => {
+      interiorTour.mood = interiorTour.mood === 'evening' ? 'day' : 'evening';
+      try { localStorage.setItem('sebotse-tour-mood', interiorTour.mood); } catch (_) {}
+      showMood();
+      if (interiorTour.active && interiorTour.room) {
+        tourElement('panoFade').classList.add('on');
+        loadTourRoom(interiorTour.room);
+      }
+    };
+  }
+  // END DAY/EVENING
   tourElement('tourRotate').onclick = () => {
     interiorTour.autoRotate = !interiorTour.autoRotate;
     tourElement('tourRotate').setAttribute('aria-pressed', String(interiorTour.autoRotate));
