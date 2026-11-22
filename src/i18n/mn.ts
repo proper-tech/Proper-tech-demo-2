@@ -29,6 +29,8 @@ const mn: Dict = {
     cityLine: 'Нийслэл дээрээс',
     square: 'Чингисийн талбай',
     embassy: 'БНХАУ-ын ЭСЯ',
+    school: '3-р сургууль',
+    roundabout: 'Баянбүрдийн тойрог',
     sebotse: 'Сэбоцэ',
     sebotseLine: 'Чингэлтэй, төв замын дагуу',
     away: '{km} км · машинаар {min} мин',

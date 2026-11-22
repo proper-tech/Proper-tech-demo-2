@@ -27,6 +27,8 @@ const en = {
     cityLine: 'The capital from above',
     square: 'Chinggis Square',
     embassy: 'Embassy of China',
+    school: 'School No. 3',
+    roundabout: 'Bayanburd roundabout',
     sebotse: 'Sebotse',
     sebotseLine: 'Chingeltei, on the main road',
     away: '{km} km · {min} min by car',

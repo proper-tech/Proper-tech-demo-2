@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GeoJSONSource, Map as MapLibreMap, Marker, StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { landmarks, sebotse } from '@/data/landmarks';
+import { landmarks, sebotse, type LandmarkId } from '@/data/landmarks';
 import { distance } from '@/lib/geo';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -18,13 +18,21 @@ const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const AMBER = '#F2B632';
 const BLUE = '#2F6FDE';
 
-type StepId = 'city' | 'square' | 'embassy' | 'sebotse';
+type StepId = 'city' | LandmarkId | 'sebotse';
 const STEPS: { id: StepId; center: [number, number]; zoom: number; pitch: number; bearing: number }[] = [
   { id: 'city', center: [106.917, 47.919], zoom: 12.2, pitch: 0, bearing: 0 },
   { id: 'square', center: landmarks.square, zoom: 15.8, pitch: 50, bearing: -18 },
   { id: 'embassy', center: landmarks.embassy, zoom: 16.2, pitch: 52, bearing: 24 },
+  { id: 'school', center: landmarks.school, zoom: 16.6, pitch: 55, bearing: 10 },
+  { id: 'roundabout', center: landmarks.roundabout, zoom: 16.6, pitch: 55, bearing: -20 },
   { id: 'sebotse', center: sebotse.centre, zoom: 17.4, pitch: 62, bearing: -35 },
 ];
+const PLACES = Object.keys(landmarks) as LandmarkId[];
+/** Tags shown over the whole city: the places near the complex would pile up on it at that zoom. */
+const CITY_TAGS: (LandmarkId | 'sebotse')[] = ['square', 'embassy', 'sebotse'];
+/** The ring round each place, metres. */
+const RING: Record<LandmarkId | 'sebotse', number> = { square: 170, embassy: 90, school: 70, roundabout: 60, sebotse: 110 };
+const isPlace = (id: StepId): id is LandmarkId => id in landmarks;
 const FLY = 3800;
 const HOLD = 2600;
 
@@ -137,8 +145,7 @@ export function LocationMap() {
           data: {
             type: 'FeatureCollection',
             features: [
-              { type: 'Feature', properties: { id: 'square' }, geometry: { type: 'Point', coordinates: landmarks.square } },
-              { type: 'Feature', properties: { id: 'embassy' }, geometry: { type: 'Point', coordinates: landmarks.embassy } },
+              ...PLACES.map((id) => ({ type: 'Feature' as const, properties: { id }, geometry: { type: 'Point' as const, coordinates: landmarks[id] } })),
               { type: 'Feature', properties: { id: 'sebotse' }, geometry: { type: 'Point', coordinates: sebotse.centre } },
             ],
           },
@@ -147,7 +154,7 @@ export function LocationMap() {
           type: 'geojson',
           data: {
             type: 'FeatureCollection',
-            features: (['square', 'embassy'] as const).map((id) => ({
+            features: PLACES.map((id) => ({
               type: 'Feature',
               properties: { id },
               geometry: { type: 'LineString', coordinates: [sebotse.centre, landmarks[id]] },
@@ -167,7 +174,7 @@ export function LocationMap() {
           type: 'circle',
           source: 'places',
           paint: {
-            'circle-radius': ['match', ['get', 'id'], 'square', metres(170, lat), 'embassy', metres(90, lat), metres(110, lat)],
+            'circle-radius': ['match', ['get', 'id'], ...PLACES.flatMap((id) => [id, metres(RING[id], lat)]), metres(RING.sebotse, lat)] as unknown as number,
             'circle-color': ['match', ['get', 'id'], 'sebotse', AMBER, BLUE],
             'circle-opacity': 0.12,
             'circle-stroke-width': 2.5,
@@ -190,9 +197,9 @@ export function LocationMap() {
           },
         });
         // a name tag over each place
-        const tag = (id: 'square' | 'embassy' | 'sebotse', at: [number, number]) => {
+        const tag = (id: LandmarkId | 'sebotse', at: [number, number]) => {
           const div = document.createElement('div');
-          div.className = `map-tag map-tag-${id}`;
+          div.className = `map-tag map-tag-${id}${id === 'sebotse' ? '' : ' map-tag-place'}${CITY_TAGS.includes(id) ? '' : ' map-tag-near'}`;
           const b = document.createElement('b');
           b.textContent = t.location[id];
           div.append(b);
@@ -203,8 +210,7 @@ export function LocationMap() {
           }
           markers.push(new maplibre.Marker({ element: div, anchor: 'bottom', offset: [0, -14] }).setLngLat(at).addTo(m));
         };
-        tag('square', landmarks.square);
-        tag('embassy', landmarks.embassy);
+        for (const id of PLACES) tag(id, landmarks[id]);
         tag('sebotse', sebotse.centre);
       };
       m.on('style.load', addOwn);
@@ -218,7 +224,7 @@ export function LocationMap() {
         const k = ((performance.now() - t0) % 1800) / 1800;
         const id = (m.getContainer().dataset.step as StepId) ?? 'city';
         const lat = sebotse.centre[1];
-        const r = id === 'square' ? 170 : id === 'embassy' ? 90 : 110;
+        const r = isPlace(id) ? RING[id] : RING.sebotse;
         m.setFilter('place-pulse', ['==', ['get', 'id'], id]);
         m.setPaintProperty('place-pulse', 'circle-radius', metres(r * (1 + 0.8 * k), lat));
         m.setPaintProperty('place-pulse', 'circle-stroke-opacity', 1 - k);
@@ -246,7 +252,8 @@ export function LocationMap() {
     m.flyTo({ center: s.center, zoom: s.zoom, pitch: s.pitch, bearing: s.bearing, duration: FLY, essential: true, curve: 1.5 });
     if (m.getLayer('links')) m.setPaintProperty('links', 'line-opacity', id === 'city' ? 0 : 0.85);
     for (const el2 of m.getContainer().querySelectorAll<HTMLElement>('.map-tag')) {
-      el2.classList.toggle('is-on', el2.classList.contains(`map-tag-${id}`) || id === 'sebotse' || id === 'city');
+      const city = id === 'city' && CITY_TAGS.some((c) => el2.classList.contains(`map-tag-${c}`));
+      el2.classList.toggle('is-on', el2.classList.contains(`map-tag-${id}`) || id === 'sebotse' || city);
     }
   };
 
@@ -313,7 +320,7 @@ export function LocationMap() {
               <i>{i + 1}</i>
               <span>
                 <b>{t.location[s.id]}</b>
-                {s.id === 'square' || s.id === 'embassy' ? <small>{km(landmarks[s.id])}</small> : <small>{t.location[`${s.id}Line`]}</small>}
+                {isPlace(s.id) ? <small>{km(landmarks[s.id])}</small> : <small>{t.location[`${s.id}Line`]}</small>}
               </span>
             </button>
           </li>
