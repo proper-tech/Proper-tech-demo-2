@@ -83,3 +83,16 @@ The hall, escalators and supermarket of the podium's ground floor, for the 360°
    (about 4 minutes each on an Apple M-series GPU). The top view (`renders/A1/topdown.jpg`) is an
    orthographic render from camera `TopCam`, clipped at 2.9 m.
 5. `python3 -I interior/tools/make_tour_a1.py` writes `public/tour/A1/index.html` from the plan-D tour's viewer.
+
+## Photographic upgrade of plans D, F, E (daylight, textures, props) — Монгол заавар
+
+`tools/upgrade_interior.py` turns a plan scene into a photographic one: sun through thin window glass, curtains
+gathered at the ends of their rods, the city HDRI outside, exposure by the side the windows face.
+`tools/upgrade_dress.py` adds Poly Haven (CC0) textures (floor, stone, wood, fabric, plaster) and props (plants,
+vases, books, bowls, kitchen things), placed by rule. The assets are not in git:
+
+1. `interior\fetch_assets.bat` — татаж авна (`interior\assets`, ~250 MB, нэг удаа).
+2. `interior\render_upgraded.bat` — D, F, E-г шинэчлээд 22 панорамыг рендерлэнэ (RTX: ~200 с нэг зураг).
+   Зөвхөн заримыг нь: `set PLANS=F E` эсвэл `set PLANS=D` + `set STOPS=entry,hall`.
+3. Tours: run `tools/passes.py ids|top` on `<plan>_day.blend`, then repanos / retop / build_tour / mirror_tour /
+   make_plans / split_tours as in `tools/finalize.sh`.
