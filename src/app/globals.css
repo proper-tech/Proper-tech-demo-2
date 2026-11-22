@@ -3834,7 +3834,6 @@ html.js-motion .fx.rv.is-in {
   .location-steps button small {
     display: none;
   }
-}
 
   /* one row to swipe through, so the steps don't stack over the map */
   .location-steps {
@@ -3846,3 +3845,4 @@ html.js-motion .fx.rv.is-in {
   .location-steps li {
     flex: none;
   }
+}
