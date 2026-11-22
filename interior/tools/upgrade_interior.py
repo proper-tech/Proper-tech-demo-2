@@ -49,10 +49,21 @@ def thin_glass():
     tr.inputs['Color'].default_value = (0.93, 0.96, 0.97, 1)
     gl = nt.nodes.new('ShaderNodeBsdfGlossy')
     gl.inputs['Roughness'].default_value = 0.0
-    fr = nt.nodes.new('ShaderNodeFresnel')
-    fr.inputs['IOR'].default_value = 1.52
+    # A Fresnel node would see the inside of the pane as glass-to-air and turn total internal reflection
+    # (a black frame around a round view) on at steep angles: use a fixed 7 % reflection, raised at grazing
+    # angles by the facing ratio, which does not care which side the ray comes from.
+    lw = nt.nodes.new('ShaderNodeLayerWeight')
+    lw.inputs['Blend'].default_value = 0.5
+    pw = nt.nodes.new('ShaderNodeMath')
+    pw.operation = 'POWER'
+    pw.inputs[1].default_value = 4.0
+    nt.links.new(lw.outputs['Facing'], pw.inputs[0])
+    fac = nt.nodes.new('ShaderNodeMapRange')
+    fac.inputs['To Min'].default_value = 0.06
+    fac.inputs['To Max'].default_value = 0.5
+    nt.links.new(pw.outputs[0], fac.inputs['Value'])
     mix = nt.nodes.new('ShaderNodeMixShader')
-    nt.links.new(fr.outputs[0], mix.inputs[0])
+    nt.links.new(fac.outputs['Result'], mix.inputs[0])
     nt.links.new(tr.outputs[0], mix.inputs[1])
     nt.links.new(gl.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], out.inputs['Surface'])
@@ -68,14 +79,27 @@ def open_curtains():
         ax = 0 if (max(xs) - min(xs)) >= (max(ys) - min(ys)) else 1
         lo = min(v.co[ax] for v in vs); hi = max(v.co[ax] for v in vs)
         span = hi - lo
-        keep = min(0.42, 0.16 * span + 0.12)  # metres of gathered cloth at each end
+        k = o.scale[ax] or 1.0
+        keep = min(0.42, 0.16 * span * k + 0.12) / k  # gathered cloth at each end (0.42 m at most, world)
+        # gather to the ends of the curtain rod above it: a curtain drawn half way still opens fully
+        wlo, whi = bbox(o)
+        dst_lo, dst_hi = lo, hi
+        for r in bpy.data.objects:
+            if r.type != 'MESH' or not r.name.startswith('Rod'):
+                continue
+            a, b = bbox(r)
+            other = 1 - ax
+            if a[other] - 0.2 < wlo[other] and b[other] + 0.2 > whi[other] and b[ax] > wlo[ax] and a[ax] < whi[ax]:
+                dst_lo = (a[ax] + 0.05 - o.location[ax]) / k
+                dst_hi = (b[ax] - 0.05 - o.location[ax]) / k
+                break
         bm = bmesh.new()
         bm.from_mesh(o.data)
         side = {}
         for v in bm.verts:
             t = (v.co[ax] - lo) / span
             side[v.index] = t < 0.5
-            v.co[ax] = lo + t * 2 * keep if t < 0.5 else hi - (1 - t) * 2 * keep
+            v.co[ax] = dst_lo + t * 2 * keep if t < 0.5 else dst_hi - (1 - t) * 2 * keep
         # the faces that joined the two halves would now stretch across the window
         bmesh.ops.delete(bm, geom=[f for f in bm.faces if len({side[v.index] for v in f.verts}) > 1], context='FACES')
         bmesh.ops.delete(bm, geom=[e for e in bm.edges if side[e.verts[0].index] != side[e.verts[1].index]], context='EDGES')
