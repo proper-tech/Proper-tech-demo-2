@@ -10,7 +10,7 @@ $textures = @('laminate_floor_02','wood_floor','herringbone_parquet','oak_veneer
   'marble_01','floor_tiles_06','interior_tiles','white_plaster_02','plastered_wall_04','fabric_pattern_05',
   'fabric_pattern_07','velour_velvet','leather_white')
 $models = @('potted_plant_01','potted_plant_02','potted_plant_04','anthurium_botany_01','calathea_orbifolia_01',
-  'pachira_aquatica_01','decorative_book_set_01','book_encyclopedia_set_01','ceramic_vase_01','ceramic_vase_02',
+  'pachira_aquatica_01','book_encyclopedia_set_01','ceramic_vase_01','ceramic_vase_02',
   'ceramic_vase_03','ceramic_vase_04','brass_vase_01','hanging_picture_frame_01','hanging_picture_frame_02',
   'hanging_picture_frame_03','standing_picture_frame_01','throw_pillows_01','wicker_basket_01','wooden_bowl_01',
   'tea_set_01','jug_01','food_apple_01','lemon','wooden_cutting_board','wall_clock','alarm_clock_01','Ottoman_01',
