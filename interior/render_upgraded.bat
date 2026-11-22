@@ -3,6 +3,8 @@ rem Шинэчилсэн дотор талын 360 зургууд: D, F, E пл�
 rem Эхлээд interior\fetch_assets.bat-аар interior\assets-ыг татсан байх ёстой.
 rem   render_upgraded.bat            (бүгд, 128 sample)
 rem   render_upgraded.bat 64         (хурдан туршилт)
+rem   set PLANS=F E  ^&  render_upgraded.bat           (зөвхөн F, E)
+rem   set PLANS=D  ^&  set STOPS=entry,hall  ^&  render_upgraded.bat   (D-ийн хоёр цэг)
 setlocal
 cd /d "%~dp0"
 if not defined BLENDER (
@@ -18,13 +20,16 @@ if not exist assets\textures (
   pause
   exit /b 1
 )
-for %%P in (D F E) do (
+if not defined PLANS set "PLANS=D F E"
+set "SAMPLES=%~1"
+if not defined SAMPLES set "SAMPLES=128"
+for %%P in (%PLANS%) do (
   echo === %%P: upgrade ===
   "%BLENDER%" -b %%P.blend -P tools\upgrade_interior.py -- %%P day "%~dp0%%P_day.blend"
   echo === %%P: render ===
-  "%BLENDER%" -b %%P_day.blend -P render_panos.py -- %%P %*
+  "%BLENDER%" -b %%P_day.blend -P render_panos.py -- %%P %SAMPLES% %STOPS%
 )
 echo.
 echo Duussan. Zurguud interior\renders\D, F, E-d baina. Odoo ilgeene:
 echo   git add interior/renders ^&^& git commit -m "Upgraded D, F, E panoramas" ^&^& git push
-pause
+if /i not "%~2"=="nopause" pause
