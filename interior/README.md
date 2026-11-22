@@ -103,3 +103,14 @@ vases, books, bowls, kitchen things), placed by rule. The assets are not in git:
 `interior\renders\D_evening`, `F_evening`, `E_evening` (~1 h 15 min). `tools/make_all_tours.sh` then adds them to the
 tours as `D_<stop>@eve` (`tools/add_evening.py`), and the tour's **☾ Орой / ☀ Өдөр** button
 (`tools/add_mood_toggle.py`) switches between the two; it stays hidden while a tour has no evening pictures.
+
+### The real view through the windows (drone spheres)
+
+Every tour holds the window-glass mask of each of its views (`tools/add_window_masks.py`). The apartment page opens
+the tour with `?tower=B&floor=7`; the tour then reads `public/views/manifest.json`, takes the drone sphere nearest
+to that floor and shows it in the windows, turned to true north (`tools/add_window_views.py`). Until a sphere is
+added nothing changes. To add one (stitched 2:1 JPG from DJI Fly's Sphere mode, nose to the north):
+
+    python3 -I interior/tools/add_view.py . B 7 PANO_0012.jpg        # -> public/views/B-07.jpg + manifest
+
+If a view turns out rotated, give the yaw in degrees as a fifth argument (clockwise).

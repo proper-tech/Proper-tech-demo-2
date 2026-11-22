@@ -1,5 +1,6 @@
 #!/bin/sh
-# Rebuild the six apartment tours (A-F), their top views and the plan pictures from interior/renders.
+# Rebuild the six apartment tours (A-F), their top views and the plan pictures from interior/renders,
+# with the window masks for the drone's real view (add_window_masks.py, add_window_views.py).
 # Needs the passes of the upgraded scenes in <passes>/<D|E|F> (tools/passes.py ids + top on <plan>_day.blend)
 # and the palette mapping. Evening panoramas in interior/renders/<plan>_evening, when there, add the
 # Өдөр / Орой button (add_evening.py, add_mood_toggle.py).
@@ -19,12 +20,14 @@ a[:int((13.9 - N) * sy), int((12.12 - L) * sx):, 3] = 0  # north of plan D is op
 Image.fromarray(a).save(f'{P}/D/top.png')
 PY
 python3 -I $T/add_mood_toggle.py $R/interior/tours/D/index.html
+python3 -I $T/add_window_views.py $R/interior/tours/D/index.html
 python3 -I $T/repanos.py $R/interior/tours/D/index.html $R/interior/renders/D $P/D $MAP
 python3 -I $T/retop.py $R/interior/tours/D/index.html $P/D $MAP
 for U in F E; do
   python3 -I $T/build_tour.py $R/interior/tours/D/index.html $U $R/interior/renders/$U $P/$U $MAP $R/interior/tours/$U/index.html
 done
 for U in D F E; do
+  python3 -I $T/add_window_masks.py $R/interior/tours/$U/index.html $U $P/$U
   if [ -d $R/interior/renders/${U}_evening ]; then
     python3 -I $T/add_evening.py $R/interior/tours/$U/index.html $U $R/interior/renders/${U}_evening
   fi
