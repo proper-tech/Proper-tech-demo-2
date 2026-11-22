@@ -27,7 +27,7 @@ interior/renders/**/*.log
 interior/A1.blend
 
 # Poly Haven assets for the upgraded interiors (interior\fetch_assets.bat downloads them)
-interior/assets/
+interior/assets
 interior/assets.zip
 interior/*_day.blend
 interior/*_evening.blend
