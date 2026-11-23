@@ -1,5 +1,5 @@
 @echo off
-rem Дараагийн рендер: орой (22 зураг) + Цайвар, Бараан материалын багц (44 зураг) = 66 зураг, RTX дээр ~3.5-4 цаг.
+rem Дараагийн рендер: шинэ цонхтой өдөр (22) + орой (22) + Цайвар, Бараан материалын багц (44) = 88 зураг, RTX дээр ~5 цаг.
 rem Дуусахад зургуудыг interior-renders салбар руу автоматаар push хийнэ. Компьютерыг унтуулахгүй, цэнэглэгчтэй байлгана.
 setlocal
 cd /d "%~dp0"
@@ -24,6 +24,11 @@ if not exist assets\textures (
 set "PLANS=D F E"
 set "STOPS="
 
+echo ===== Day (new windows) =====
+set "MOOD=day"
+set "FINISH=warm"
+call render_upgraded.bat 128 nopause
+
 echo ===== Evening =====
 set "MOOD=evening"
 set "FINISH=warm"
@@ -43,6 +48,7 @@ cd ..
 git checkout -B interior-renders
 rem зөвхөн энэ удаагийн зургууд (бусад хавтас, хуучин файлууд орохгүй)
 set "N=0"
+for %%P in (D F E) do if exist "interior\renders\%%P\*.jpg" (git add "interior/renders/%%P" & set /a N+=1)
 for %%P in (D F E) do for %%K in (evening light dark) do if exist "interior\renders\%%P_%%K\*.jpg" (git add "interior/renders/%%P_%%K" & set /a N+=1)
 if "%N%"=="0" (
   echo.
@@ -50,7 +56,7 @@ if "%N%"=="0" (
   pause
   exit /b 1
 )
-git commit -m "Evening and finish-package panoramas (D, F, E)"
+git commit -m "Day (new windows), evening and finish-package panoramas (D, F, E)"
 git push -u origin interior-renders --force
 echo.
 echo Duussan. Claude-d "duussan" gej bichne uu.
