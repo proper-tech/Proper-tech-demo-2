@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
-import { BackSide, Euler, MathUtils, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
+import { BackSide, Euler, MathUtils, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
 import type { Finish, Layout } from '@/data/types';
 import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
@@ -11,6 +11,7 @@ import { SafeCanvas } from './SafeCanvas';
 import { photoModels } from '@/data/photoModels';
 import { photoRoomCentre } from './PhotoApartment';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
+import { FLIGHT_IN, FLIGHT_OUT, TOUR_EYE, easeInOut, easeOut, type Flight } from './flight';
 
 export type SceneMode = 'model' | 'tour';
 
@@ -28,6 +29,12 @@ interface Props {
   layer: LabelLayer;
   /** A room was picked in the 3D model. */
   onSelectRoom: (id: string) => void;
+  /** Fly the camera into a tour stop or back out to the model view (see ApartmentExperience). */
+  flight?: Flight | null;
+  /** Each frame of a flight: progress 0..1, and true once it has landed. */
+  onFlight?: (id: number, progress: number) => void;
+  /** Where the camera is now, for the heading of a flight in. */
+  cameraRef?: { current: PerspectiveCamera | null };
 }
 
 export function Lights() {
@@ -41,21 +48,26 @@ export function Lights() {
   );
 }
 
-/** Outside view: orbit around the open model. */
-function OrbitRig({ layout }: { layout: Layout }) {
-  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+/** The model view: from the south, so the model reads the same way as the north-up 2D plan. */
+function useOrbitPose(layout: Layout) {
   const cx = layout.w / 2;
   const cz = layout.d / 2;
   // Step back on narrow (phone) screens so the whole apartment stays in view.
   const narrow = useThree((s) => s.size.width / s.size.height < 0.9);
   const dist = Math.max(layout.w, layout.d * 1.4) * (narrow ? 1.4 : 1);
+  return { cx, cz, dist, position: [cx + dist * 0.25, dist * 1.3, cz + dist * 1.25] as const };
+}
 
-  // from the south, so the model reads the same way as the north-up 2D plan
+/** Outside view: orbit around the open model. */
+function OrbitRig({ layout }: { layout: Layout }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const { cx, cz, dist, position } = useOrbitPose(layout);
+
   useEffect(() => {
-    camera.position.set(cx + dist * 0.25, dist * 1.3, cz + dist * 1.25);
+    camera.position.set(...position);
     camera.fov = 40;
     camera.updateProjectionMatrix();
-  }, [camera, cx, cz, dist]);
+  }, [camera, cx, cz, dist]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <OrbitControls
@@ -68,6 +80,83 @@ function OrbitRig({ layout }: { layout: Layout }) {
       maxPolarAngle={Math.PI / 2.2}
     />
   );
+}
+
+/**
+ * A flight in: from wherever the orbit left the camera, it swoops down over the room and lands at the tour stop's
+ * eye, facing the way it flew, at the tour's tilt and field of view; the page fades the 360° picture in on the way.
+ * A flight out: from the stop, looking as the tour was left, back up to the model view.
+ */
+function FlightRig({ layout, flight, onFlight }: { layout: Layout; flight: Flight; onFlight?: (id: number, p: number) => void }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const orbit = useOrbitPose(layout);
+  const tmp = useMemo(() => ({ m: new Matrix4(), up: new Vector3(0, 1, 0), look: new Vector3(), q: new Quaternion(), aim: new Quaternion() }), []);
+  /** the rotation of a camera at `from` looking at `to` (cameras look down their -z) */
+  const aim = (from: Vector3, to: Vector3) => tmp.aim.setFromRotationMatrix(tmp.m.lookAt(from, to, tmp.up));
+  const plan = useRef<{
+    p0: Vector3; c: Vector3; p1: Vector3; q0: Quaternion; q1: Quaternion; f0: number; f1: number;
+    /** what the camera looks at: the stop on the floor, and straight ahead from the stop */
+    near: Vector3; ahead: Vector3; centre: Vector3; start: number;
+  } | null>(null);
+  useEffect(() => {
+    const eye = new Vector3(flight.eye[0], TOUR_EYE, flight.eye[1]);
+    const view = new Quaternion().setFromEuler(new Euler(MathUtils.degToRad(flight.pitch), flight.yaw, 0, 'YXZ'));
+    const fwd = new Vector3(-Math.sin(flight.yaw), 0, -Math.cos(flight.yaw));
+    const ahead = eye.clone().addScaledVector(fwd, 4).add(new Vector3(0, 4 * Math.tan(MathUtils.degToRad(flight.pitch)), 0));
+    const near = new Vector3(flight.eye[0], 0.4, flight.eye[1]).addScaledVector(fwd, 1.2);
+    const centre = new Vector3(orbit.cx, 0.6, orbit.cz);
+    // come in from behind and above the stop, along the way the camera will face
+    const c = eye.clone().addScaledVector(fwd, -2.4).add(new Vector3(0, 2.8, 0));
+    if (flight.dir === 'in') {
+      plan.current = { p0: camera.position.clone(), c, p1: eye, q0: camera.quaternion.clone(), q1: view, f0: camera.fov, f1: flight.fov, near, ahead, centre, start: -1 };
+    } else {
+      camera.position.copy(eye);
+      camera.quaternion.copy(view);
+      camera.fov = flight.fov;
+      camera.updateProjectionMatrix();
+      const p1 = new Vector3(...orbit.position);
+      plan.current = { p0: eye, c, p1, q0: view, q1: aim(p1, centre).clone(), f0: flight.fov, f1: 40, near, ahead, centre, start: -1 };
+    }
+  }, [flight.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useFrame(({ clock }) => {
+    const f = plan.current;
+    if (!f) return;
+    const now = clock.getElapsedTime();
+    if (f.start < 0) f.start = now;
+    const dur = flight.dir === 'in' ? FLIGHT_IN : FLIGHT_OUT;
+    const raw = Math.min(1, (now - f.start) / dur);
+    // the way out waits a moment for the 360° picture to fade
+    const t = flight.dir === 'out' ? Math.max(0, (raw - 0.18) / 0.82) : raw;
+    const k = easeInOut(t);
+    const u = 1 - k;
+    camera.position.set(0, 0, 0).addScaledVector(f.p0, u * u).addScaledVector(f.c, 2 * u * k).addScaledVector(f.p1, k * k);
+    if (flight.dir === 'in') {
+      // keep the room in view on the way down, then level out to the tour's first view
+      tmp.look.lerpVectors(f.near, f.ahead, MathUtils.smoothstep(t, 0.45, 0.95));
+      tmp.q.slerpQuaternions(f.q0, aim(camera.position, tmp.look), easeOut(Math.min(1, t / 0.3)));
+      if (t > 0.97) tmp.q.slerp(f.q1, (t - 0.97) / 0.03);
+    } else {
+      tmp.look.lerpVectors(f.ahead, f.centre, MathUtils.smoothstep(t, 0.0, 0.6));
+      tmp.q.copy(aim(camera.position, tmp.look));
+      if (t < 0.05) tmp.q.slerpQuaternions(f.q0, tmp.aim, t / 0.05);
+      if (t > 0.8) tmp.q.slerp(f.q1, (t - 0.8) / 0.2);
+    }
+    camera.quaternion.copy(tmp.q);
+    camera.fov = MathUtils.lerp(f.f0, f.f1, k);
+    camera.updateProjectionMatrix();
+    onFlight?.(flight.id, raw);
+  });
+  return null;
+}
+
+/** Hands the scene's camera to the page. */
+function CameraTap({ cameraRef }: { cameraRef: { current: PerspectiveCamera | null } }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera, cameraRef]);
+  return null;
 }
 
 const EYE_HEIGHT = 1.6;
@@ -168,7 +257,7 @@ function Panorama({ url, eye }: { url: string; eye: [number, number] }) {
   );
 }
 
-export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom }: Props) {
+export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom, flight, onFlight, cameraRef }: Props) {
   const room = layout.rooms.find((r) => r.id === roomId) ?? layout.rooms[0];
   const eye = useMemo(() => roomEye(room), [room]);
   const links = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
@@ -203,7 +292,7 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
 
   return (
     <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 40, near: 0.05, far: 300, position: [layout.w / 2, 14, layout.d + 12] }}>
-      <color attach="background" args={[mode === 'tour' ? '#D3E3F3' : '#E9EDF0']} />
+      <color attach="background" args={[mode === 'tour' && !flight ? '#D3E3F3' : '#E9EDF0']} />
       <Lights />
 
       <group visible={!photo}>
@@ -220,7 +309,10 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
         </Suspense>
       )}
 
-      {mode === 'model' ? (
+      {cameraRef && <CameraTap cameraRef={cameraRef} />}
+      {flight ? (
+        <FlightRig layout={layout} flight={flight} onFlight={onFlight} />
+      ) : mode === 'model' ? (
         <>
           <OrbitRig layout={layout} />
           {base && (

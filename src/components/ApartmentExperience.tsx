@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { availableUnits } from '@/data/building';
@@ -13,6 +13,19 @@ import { doorLinks, hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib
 import { ApartmentPlan } from './Plan2D';
 import { fitTourFrame } from './tourFrame';
 import type { RoomLabel } from './three/ApartmentScene';
+import { tourStops } from '@/data/tourStops';
+import { sceneYaw, stopLocal, tourView, type Flight } from './three/flight';
+import type { PerspectiveCamera } from 'three';
+
+/** What the tour page offers its parent (interior/tools/add_tour_bridge.py). */
+interface TourBridge {
+  go: (room: string, yaw?: number, pitch?: number, fov?: number) => void;
+  state: () => { room: string; yaw: number; pitch: number; fov: number };
+  heading: (room: string) => number;
+  shown: ((room: string, quality: number) => void) | null;
+}
+const bridgeOf = (frame: HTMLIFrameElement | null) =>
+  ((frame?.contentWindow as (Window & { sebotseTour?: TourBridge }) | null)?.sebotseTour ?? null);
 
 const ApartmentScene = dynamic(() => import('./three/ApartmentScene'), {
   ssr: false,
@@ -58,7 +71,110 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
   const next = availableUnits[(index + 1) % availableUnits.length];
   const suffix = mode === 'tour' ? '?view=tour' : '';
   // Plan D has a rendered 360° tour (public/tour, a self-contained file); it replaces the 3D tour.
+  const hasPhotoTour = PHOTO_TOURS.includes(layout.plan) && Boolean(tourStops[layout.plan]);
   const photoTour = mode === 'tour' && PHOTO_TOURS.includes(layout.plan);
+
+  // ---- flights between the 3D model and the 360° tour
+  // The tour waits in its (hidden) frame from the first moment the visitor shows interest, so a flight in never waits.
+  const frame = useRef<HTMLIFrameElement>(null);
+  const cameraRef = useRef<PerspectiveCamera | null>(null);
+  const [frameWanted, setFrameWanted] = useState(false);
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const [tourShown, setTourShown] = useState(false);
+  const shownStop = useRef<string | null>(null);
+  const wantedStop = useRef<string | null>(null);
+  const progress = useRef(0);
+  const nextId = useRef(1);
+  useEffect(() => {
+    if (!hasPhotoTour) return;
+    const id = window.setTimeout(() => setFrameWanted(true), 2500);
+    return () => window.clearTimeout(id);
+  }, [hasPhotoTour]);
+  const hookBridge = useCallback(() => {
+    const bridge = bridgeOf(frame.current);
+    if (!bridge) return;
+    bridge.shown = (stop) => {
+      shownStop.current = stop;
+      if (stop === wantedStop.current && progress.current >= 0.6) setTourShown(true);
+    };
+  }, []);
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /** Fly into a room and fade its 360° picture in at the same place and heading. */
+  const dive = (id: string) => {
+    const roomKey = layout.rooms.find((r) => r.id === id)?.partOf ?? id;
+    setRoomId(roomKey);
+    const stops = tourStops[layout.plan];
+    const stop = stops?.rooms[roomKey] ?? 'living';
+    const bridge = bridgeOf(frame.current);
+    const camera = cameraRef.current;
+    if (!stops || !bridge || !camera || reduced() || mode !== 'model') {
+      setFrameWanted(true);
+      // already in the tour (or no motion wanted): just change room, the tour fades by itself
+      if (bridge && bridge.state().room !== stop) bridge.go(stop);
+      setMode('tour');
+      return;
+    }
+    const eye = stopLocal(layout, stops.stops[stop]);
+    // land facing the room's best view (the heading the tour opens it with); the flight comes in from behind it
+    const heading = bridge.heading(stop);
+    const yaw = sceneYaw(heading);
+    const view = tourView(stop);
+    wantedStop.current = stop;
+    shownStop.current = null;
+    progress.current = 0;
+    setTourShown(false);
+    bridge.go(stop, heading, view.pitch, view.fov);
+    setFlight({ id: nextId.current++, dir: 'in', eye, yaw, pitch: view.pitch, fov: view.fov });
+  };
+
+  /** Leave the tour: fly back out from where the tour was left. */
+  const surface = (to: Mode) => {
+    const bridge = bridgeOf(frame.current);
+    const stops = tourStops[layout.plan];
+    if (to !== 'model' || !bridge || !stops || reduced()) {
+      setMode(to);
+      return;
+    }
+    const state = bridge.state();
+    const at = stops.stops[state.room] ?? stops.stops.living;
+    progress.current = 0;
+    setTourShown(false);
+    setFlight({ id: nextId.current++, dir: 'out', eye: stopLocal(layout, at), yaw: sceneYaw(state.yaw), pitch: state.pitch, fov: state.fov });
+  };
+
+  const onFlight = useCallback(
+    (id: number, p: number) => {
+      progress.current = p;
+      if (!flight || id !== flight.id) return;
+      if (flight.dir === 'in') {
+        if (p >= 0.6 && shownStop.current === wantedStop.current) setTourShown(true);
+        if (p >= 1 && shownStop.current === wantedStop.current) {
+          setMode('tour');
+          setFlight(null);
+        }
+      } else if (p >= 1) {
+        setMode('model');
+        setFlight(null);
+      }
+    },
+    [flight],
+  );
+  // a flight in that landed before the picture was ready finishes when it is
+  useEffect(() => {
+    if (flight?.dir === 'in' && tourShown && progress.current >= 1) {
+      setMode('tour');
+      setFlight(null);
+    }
+  }, [flight, tourShown]);
+
+  const pickMode = (id: Mode) => {
+    if (id === mode || flight) return;
+    if (id === 'tour' && hasPhotoTour && mode === 'model') return dive(room.id);
+    if (mode === 'tour' && hasPhotoTour) return surface(id);
+    setMode(id);
+  };
+  const frameVisible = (photoTour && !flight) || (flight?.dir === 'in' && tourShown);
   const modes: [Mode, string][] = [
     ['model', t.apt.modeModel],
     ['plan', t.apt.modePlan],
@@ -67,16 +183,19 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
 
   return (
     <div className="apt">
-      <section className="apt-stage">
+      <section className="apt-stage" onPointerEnter={() => hasPhotoTour && setFrameWanted(true)}>
         {/* The canvas stays mounted while the 2D plan is shown, so switching back is instant. */}
-        <div className={mode === 'plan' || photoTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
+        <div className={mode === 'plan' || (photoTour && !flight) ? 'stage-canvas is-hidden' : flight ? 'stage-canvas is-flying' : 'stage-canvas'}>
           <ApartmentScene
             layout={layout}
             finish={finish}
             mode={mode === 'tour' ? 'tour' : 'model'}
             roomId={room.id}
             layer={layer}
-            onSelectRoom={selectRoom}
+            onSelectRoom={hasPhotoTour ? dive : selectRoom}
+            flight={flight}
+            onFlight={onFlight}
+            cameraRef={cameraRef}
           />
           <div className="label-layer" ref={layer}>
             {mode === 'tour'
@@ -93,14 +212,20 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
                 ))}
           </div>
         </div>
-        {photoTour && (
+        {hasPhotoTour && (frameWanted || photoTour || flight) && (
           <iframe
-            className="apt-tour-frame"
+            ref={frame}
+            className={`apt-tour-frame${frameVisible ? ' is-shown' : ' is-waiting'}${flight?.dir === 'in' ? ' is-stepping-in' : ''}`}
             // tower and floor pick the drone's real view through the windows (public/views/manifest.json)
             src={`/tour/${layout.plan}/index.html?tower=${unit.tower}&floor=${unit.floor}`}
             title={t.apt.modeTour}
             allow="fullscreen"
-            onLoad={(e) => fitTourFrame(e.currentTarget)}
+            aria-hidden={!frameVisible}
+            tabIndex={frameVisible ? 0 : -1}
+            onLoad={(e) => {
+              fitTourFrame(e.currentTarget);
+              hookBridge();
+            }}
           />
         )}
         {mode === 'plan' && (
@@ -121,7 +246,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </p>
           <div className="segmented" role="group">
             {modes.map(([id, label]) => (
-              <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)}>
+              <button key={id} type="button" aria-pressed={mode === id} onClick={() => pickMode(id)}>
                 {label}
               </button>
             ))}
@@ -144,7 +269,9 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             </div>
           </div>
         )}
-        {mode !== 'plan' && !photoTour && <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}</p>}
+        {mode !== 'plan' && !photoTour && !flight && (
+          <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : hasPhotoTour ? t.apt.hintModelDive : t.apt.hintModel}</p>
+        )}
       </section>
 
       <aside className="apt-panel">
@@ -163,7 +290,11 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               {rooms.map((r) => (
                 <tr key={r.id} className={r.id === room.id ? 'is-selected' : undefined}>
                   <th scope="row">
-                    <button type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
+                    <button
+                      type="button"
+                      aria-pressed={r.id === room.id}
+                      onClick={() => (mode === 'tour' && hasPhotoTour && !flight ? dive(r.id) : setRoomId(r.id))}
+                    >
                       {labels[r.id].name}
                     </button>
                   </th>
@@ -183,7 +314,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             </tfoot>
           </table>
           {mode !== 'tour' && (
-            <button type="button" className="button" onClick={() => setMode('tour')}>
+            <button type="button" className="button" onClick={() => pickMode('tour')}>
               {fmt(t.apt.openTour, { room: labels[room.id].name })}
             </button>
           )}
