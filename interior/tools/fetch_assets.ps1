@@ -3,7 +3,9 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$root = Join-Path (Get-Location) 'interior\assets'
+# next to this script (interior\tools\..\assets), whichever folder it is started from
+$interior = Split-Path -Parent $PSScriptRoot
+$root = Join-Path $interior 'assets'
 $ua = @{ 'User-Agent' = 'sebotse-interior-fetch/1.0' }
 
 $textures = @('laminate_floor_02','wood_floor','herringbone_parquet','oak_veneer_01','kitchen_wood','dark_wood',
@@ -53,7 +55,7 @@ foreach ($id in $hdris) {
   Get-File $f.hdri.'4k'.hdr.url (Join-Path $root "hdri\$($id)_4k.hdr")
 }
 
-$zip = Join-Path (Get-Location) 'interior\assets.zip'
+$zip = Join-Path $interior 'assets.zip'
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path "$root\*" -DestinationPath $zip -CompressionLevel Fastest
 $mb = [math]::Round((Get-Item $zip).Length / 1MB)

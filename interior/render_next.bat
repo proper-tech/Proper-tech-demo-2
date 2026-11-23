@@ -15,6 +15,12 @@ if not exist "%BLENDER%" (
 )
 echo Blender: %BLENDER%
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\fetch_assets.ps1
+if not exist assets\textures (
+  echo.
+  echo interior\assets tatagdsangui. Internet holboltoo shalgaad dahin ajilluulna uu.
+  pause
+  exit /b 1
+)
 set "PLANS=D F E"
 set "STOPS="
 
