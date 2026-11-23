@@ -242,5 +242,10 @@ if os.path.isdir(assets):
     import upgrade_dress
     upgrade_dress.run(plan, mood, assets)
 
+# real windows: frames, sashes, handles, beads, gaskets (no assets needed)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import upgrade_windows
+upgrade_windows.run()
+
 bpy.ops.wm.save_as_mainfile(filepath=out_path, compress=True)
 print('saved', out_path)
