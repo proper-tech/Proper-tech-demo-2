@@ -3853,3 +3853,55 @@ html.js-motion .fx.rv.is-in {
     flex: none;
   }
 }
+
+/* the complex rising on the map (LocationMap, map/complexLayer.ts) */
+.location-build {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.55rem 1rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgb(20 35 59 / 0.86);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  animation: location-build-in 0.5s ease both;
+  pointer-events: none;
+}
+.location-build i {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #f2b632;
+}
+.location-build.is-rising i {
+  animation: location-build-dot 0.9s ease-in-out infinite alternate;
+}
+@keyframes location-build-in {
+  from { opacity: 0; transform: translate(-50%, -0.5rem); }
+}
+@keyframes location-build-dot {
+  to { opacity: 0.25; transform: scale(0.6); }
+}
+/* handing over to the 3D building: the map fades to the page */
+.location-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: var(--board, #f4f1ea);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+.location-map.is-leaving::after {
+  opacity: 1;
+}

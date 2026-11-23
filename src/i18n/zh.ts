@@ -37,6 +37,8 @@ const zh: Dict = {
     replay: '再看一遍',
     playing: '飞行中…',
     to3d: '查看3D楼盘',
+    rising: 'Sebotse 正在建造…',
+    standing: 'Sebotse · 两栋塔楼，16 层',
   },
   explore: {
     heading: '走进去看看',

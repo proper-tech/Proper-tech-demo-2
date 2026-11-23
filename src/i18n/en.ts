@@ -35,6 +35,8 @@ const en = {
     replay: 'Play the flight again',
     playing: 'Flying…',
     to3d: 'See the building in 3D',
+    rising: 'Sebotse going up…',
+    standing: 'Sebotse · 2 towers, 16 floors',
   },
   explore: {
     heading: 'Step inside',

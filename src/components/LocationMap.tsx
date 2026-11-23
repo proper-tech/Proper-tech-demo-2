@@ -7,11 +7,14 @@ import { landmarks, sebotse, type LandmarkId } from '@/data/landmarks';
 import { distance } from '@/lib/geo';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
+import type { ComplexLayer } from '@/components/map/complexLayer';
 
 // Where the complex is, as a flight over the city map: Ulaanbaatar from above, then Chinggis
 // (Sükhbaatar) Square and the Embassy of China lit up in turn, then down onto the complex, drawn in 3D
-// in amber among the city's buildings. Plays once when it comes into view; the steps can be picked
-// again by hand. The map is OpenFreeMap's (OpenStreetMap data, no key); if it can't be reached, a
+// in amber among the city's buildings. There the amber blocks give way to the empty plot and the
+// complex's own model rises storey by storey (map/complexLayer.ts); once it stands, the first play
+// hands over to the 3D building further down the page. Plays once when it comes into view; the steps
+// can be picked again by hand. The map is OpenFreeMap's (OpenStreetMap data, no key); if it can't be reached, a
 // plain map with only the complex and the places stands in.
 
 const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
@@ -35,6 +38,9 @@ const RING: Record<LandmarkId | 'sebotse', number> = { square: 170, embassy: 90,
 const isPlace = (id: StepId): id is LandmarkId => id in landmarks;
 const FLY = 3800;
 const HOLD = 2600;
+/** How long the complex takes to rise, and the pause before the page moves on to the 3D building. */
+const BUILD = 8000;
+const STAND = 1600;
 
 /** A plain map for when the tiles can't be reached: a ground, and our own layers on it. */
 const FALLBACK: StyleSpecification = {
@@ -57,7 +63,10 @@ export function LocationMap() {
   const [step, setStep] = useState<StepId>('city');
   const [playing, setPlaying] = useState(false);
   const [near, setNear] = useState(false);
+  const [building, setBuilding] = useState<'no' | 'rising' | 'done'>('no');
+  const [leaving, setLeaving] = useState(false);
   const run = useRef(0);
+  const complex = useRef<ComplexLayer | null>(null);
 
   const km = (to: [number, number]) => {
     const d = distance(sebotse.centre, to);
@@ -214,6 +223,38 @@ export function LocationMap() {
         };
         for (const id of PLACES) tag(id, landmarks[id]);
         tag('sebotse', sebotse.centre);
+
+        // the map's own buildings on our plot (the old ones) go, so the plot is empty for the complex
+        const lons = sebotse.blocks.flatMap((b) => b.ring.map((p) => p[0]));
+        const lats = sebotse.blocks.flatMap((b) => b.ring.map((p) => p[1]));
+        const pad = 0.00012;
+        const plot = {
+          type: 'Polygon' as const,
+          coordinates: [[
+            [Math.min(...lons) - pad, Math.min(...lats) - pad], [Math.max(...lons) + pad, Math.min(...lats) - pad],
+            [Math.max(...lons) + pad, Math.max(...lats) + pad], [Math.min(...lons) - pad, Math.max(...lats) + pad],
+            [Math.min(...lons) - pad, Math.min(...lats) - pad],
+          ]],
+        };
+        for (const layer of m.getStyle().layers ?? []) {
+          if (layer.id.startsWith('sebotse') || !('source-layer' in layer) || layer['source-layer'] !== 'building') continue;
+          const old = m.getFilter(layer.id);
+          const notOurs = ['!', ['within', plot]];
+          m.setFilter(layer.id, (old ? ['all', old, notOurs] : notOurs) as never);
+        }
+        // the complex's own model, hidden until it is built (or already built before a style change)
+        void import('@/components/map/complexLayer').then(({ complexLayer }) => {
+          if (cancelled || m.getLayer('sebotse-model')) return;
+          const c = complexLayer(m, maplibre);
+          complex.current = c;
+          m.addLayer(c.layer);
+          void c.ready.then((ok) => {
+            if (ok && m.getContainer().dataset.built === '1') {
+              c.show(true);
+              if (m.getLayer('sebotse-3d')) m.setLayoutProperty('sebotse-3d', 'visibility', 'none');
+            }
+          });
+        });
       };
       m.on('style.load', addOwn);
       m.on('load', addOwn);
@@ -244,6 +285,21 @@ export function LocationMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [near, locale]);
 
+  /** At the complex: the amber blocks give way to the empty plot and the model rises; resolves when it stands. */
+  const raise = async (me: number) => {
+    const m = map.current;
+    const c = complex.current;
+    if (!m || !c || !(await c.ready) || run.current !== me) return false;
+    if (m.getLayer('sebotse-3d')) m.setLayoutProperty('sebotse-3d', 'visibility', 'none');
+    setBuilding('rising');
+    // a slow turn round the plot while it goes up
+    m.easeTo({ bearing: m.getBearing() + 70, pitch: 64, duration: BUILD + 600, easing: (k) => k, essential: true });
+    await c.build(BUILD);
+    m.getContainer().dataset.built = '1';
+    setBuilding('done');
+    return run.current === me;
+  };
+
   /** Fly to a step; the lines to the complex show from the square on. */
   const go = (id: StepId) => {
     const m = map.current;
@@ -259,14 +315,31 @@ export function LocationMap() {
     }
   };
 
-  /** The whole flight: city, square, embassy, complex. */
-  const play = async () => {
+  /** The whole flight: city, the places, the complex rising; the first time, then on to the 3D building. */
+  const play = async (first = false) => {
     const me = ++run.current;
     setPlaying(true);
+    setLeaving(false);
     for (const s of STEPS) {
       if (run.current !== me) return;
       go(s.id);
-      await new Promise((r) => setTimeout(r, FLY + HOLD));
+      if (s.id !== 'sebotse') {
+        await new Promise((r) => setTimeout(r, FLY + HOLD));
+        continue;
+      }
+      await new Promise((r) => setTimeout(r, FLY + 300));
+      const stands = await raise(me);
+      if (!stands) break;
+      await new Promise((r) => setTimeout(r, STAND));
+      // the first play hands over to the 3D building, if the map is still what is being watched
+      const rect = box.current?.getBoundingClientRect();
+      const watched = rect && rect.top < innerHeight * 0.5 && rect.bottom > innerHeight * 0.5;
+      if (first && run.current === me && watched) {
+        setLeaving(true);
+        await new Promise((r) => setTimeout(r, 700));
+        document.getElementById('floors')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => setLeaving(false), 1600);
+      }
     }
     if (run.current === me) setPlaying(false);
   };
@@ -284,7 +357,7 @@ export function LocationMap() {
         const start = () => {
           if (started) return;
           started = true;
-          void play();
+          void play(true);
         };
         if (m?.getSource('sebotse')) start();
         else {
@@ -305,8 +378,14 @@ export function LocationMap() {
   }, [near]);
 
   return (
-    <div className="location-map" ref={box}>
+    <div className={`location-map${leaving ? ' is-leaving' : ''}`} ref={box}>
       <div className="location-canvas" ref={el} />
+      {building !== 'no' && (
+        <p className={`location-build is-${building}`} aria-live="polite">
+          <i aria-hidden="true" />
+          {building === 'rising' ? t.location.rising : t.location.standing}
+        </p>
+      )}
       <ol className="location-steps">
         {STEPS.map((s, i) => (
           <li key={s.id}>
@@ -314,9 +393,10 @@ export function LocationMap() {
               type="button"
               aria-pressed={step === s.id}
               onClick={() => {
-                run.current++;
+                const me = ++run.current;
                 setPlaying(false);
                 go(s.id);
+                if (s.id === 'sebotse') setTimeout(() => void raise(me), FLY + 300);
               }}
             >
               <i>{i + 1}</i>
