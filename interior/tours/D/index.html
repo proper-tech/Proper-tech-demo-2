@@ -4784,6 +4784,7 @@ function loadTourRoom(room) {
       tourElement('panoFade').classList.remove('on');
       setTourStatus('');
       tourElement('pano').dataset.quality = quality === 2 ? 'full' : 'preview';
+      if (window.sebotseTour && window.sebotseTour.shown) window.sebotseTour.shown(room, quality);
       trimTourTextureCache();
     }).catch(() => {
       if (!interiorTour.active || requestId !== interiorTour.requestId) return;
@@ -4913,6 +4914,22 @@ function refreshTourRoomUI(room) {
   }
 }
 
+// BEGIN SITE BRIDGE
+window.sebotseTour = {
+  shown: null,
+  go(room, yaw, pitch, fov) {
+    interiorTour.pendingView = { pitch, fov };
+    changeTourRoom(room, yaw);
+  },
+  state() {
+    return { room: interiorTour.room, yaw: interiorTour.yaw, pitch: interiorTour.pitch, fov: interiorTour.camera ? interiorTour.camera.fov : 72 };
+  },
+  // the heading the tour itself opens a room with (its best view)
+  heading(room) {
+    return room === 'bath_d5' ? 80 : Mx[`D_${room}`] ?? 0;
+  },
+};
+// END SITE BRIDGE
 function changeTourRoom(room, heading) {
   if (!interiorTour.active || !tourRoomNames[room]) return;
   clearTimeout(interiorTour.transitionTimer);
@@ -4926,6 +4943,12 @@ function changeTourRoom(room, heading) {
     interiorTour.yaw = heading ?? (room === 'bath_d5' ? 80 : Mx[`D_${room}`] ?? 0);
     interiorTour.pitch = room === 'bath_d5' ? -32 : room === 'hall' ? -12 : room.startsWith('bath_') ? -14 : room === 'balcony' ? -28 : -3;
     if (interiorTour.camera) { interiorTour.camera.fov = room === 'bath_d5' ? 86 : room === 'hall' || room === 'balcony' ? 90 : 72; interiorTour.camera.updateProjectionMatrix(); }
+    if (interiorTour.pendingView) {
+      const view = interiorTour.pendingView;
+      interiorTour.pendingView = null;
+      if (view.pitch != null) interiorTour.pitch = view.pitch;
+      if (view.fov && interiorTour.camera) { interiorTour.camera.fov = view.fov; interiorTour.camera.updateProjectionMatrix(); }
+    }
     interiorTour.pointers.clear();
     interiorTour.gesture = null;
     refreshTourRoomUI(room);

@@ -22,6 +22,7 @@ PY
 python3 -I $T/add_mood_toggle.py $R/interior/tours/D/index.html
 python3 -I $T/add_window_views.py $R/interior/tours/D/index.html
 python3 -I $T/add_finish_toggle.py $R/interior/tours/D/index.html
+python3 -I $T/add_tour_bridge.py $R/interior/tours/D/index.html
 python3 -I $T/repanos.py $R/interior/tours/D/index.html $R/interior/renders/D $P/D $MAP
 python3 -I $T/retop.py $R/interior/tours/D/index.html $P/D $MAP
 for U in F E; do
@@ -43,4 +44,5 @@ python3 -I $T/mirror_tour.py $R/interior/tours/F/index.html $R/interior/tours/A/
 python3 -I $T/mirror_tour.py $R/interior/tours/E/index.html $R/interior/tours/B/index.html E B
 python3 -I $T/make_plans.py $R /tmp/plans.json
 python3 -I $T/split_tours.py $R A B C D E F
+python3 -I $T/make_tour_stops.py $R
 echo TOURS_DONE
