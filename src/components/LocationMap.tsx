@@ -83,6 +83,8 @@ export function LocationMap() {
     (async () => {
       const maplibre = await import('maplibre-gl');
       if (cancelled || !el.current) return;
+      // the worker file is copied to public/ (scripts/copy-maplibre-worker.mjs); the bundle loses its own copy
+      maplibre.setWorkerUrl('/maplibre-gl-worker.mjs');
       const m = new maplibre.Map({
         container: el.current,
         style: STYLE,
