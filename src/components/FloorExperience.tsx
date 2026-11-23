@@ -10,6 +10,7 @@ import { ROOF_FLOOR } from '@/data/roof';
 import type { Layout, PlanId, TowerId } from '@/data/types';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
+import { APT_POSTER_KEY } from '@/lib/arrive';
 import { layoutArea, m } from '@/lib/geometry';
 import { PlanGroup, type PlanTx } from './Plan2D';
 import { photoModels } from '@/data/photoModels';
@@ -120,7 +121,32 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   // so it is listed there under that number instead of leaving a gap
   const hoa = core.some((c) => c.id === 'hoa') ? `${tower}${floor}02` : null;
   const layer = useRef<HTMLDivElement>(null);
-  const open = (id: string) => router.push(`/${locale}/apartments/${id}`);
+  // a picked apartment: the rest of the floor sinks away and the camera flies to the apartment page's first view,
+  // whose last frame then covers that page until its own 3D view has drawn (APT_POSTER_KEY)
+  const [zoomTo, setZoomTo] = useState<string | null>(null);
+  const open = (id: string) => {
+    const href = `/${locale}/apartments/${id}`;
+    if (zoomTo) return;
+    if (view !== '3d' || !drawn || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      router.push(href);
+      return;
+    }
+    router.prefetch(href);
+    setHovered(null);
+    setZoomTo(id);
+  };
+  const zoomed = useCallback(
+    (poster: string | null) => {
+      if (!zoomTo) return;
+      try {
+        if (poster) sessionStorage.setItem(APT_POSTER_KEY, JSON.stringify({ id: zoomTo, img: poster, at: Date.now() }));
+      } catch {
+        // storage full or blocked: the apartment page opens without the hand-over picture
+      }
+      router.push(`/${locale}/apartments/${zoomTo}`);
+    },
+    [zoomTo, locale, router],
+  );
 
   const tags = useMemo(() => {
     const out: Record<string, { title: string; detail: string }> = {};
@@ -138,7 +164,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
     <div className="floor">
       <section className="floor-stage">
         <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} onReady={ready} />
+          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} onReady={ready} zoomTo={zoomTo} onZoomed={zoomed} />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
               <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>

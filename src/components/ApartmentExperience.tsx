@@ -14,6 +14,7 @@ import { ApartmentPlan } from './Plan2D';
 import { fitTourFrame } from './tourFrame';
 import type { RoomLabel } from './three/ApartmentScene';
 import { tourStops } from '@/data/tourStops';
+import { APT_POSTER_KEY } from '@/lib/arrive';
 import { sceneYaw, stopLocal, tourView, type Flight } from './three/flight';
 import type { PerspectiveCamera } from 'three';
 
@@ -175,6 +176,21 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     setMode(id);
   };
   const frameVisible = (photoTour && !flight) || (flight?.dir === 'in' && tourShown);
+
+  // Arriving from the floor page: its last frame (the same view as this page's first) covers the stage until the
+  // 3D view has drawn, then fades.
+  const [poster, setPoster] = useState<string | null>(null);
+  const [sceneReady, setSceneReady] = useState(false);
+  const onSceneReady = useCallback(() => setSceneReady(true), []);
+  useEffect(() => {
+    try {
+      const p = JSON.parse(sessionStorage.getItem(APT_POSTER_KEY) ?? 'null') as { id: string; img: string; at: number } | null;
+      sessionStorage.removeItem(APT_POSTER_KEY);
+      if (p && p.id === unit.id && Date.now() - p.at < 10000 && !new URLSearchParams(window.location.search).get('view')) setPoster(p.img);
+    } catch {
+      // no storage: no hand-over picture
+    }
+  }, [unit.id]);
   const modes: [Mode, string][] = [
     ['model', t.apt.modeModel],
     ['plan', t.apt.modePlan],
@@ -196,6 +212,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             flight={flight}
             onFlight={onFlight}
             cameraRef={cameraRef}
+            onReady={onSceneReady}
           />
           <div className="label-layer" ref={layer}>
             {mode === 'tour'
@@ -212,6 +229,10 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
                 ))}
           </div>
         </div>
+        {poster && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className={`apt-poster${sceneReady ? ' is-gone' : ''}`} src={poster} alt="" aria-hidden onTransitionEnd={() => sceneReady && setPoster(null)} />
+        )}
         {hasPhotoTour && (frameWanted || photoTour || flight) && (
           <iframe
             ref={frame}

@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
-import { BackSide, Euler, MathUtils, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera } from 'three';
+import { BackSide, Euler, MathUtils, Matrix4, Quaternion, SRGBColorSpace, TextureLoader, Vector3, type PerspectiveCamera } from 'three';
 import type { Finish, Layout } from '@/data/types';
 import { doorLinks, roomEdges, roomEye } from '@/lib/geometry';
 import { ApartmentModel } from './ApartmentModel';
@@ -35,6 +35,22 @@ interface Props {
   onFlight?: (id: number, progress: number) => void;
   /** Where the camera is now, for the heading of a flight in. */
   cameraRef?: { current: PerspectiveCamera | null };
+  /** Called once the model's picture is in and the first frames are drawn. */
+  onReady?: () => void;
+}
+
+/** Waits for the plan picture (the same cached texture PhotoApartment draws) and three frames. */
+function ReadyAfterFrames({ picture, onReady }: { picture: string | null; onReady: () => void }) {
+  useLoader(TextureLoader, picture ? [picture] : []);
+  const n = useRef(0);
+  useFrame(() => {
+    if (n.current < 0) return;
+    if (++n.current >= 3) {
+      n.current = -1;
+      onReady();
+    }
+  });
+  return null;
 }
 
 export function Lights() {
@@ -257,7 +273,7 @@ function Panorama({ url, eye }: { url: string; eye: [number, number] }) {
   );
 }
 
-export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom, flight, onFlight, cameraRef }: Props) {
+export default function ApartmentScene({ layout, finish, mode, roomId, layer, onSelectRoom, flight, onFlight, cameraRef, onReady }: Props) {
   const room = layout.rooms.find((r) => r.id === roomId) ?? layout.rooms[0];
   const eye = useMemo(() => roomEye(room), [room]);
   const links = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
@@ -310,6 +326,11 @@ export default function ApartmentScene({ layout, finish, mode, roomId, layer, on
       )}
 
       {cameraRef && <CameraTap cameraRef={cameraRef} />}
+      {onReady && (
+        <Suspense fallback={null}>
+          <ReadyAfterFrames picture={photoModels[layout.plan]?.image.src ?? null} onReady={onReady} />
+        </Suspense>
+      )}
       {flight ? (
         <FlightRig layout={layout} flight={flight} onFlight={onFlight} />
       ) : mode === 'model' ? (

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3 } from 'three';
+import { Color, ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3, type Group, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -30,6 +30,10 @@ interface Props {
   onOpen: (id: string) => void;
   /** Called once the plan pictures are in, the shaders compiled and the first frames drawn. */
   onReady?: () => void;
+  /** An apartment that was just picked: the rest of the floor sinks away and the camera flies to the apartment
+   *  page's own first view of it; then onZoomed gets that last frame (a JPEG data URL, or null). */
+  zoomTo?: string | null;
+  onZoomed?: (poster: string | null) => void;
 }
 
 // Floor-plate coordinates (X east, Y north, see layouts.ts) -> scene: x east, z south,
@@ -181,6 +185,95 @@ function FitCamera() {
   return null;
 }
 
+/** The apartment page's first view (ApartmentScene's model view), in the apartment's own coordinates. */
+function aptPose(layout: Layout, narrow: boolean) {
+  const cx = layout.w / 2;
+  const cz = layout.d / 2;
+  const dist = Math.max(layout.w, layout.d * 1.4) * (narrow ? 1.4 : 1);
+  return { position: new Vector3(cx + dist * 0.25, dist * 1.3, cz + dist * 1.25), target: new Vector3(cx, 0.6, cz) };
+}
+
+const ZOOM_APT = 1.5;
+const APT_BACKGROUND = '#E9EDF0';
+
+/**
+ * The picked apartment stays; everything else (the other apartments, the cores, the slab) sinks away, while the
+ * camera flies to exactly the view the apartment page opens with. The last frame is handed over as a picture.
+ */
+function UnitZoom({ unit, rest, onDone }: { unit: Unit; rest: { current: Group | null }; onDone?: (poster: string | null) => void }) {
+  const { camera, gl, scene, size } = useThree();
+  type Limits = { target: Vector3; enabled: boolean; minDistance: number; maxDistance: number; minPolarAngle: number; maxPolarAngle: number };
+  const controls = useThree((s) => s.controls) as unknown as Limits | null;
+  const plan = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; t1: Vector3; f0: number; start: number; done: boolean } | null>(null);
+  useEffect(() => {
+    const layout = layouts[unit.layout];
+    const at = new Vector3(...unitPlacement(layout));
+    const pose = aptPose(layout, size.width / size.height < 0.9);
+    plan.current = {
+      p0: camera.position.clone(),
+      t0: controls ? controls.target.clone() : new Vector3(),
+      p1: pose.position.add(at),
+      t1: pose.target.add(at),
+      f0: (camera as PerspectiveCamera).fov,
+      start: -1,
+      done: false,
+    };
+    // the controls still clamp the camera while disabled: lift their limits for the flight
+    const limits = controls && { min: controls.minDistance, max: controls.maxDistance, lo: controls.minPolarAngle, hi: controls.maxPolarAngle };
+    if (controls) {
+      controls.enabled = false;
+      controls.minDistance = 0;
+      controls.maxDistance = Infinity;
+      controls.minPolarAngle = 0;
+      controls.maxPolarAngle = Math.PI;
+    }
+    const before = scene.background;
+    scene.background = new Color(APT_BACKGROUND);
+    return () => {
+      scene.background = before;
+      if (controls && limits) {
+        controls.enabled = true;
+        controls.minDistance = limits.min;
+        controls.maxDistance = limits.max;
+        controls.minPolarAngle = limits.lo;
+        controls.maxPolarAngle = limits.hi;
+      }
+    };
+  }, [unit]); // eslint-disable-line react-hooks/exhaustive-deps
+  useFrame(({ clock }) => {
+    const z = plan.current;
+    if (!z || z.done) return;
+    const now = clock.getElapsedTime();
+    if (z.start < 0) z.start = now;
+    const k = Math.min(1, (now - z.start) / ZOOM_APT);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(z.p0, z.p1, e);
+    const target = new Vector3().lerpVectors(z.t0, z.t1, e);
+    if (controls) controls.target.copy(target);
+    camera.lookAt(target);
+    const cam = camera as PerspectiveCamera;
+    cam.fov = MathUtils.lerp(z.f0, 40, e);
+    cam.updateProjectionMatrix();
+    // the rest of the floor drops out of the way, faster than the camera moves
+    if (rest.current) {
+      rest.current.position.y = -30 * Math.pow(Math.min(1, k / 0.55), 2);
+      rest.current.visible = k < 0.55;
+    }
+    if (k >= 1) {
+      z.done = true;
+      let poster: string | null = null;
+      try {
+        gl.render(scene, camera);
+        poster = gl.domElement.toDataURL('image/jpeg', 0.85);
+      } catch {
+        // a tainted or lost context: the apartment page just opens
+      }
+      onDone?.(poster);
+    }
+  });
+  return null;
+}
+
 function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: boolean; onHover: Props['onHover']; onOpen: Props['onOpen'] }) {
   const layout = layouts[unit.layout];
   const available = unit.status === 'available';
@@ -270,7 +363,9 @@ function WhenReady({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady }: Props) {
+export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady, zoomTo, onZoomed }: Props) {
+  const rest = useRef<Group>(null);
+  const picked = zoomTo ? units.find((u) => u.id === zoomTo) : undefined;
   const anchors = useMemo<Anchor[]>(
     () => [
       ...units.map((u): Anchor => {
@@ -315,16 +410,20 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
       </Suspense>
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
 
-      <Slab hole={hole} />
-      {core.map((space) => (
-        <CoreBlock key={space.id} space={space} />
-      ))}
-      {stair && <Stairs {...stair} wallH={WALL_H} cap />}
-      {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap color="#EDEBE6" />}
-      {units.map((unit) => (
-        <UnitOnFloor key={unit.id} unit={unit} hovered={hovered === unit.id} onHover={onHover} onOpen={onOpen} />
-      ))}
-      <Projector anchors={anchors} layer={layer} />
+      <group ref={rest}>
+        <Slab hole={hole} />
+        {core.map((space) => (
+          <CoreBlock key={space.id} space={space} />
+        ))}
+        {stair && <Stairs {...stair} wallH={WALL_H} cap />}
+        {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap color="#EDEBE6" />}
+        {units.map((unit) =>
+          unit.id === zoomTo ? null : <UnitOnFloor key={unit.id} unit={unit} hovered={hovered === unit.id} onHover={onHover} onOpen={onOpen} />,
+        )}
+      </group>
+      {picked && <UnitOnFloor key={picked.id} unit={picked} hovered={false} onHover={() => {}} onOpen={() => {}} />}
+      {picked && <UnitZoom unit={picked} rest={rest} onDone={onZoomed} />}
+      <Projector anchors={picked ? [] : anchors} layer={layer} />
     </SafeCanvas>
   );
 }
