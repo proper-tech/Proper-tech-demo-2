@@ -21,6 +21,7 @@ Image.fromarray(a).save(f'{P}/D/top.png')
 PY
 python3 -I $T/add_mood_toggle.py $R/interior/tours/D/index.html
 python3 -I $T/add_window_views.py $R/interior/tours/D/index.html
+python3 -I $T/add_finish_toggle.py $R/interior/tours/D/index.html
 python3 -I $T/repanos.py $R/interior/tours/D/index.html $R/interior/renders/D $P/D $MAP
 python3 -I $T/retop.py $R/interior/tours/D/index.html $P/D $MAP
 for U in F E; do
@@ -29,8 +30,13 @@ done
 for U in D F E; do
   python3 -I $T/add_window_masks.py $R/interior/tours/$U/index.html $U $P/$U
   if [ -d $R/interior/renders/${U}_evening ]; then
-    python3 -I $T/add_evening.py $R/interior/tours/$U/index.html $U $R/interior/renders/${U}_evening
+    python3 -I $T/add_evening.py $R/interior/tours/$U/index.html $U $R/interior/renders/${U}_evening eve
   fi
+  for F in light dark; do  # the other finish packages
+    if [ -d $R/interior/renders/${U}_$F ]; then
+      python3 -I $T/add_evening.py $R/interior/tours/$U/index.html $U $R/interior/renders/${U}_$F $F
+    fi
+  done
 done
 python3 -I $T/mirror_tour.py $R/interior/tours/D/index.html $R/interior/tours/C/index.html D C
 python3 -I $T/mirror_tour.py $R/interior/tours/F/index.html $R/interior/tours/A/index.html F A

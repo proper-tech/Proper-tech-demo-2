@@ -130,10 +130,41 @@ def textures():
         ('Throw_Knit', 'velour_velvet', 2.0, dict(keep_color=True, normal=1.0)),
         ('Wall_WarmPlaster', 'plastered_wall_04', 0.5, dict(keep_color=True, normal=0.25, tint=(0.9, 0.88, 0.84, 1))),
     ]
+    finish = os.environ.get('FINISH', 'warm')
+    rules = [FINISHES.get(finish, {}).get(r[0], r) for r in rules]
     for mat, tid, sc, kw in rules:
         if textured(mat, tid, sc, **kw):
             done.append(mat)
-    print('textured:', ', '.join(done))
+    for mat, colour in CABINETS.get(finish, {}).items():
+        m = bpy.data.materials.get(mat)
+        p = m and next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if p:
+            p.inputs['Base Color'].default_value = colour
+    print('textured:', ', '.join(done), '| finish', finish)
+
+
+# The three finish packages a buyer can pick (FINISH=warm|light|dark): floor, joinery, doors and worktops.
+# warm is the scene as designed; the other two swap these materials.
+FINISHES = {
+    'light': {
+        'Oak_Floor': ('Oak_Floor', 'herringbone_parquet', 0.55, dict(normal=0.5, tint=(0.8, 0.69, 0.53, 1))),
+        'Walnut': ('Walnut', 'oak_veneer_01', 0.9, dict(normal=0.4, tint=(0.72, 0.6, 0.44, 1))),
+        'Oak_Furniture': ('Oak_Furniture', 'oak_veneer_01', 0.9, dict(normal=0.4, tint=(0.76, 0.65, 0.5, 1))),
+        'Door_Oak': ('Door_Oak', 'oak_veneer_01', 0.7, dict(normal=0.3, tint=(0.78, 0.69, 0.55, 1))),
+        'Marble_Warm': ('Marble_Warm', 'marble_01', 0.8, dict(normal=0.3, rough_bias=-0.1, tint=(0.92, 0.91, 0.89, 1))),
+    },
+    'dark': {
+        'Oak_Floor': ('Oak_Floor', 'dark_wood', 0.6, dict(normal=0.6, tint=(0.34, 0.23, 0.15, 1))),
+        'Oak_Furniture': ('Oak_Furniture', 'dark_wood', 0.9, dict(normal=0.5, tint=(0.32, 0.21, 0.14, 1))),
+        'Door_Oak': ('Door_Oak', 'dark_wood', 0.7, dict(normal=0.4, tint=(0.3, 0.2, 0.13, 1))),
+        'Marble_Warm': ('Marble_Warm', 'marble_01', 0.8, dict(normal=0.3, rough_bias=-0.1, tint=(0.3, 0.3, 0.31, 1))),
+    },
+}
+# kitchen and wardrobe fronts are plain lacquer: just their colour
+CABINETS = {
+    'light': {'Cabinet_Greige': (0.84, 0.83, 0.8, 1)},
+    'dark': {'Cabinet_Greige': (0.16, 0.16, 0.17, 1)},
+}
 
 
 # ------------------------------------------------------------------------------------------------ props
