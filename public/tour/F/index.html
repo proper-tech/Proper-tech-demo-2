@@ -178,6 +178,8 @@ body.collapsed .panel { transform:translateX(-350px); }
 @media(prefers-reduced-motion:reduce) { *, *::before, *::after { transition:none !important; scroll-behavior:auto !important; } }
 
 
+#tourMood[aria-pressed=true]{background:#1c2433;color:#f3d9a6;border-color:#f3d9a6}#pano.is-evening #panoFade{background:#05070c}
+.tour-outside-badge{position:absolute;left:24px;bottom:118px;z-index:6;padding:6px 11px;border-radius:999px;background:#0d1420c9;color:#f5f3ed;font-size:11px;letter-spacing:.01em;pointer-events:none}
 /* BEGIN PALETTE CSS */
 #tourDesignPanel {position:absolute;z-index:5;left:24px;top:226px;width:246px;max-height:calc(100dvh - 400px);overflow:auto;color:#f5f3ed;background:#17231eea;border:1px solid #ffffff35;border-radius:14px;box-shadow:0 12px 36px #0003;backdrop-filter:blur(18px)}
 #tourPaletteToggle {width:100%;display:grid;grid-template-columns:1fr auto;gap:5px 10px;text-align:left;border:0;padding:14px;background:transparent;color:inherit;cursor:pointer}
@@ -302,6 +304,7 @@ body.collapsed .panel { transform:translateX(-350px); }
       <button id="tourZoomOut" class="tour-tool" type="button" aria-label="Холдуулах" title="Холдуулах (-)">−</button>
       <button id="tourZoomIn" class="tour-tool" type="button" aria-label="Ойртуулах" title="Ойртуулах (+)">+</button>
       <button id="tourRotate" class="tour-tool" type="button" aria-pressed="false">↻ Тойрох</button>
+      <button id="tourMood" class="tour-tool" type="button" aria-pressed="false" hidden title="Өдөр / Орой">☾ Орой</button>
       <button id="tourMapToggle" class="tour-tool" type="button" aria-pressed="true" aria-controls="tourPlan">Top view</button>
       <button id="tourFullscreen" class="tour-tool" type="button" aria-label="Бүтэн дэлгэц" title="Бүтэн дэлгэц">⛶</button>
     </div>
@@ -349,7 +352,8 @@ body.collapsed .panel { transform:translateX(-350px); }
   <div class="tour-footer-note">4K · 360°</div>
 </div>
 
-<script>window.__PANOS__ = {"D_entry": {"lo": "/tour/F/img/4abfd3baa4806d61.webp", "hi": "/tour/F/img/9e84c5b7d2feacb6.webp", "thumb": "/tour/F/img/ca2cc6171d48ed86.webp"}, "D_kitchen": {"lo": "/tour/F/img/bee066abe35d321e.webp", "hi": "/tour/F/img/b6c1f5be8783e08c.webp", "thumb": "/tour/F/img/f26e2c21bfbd8f76.webp"}, "D_living": {"lo": "/tour/F/img/8675a1729723852d.webp", "hi": "/tour/F/img/057f100f75050782.webp", "thumb": "/tour/F/img/241cf0c92db41e2d.webp"}, "D_bed_d4": {"lo": "/tour/F/img/07633da6ff2fb16a.webp", "hi": "/tour/F/img/831403a74bbda8a1.webp", "thumb": "/tour/F/img/f2dc406e075cc128.webp"}, "D_bed_d3": {"lo": "/tour/F/img/103d4e4280ad1676.webp", "hi": "/tour/F/img/0be6c2137d0946be.webp", "thumb": "/tour/F/img/7c037a930e7c2666.webp"}, "D_bath_d5": {"lo": "/tour/F/img/0a30f9c90ce3d84d.webp", "hi": "/tour/F/img/3ca0c43713dcdbd6.webp", "thumb": "/tour/F/img/818506bce93aa1ce.webp"}, "D_balcony": {"lo": "/tour/F/img/327b9733a26ddb11.webp", "hi": "/tour/F/img/7af7cccba561598c.webp", "thumb": "/tour/F/img/7f059f64536ddfb1.webp"}}; window.__PLAN__ = "/tour/F/img/e1eb00d315107a24.webp";window.__PALETTE_MASKS__ = {"D_entry": ["/tour/F/img/89ce2bf99f1c916d.webp", "/tour/F/img/7792a3ee54a27c66.webp"], "D_kitchen": ["/tour/F/img/fde38789aa488f99.webp", "/tour/F/img/aa3b15c5a543e820.webp"], "D_living": ["/tour/F/img/80f94858ea767c7b.webp", "/tour/F/img/11a99b826c6d1650.webp"], "D_bed_d4": ["/tour/F/img/7ed293fdd8dd12fd.webp", "/tour/F/img/3ff091365b7fd3e9.webp"], "D_bed_d3": ["/tour/F/img/79c51cf3539a24f7.webp", "/tour/F/img/02e417b6f401e3f0.webp"], "D_bath_d5": ["/tour/F/img/11aa17fa87ce3884.webp", "/tour/F/img/d35e6acc266e7fb9.webp"], "D_balcony": ["/tour/F/img/16905900e2d52a20.webp", "/tour/F/img/02c595e36e8c1e55.webp"]};
+<script>window.__WINDOW_MASKS__ = {"D_entry": "/tour/F/img/a9996b90bdb67882.webp", "D_kitchen": "/tour/F/img/bcd145ea926ccc2f.webp", "D_living": "/tour/F/img/69336d4d5221bb89.webp", "D_bed_d4": "/tour/F/img/08615f0efeb816d6.webp", "D_bed_d3": "/tour/F/img/58f6f0c050f7073c.webp", "D_bath_d5": "/tour/F/img/40ae5dbe38e3a90a.webp", "D_balcony": "/tour/F/img/604740d39b4d7ce6.webp"};
+window.__PANOS__ = {"D_entry": {"lo": "/tour/F/img/4abfd3baa4806d61.webp", "hi": "/tour/F/img/9e84c5b7d2feacb6.webp", "thumb": "/tour/F/img/ca2cc6171d48ed86.webp"}, "D_kitchen": {"lo": "/tour/F/img/bee066abe35d321e.webp", "hi": "/tour/F/img/b6c1f5be8783e08c.webp", "thumb": "/tour/F/img/f26e2c21bfbd8f76.webp"}, "D_living": {"lo": "/tour/F/img/8675a1729723852d.webp", "hi": "/tour/F/img/057f100f75050782.webp", "thumb": "/tour/F/img/241cf0c92db41e2d.webp"}, "D_bed_d4": {"lo": "/tour/F/img/07633da6ff2fb16a.webp", "hi": "/tour/F/img/831403a74bbda8a1.webp", "thumb": "/tour/F/img/f2dc406e075cc128.webp"}, "D_bed_d3": {"lo": "/tour/F/img/103d4e4280ad1676.webp", "hi": "/tour/F/img/0be6c2137d0946be.webp", "thumb": "/tour/F/img/7c037a930e7c2666.webp"}, "D_bath_d5": {"lo": "/tour/F/img/0a30f9c90ce3d84d.webp", "hi": "/tour/F/img/3ca0c43713dcdbd6.webp", "thumb": "/tour/F/img/818506bce93aa1ce.webp"}, "D_balcony": {"lo": "/tour/F/img/327b9733a26ddb11.webp", "hi": "/tour/F/img/7af7cccba561598c.webp", "thumb": "/tour/F/img/7f059f64536ddfb1.webp"}}; window.__PLAN__ = "/tour/F/img/e1eb00d315107a24.webp";window.__PALETTE_MASKS__ = {"D_entry": ["/tour/F/img/89ce2bf99f1c916d.webp", "/tour/F/img/7792a3ee54a27c66.webp"], "D_kitchen": ["/tour/F/img/fde38789aa488f99.webp", "/tour/F/img/aa3b15c5a543e820.webp"], "D_living": ["/tour/F/img/80f94858ea767c7b.webp", "/tour/F/img/11a99b826c6d1650.webp"], "D_bed_d4": ["/tour/F/img/7ed293fdd8dd12fd.webp", "/tour/F/img/3ff091365b7fd3e9.webp"], "D_bed_d3": ["/tour/F/img/79c51cf3539a24f7.webp", "/tour/F/img/02e417b6f401e3f0.webp"], "D_bath_d5": ["/tour/F/img/11aa17fa87ce3884.webp", "/tour/F/img/d35e6acc266e7fb9.webp"], "D_balcony": ["/tour/F/img/16905900e2d52a20.webp", "/tour/F/img/02c595e36e8c1e55.webp"]};
 window.__TOPDOWN__ = {"viewBox": [12.499999617040157, -0.6499999940395356, 10.000000758469104, 10.899999609589576], "images": {"neutral": "/tour/F/img/15ec67bf8847db6e.webp", "navy": "/tour/F/img/9da5fdb97ae42424.webp", "sage": "/tour/F/img/0005034e93bf10c8.webp", "charcoal": "/tour/F/img/6fde43da64fa9d63.webp"}};
 window.__NAVIGATION__ = {"entry": [{"to": "kitchen", "point": [14.7, 6.6, 0.9], "kind": "passage"}, {"to": "bath_d5", "point": [15.475, 8.32, 1.15], "kind": "door"}], "kitchen": [{"to": "entry", "point": [14.7, 7.07, 0.9], "kind": "passage"}, {"to": "living", "point": [17.6, 4.35, 0.95], "kind": "passage"}], "living": [{"to": "kitchen", "point": [15.6, 4.9, 0.95], "kind": "passage"}, {"to": "bed_d4", "point": [16.8, 3.2, 1.15], "kind": "door"}, {"to": "bed_d3", "point": [17.9, 3.2, 1.15], "kind": "door"}], "bed_d4": [{"to": "living", "point": [16.8, 3.25, 1.15], "kind": "door"}], "bed_d3": [{"to": "living", "point": [17.9, 3.25, 1.15], "kind": "door"}, {"to": "balcony", "point": [20.3, 1.775, 1.15], "kind": "door"}], "bath_d5": [{"to": "entry", "point": [15.55, 8.32, 1.18], "kind": "door"}], "balcony": [{"to": "bed_d3", "point": [20.45, 1.775, 1.15], "kind": "door"}]};
 </script>
@@ -4599,7 +4603,7 @@ const tourRoomShortNames = {
 const tourMapPoints = Object.fromEntries(Object.entries(vf.D.pts).map(([room,point])=>[room,[...point]]));
 const interiorTour = {
   active: false, renderer: null, camera: null, scene: null, sphere: null,
-  selection: null, room: null, requestedRoom: null, yaw: 0, pitch: -3, autoRotate: false,
+  selection: null, room: null, requestedRoom: null, yaw: 0, pitch: -3, autoRotate: false, mood: 'day',
   requestId: 0, transitionTimer: null, feedbackTimer: null, textureCache: new Map(),
   pendingTextures: new Map(), pointers: new Map(), gesture: null, hotspots: [],
   mapOpen: innerWidth > 900, mapExpanded: false, returnFocus: null
@@ -4686,9 +4690,65 @@ function getTourTexture(source) {
   return pending;
 }
 
+// BEGIN WINDOW VIEWS
+const tourOutside = {texture: null, shift: 0, label: '', masks: new Map(), room: null};
+function refreshTourOutside() {
+  const uniforms = tourPaletteState.uniforms;
+  if (!uniforms) return;
+  const mask = tourOutside.masks.get(tourOutside.room);
+  const on = Boolean(tourOutside.texture && mask && mask !== 'loading' && interiorTour.mood !== 'evening');
+  uniforms.tourWindow.value = on ? mask : null;
+  uniforms.tourOutside.value = on ? tourOutside.texture : null;
+  uniforms.tourOutsideShift.value = tourOutside.shift;
+  uniforms.tourOutsideOn.value = on ? 1 : 0;
+  const badge = document.getElementById('tourOutsideBadge');
+  if (badge) badge.hidden = !on;
+  if (interiorTour.sphere) interiorTour.sphere.material.needsUpdate = true;
+}
+function setTourOutsideRoom(room) {
+  tourOutside.room = room;
+  const source = window.__WINDOW_MASKS__?.['D_' + room];
+  if (tourOutside.texture && source && !tourOutside.masks.has(room)) {
+    tourOutside.masks.set(room, 'loading');
+    tourTextureLoader.load(source, texture => {
+      texture.colorSpace = ''; texture.minFilter = TourThree.LinearFilter; texture.magFilter = TourThree.LinearFilter;
+      texture.generateMipmaps = false;
+      tourOutside.masks.set(room, texture);
+      refreshTourOutside();
+    }, undefined, () => tourOutside.masks.delete(room));
+  }
+  refreshTourOutside();
+}
+async function initTourOutside() {
+  const query = new URLSearchParams(location.search);
+  const tower = query.get('tower'), floor = Number(query.get('floor'));
+  if (!tower || !floor || !window.__WINDOW_MASKS__) return;
+  try {
+    const manifest = await (await fetch(query.get('views') || '/views/manifest.json')).json();
+    const spheres = manifest?.[tower] || {};
+    const floors = Object.keys(spheres).map(Number).filter(Boolean);
+    if (!floors.length) return;
+    const nearest = floors.reduce((a, b) => Math.abs(b - floor) < Math.abs(a - floor) ? b : a);
+    const entry = spheres[String(nearest)];
+    tourOutside.shift = 0.25 - 8.89 / 360 + (entry.yaw || 0) / 360;
+    tourOutside.texture = await new Promise((resolve, reject) => tourTextureLoader.load(entry.src, texture => {
+      texture.colorSpace = TourThree.SRGBColorSpace; texture.minFilter = TourThree.LinearFilter;
+      texture.magFilter = TourThree.LinearFilter; texture.generateMipmaps = false; resolve(texture);
+    }, undefined, reject));
+    const badge = document.createElement('div');
+    badge.id = 'tourOutsideBadge';
+    badge.className = 'tour-outside-badge';
+    badge.textContent = `Цонхоор: ${tower} блок, ${nearest}-р давхраас авсан бодит зураг`;
+    badge.hidden = true;
+    tourElement('pano').appendChild(badge);
+    if (interiorTour.room) setTourOutsideRoom(interiorTour.room);
+  } catch (error) { /* no view: the rendered sky stays */ }
+}
+initTourOutside();
+// END WINDOW VIEWS
 function loadTourRoom(room) {
   const requestId = ++interiorTour.requestId;
-  const asset = Mf[`D_${room}`];
+  const asset = (interiorTour.mood === 'evening' && Mf[`D_${room}@eve`]) || Mf[`D_${room}`];
   if (!asset) {
     setTourStatus('Энэ өрөөний зураг олдсонгүй. Өөр өрөө сонгоно уу.');
     tourElement('panoFade').classList.remove('on');
@@ -4696,6 +4756,7 @@ function loadTourRoom(room) {
   }
   clearTimeout(interiorTour.feedbackTimer);
   const paletteReady = prepareTourPaletteRoom(room, requestId);
+  setTourOutsideRoom(room);
   let displayedQuality = 0;
   let failedLoads = 0;
   const useHighResolution = Boolean(asset.hi && interiorTour.renderer.capabilities.maxTextureSize >= 2560);
@@ -5057,6 +5118,31 @@ function initializeInteriorTour() {
   tourElement('tourZoomOut').onclick = () => zoomInteriorTour(8);
   tourElement('tourPrevious').onclick = () => stepTourRoom(-1);
   tourElement('tourNext').onclick = () => stepTourRoom(1);
+  // BEGIN DAY/EVENING
+  {
+    const moodButton = tourElement('tourMood');
+    const hasEvening = Object.keys(Mf).some(key => key.endsWith('@eve'));
+    moodButton.hidden = !hasEvening;
+    const showMood = () => {
+      const evening = interiorTour.mood === 'evening';
+      moodButton.setAttribute('aria-pressed', String(evening));
+      moodButton.textContent = evening ? '☀ Өдөр' : '☾ Орой';
+      moodButton.title = evening ? 'Өдрийн гэрэлтэй харах' : 'Оройн гэрэлтэй харах';
+      tourElement('pano').classList.toggle('is-evening', evening);
+    };
+    try { if (hasEvening && localStorage.getItem('sebotse-tour-mood') === 'evening') interiorTour.mood = 'evening'; } catch (_) {}
+    showMood();
+    moodButton.onclick = () => {
+      interiorTour.mood = interiorTour.mood === 'evening' ? 'day' : 'evening';
+      try { localStorage.setItem('sebotse-tour-mood', interiorTour.mood); } catch (_) {}
+      showMood();
+      if (interiorTour.active && interiorTour.room) {
+        tourElement('panoFade').classList.add('on');
+        loadTourRoom(interiorTour.room);
+      }
+    };
+  }
+  // END DAY/EVENING
   tourElement('tourRotate').onclick = () => {
     interiorTour.autoRotate = !interiorTour.autoRotate;
     tourElement('tourRotate').setAttribute('aria-pressed', String(interiorTour.autoRotate));
@@ -5133,10 +5219,11 @@ function setupTourPaletteMaterial(material) {
   const ratios=paletteRatios(tourPaletteState.id);
   const uniforms={tourMaskA:{value:null},tourMaskB:{value:null},tourPaletteEnabled:{value:0}};
   ratios.forEach((value,i)=>uniforms['tourRatio'+i]={value});
+  Object.assign(uniforms,{tourWindow:{value:null},tourOutside:{value:null},tourOutsideOn:{value:0},tourOutsideShift:{value:0}});
   tourPaletteState.uniforms=uniforms;
   material.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
-    shader.fragmentShader='uniform sampler2D tourMaskA;\nuniform sampler2D tourMaskB;\nuniform float tourPaletteEnabled;\n'+ratios.map((_,i)=>'uniform vec3 tourRatio'+i+';').join('\n')+'\n'+shader.fragmentShader;
+    shader.fragmentShader='uniform sampler2D tourMaskA;\nuniform sampler2D tourMaskB;\nuniform float tourPaletteEnabled;\nuniform sampler2D tourWindow;\nuniform sampler2D tourOutside;\nuniform float tourOutsideOn;\nuniform float tourOutsideShift;\n'+ratios.map((_,i)=>'uniform vec3 tourRatio'+i+';').join('\n')+'\n'+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
       #ifdef USE_MAP
       if (tourPaletteEnabled > 0.5) {
@@ -5151,9 +5238,16 @@ function setupTourPaletteMaterial(material) {
           + maskB.b * (tourRatio5 - vec3(1.0));
         diffuseColor.rgb *= max(ratio, vec3(0.0));
       }
+      if (tourOutsideOn > 0.5) {
+        float glass = texture2D(tourWindow, vMapUv).r;
+        if (glass > 0.002) {
+          vec3 outside = texture2D(tourOutside, vec2(fract(vMapUv.x + tourOutsideShift), vMapUv.y)).rgb;
+          diffuseColor.rgb = mix(diffuseColor.rgb, outside * 1.08, glass);
+        }
+      }
       #endif`);
   };
-  material.customProgramCacheKey=()=> 'sebotse-material-palettes-v1';
+  material.customProgramCacheKey=()=> 'sebotse-material-palettes-v2-windows';
 }
 function applyTourPaletteUniforms() {
   const uniforms=tourPaletteState.uniforms;if(!uniforms)return;

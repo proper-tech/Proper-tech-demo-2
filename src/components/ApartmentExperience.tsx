@@ -96,7 +96,8 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
         {photoTour && (
           <iframe
             className="apt-tour-frame"
-            src={`/tour/${layout.plan}/index.html`}
+            // tower and floor pick the drone's real view through the windows (public/views/manifest.json)
+            src={`/tour/${layout.plan}/index.html?tower=${unit.tower}&floor=${unit.floor}`}
             title={t.apt.modeTour}
             allow="fullscreen"
             onLoad={(e) => fitTourFrame(e.currentTarget)}

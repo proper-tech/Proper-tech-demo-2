@@ -21,15 +21,15 @@ if not exist assets\textures (
   exit /b 1
 )
 if not defined PLANS set "PLANS=D F E"
+if not defined MOOD set "MOOD=day"
 set "SAMPLES=%~1"
 if not defined SAMPLES set "SAMPLES=128"
 for %%P in (%PLANS%) do (
   echo === %%P: upgrade ===
-  "%BLENDER%" -b %%P.blend -P tools\upgrade_interior.py -- %%P day "%~dp0%%P_day.blend"
+  "%BLENDER%" -b %%P.blend -P tools\upgrade_interior.py -- %%P %MOOD% "%~dp0%%P_%MOOD%.blend"
   echo === %%P: render ===
-  "%BLENDER%" -b %%P_day.blend -P render_panos.py -- %%P %SAMPLES% %STOPS%
+  "%BLENDER%" -b %%P_%MOOD%.blend -P render_panos.py -- %%P %SAMPLES% %STOPS%
 )
 echo.
-echo Duussan. Zurguud interior\renders\D, F, E-d baina. Odoo ilgeene:
-echo   git add interior/renders ^&^& git commit -m "Upgraded D, F, E panoramas" ^&^& git push
+echo Duussan. Zurguud interior\renders dotor baina. Claude-d "duussan" gej bichne uu.
 if /i not "%~2"=="nopause" pause

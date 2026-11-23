@@ -1,5 +1,6 @@
 @echo off
 rem Сүүлийн засварууд: F, E бүхэлдээ, D-ийн үүд ба коридор (нийт 15 зураг, ~50 мин).
+setlocal
 cd /d "%~dp0"
 set "PLANS=F E"
 set "STOPS="

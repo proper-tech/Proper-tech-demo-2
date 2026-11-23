@@ -49,6 +49,9 @@ i, j, p = block('__PANOS__', '; window.__PLAN__')
 for k, v in p.items():
     for q in list(v): v[q] = pano(v[q])
 put(i, j, p)
+if 'window.__WINDOW_MASKS__ = ' in html:  # window glass, for the real view (add_window_masks.py)
+    i, j, w = block('__WINDOW_MASKS__', '};')
+    put(i, j, {k: pano(u) for k, u in w.items()})
 i, j, m = block('__PALETTE_MASKS__', '};')
 for k in m: m[k] = [pano(u) for u in m[k]]
 put(i, j, m)

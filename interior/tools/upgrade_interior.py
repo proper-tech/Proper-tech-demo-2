@@ -119,7 +119,7 @@ def world(m):
     name = {'day': 'canary_wharf_4k.hdr', 'evening': 'rooftop_night_4k.hdr'}[m]
     f = asset('hdri', name) or os.path.join(here, 'hdri', 'modern_buildings_2_4k.hdr')
     env.image = bpy.data.images.load(f, check_existing=True)
-    bg.inputs['Strength'].default_value = 1.5 if m == 'day' else 1.6
+    bg.inputs['Strength'].default_value = 1.5 if m == 'day' else 0.6
     if mp:
         mp.inputs['Rotation'].default_value[2] = math.radians(120)
 
@@ -162,10 +162,22 @@ def lights(m):
             o.data.energy = 40 if m == 'day' else 30
             o.data.color = (1.0, 0.84, 0.66)
         elif n.startswith('LampPt'):
-            o.data.energy = 0 if m == 'day' else o.data.energy * 1.6
+            o.data.energy = 0 if m == 'day' else o.data.energy * (4.5 if o.data.energy < 12 else 2.6)  # bedside lamps light the bedrooms
             o.data.color = (1.0, 0.76, 0.52)
         elif n.endswith('_ceiling_fill'):  # bathrooms have no window: keep their light
             o.data.energy = 30 if m == 'day' else 40
+    if m != 'day':
+        # bedrooms have only bedside lamps, whose shades keep most of their light: a soft warm ceiling glow
+        cams = json.load(open(os.path.join(here, f'{plan}_cams.json')))
+        for stop, (x, y, _) in cams.items():
+            if not stop.startswith('bed'):
+                continue
+            d = bpy.data.lights.new(f'EveningGlow_{stop}', 'AREA')
+            d.shape, d.size, d.energy, d.color = 'DISK', 1.4, 20, (1.0, 0.72, 0.48)
+            o = bpy.data.objects.new(d.name, d)
+            o.location = (x, -y, 2.68)
+            o.visible_camera = False
+            sc.collection.objects.link(o)
     if sun:
         sun.hide_render = m != 'day'
         sun.data.energy = 4.2
@@ -187,7 +199,7 @@ def render_settings(m):
     vs = sc.view_settings
     vs.view_transform = 'AgX'
     vs.look = 'AgX - Medium High Contrast'
-    vs.exposure = (1.7 if SUNNY else 1.15) if m == 'day' else 0.9
+    vs.exposure = (1.7 if SUNNY else 1.15) if m == 'day' else 1.15
     cy = sc.cycles
     cy.max_bounces = 10
     cy.diffuse_bounces = 5
