@@ -114,3 +114,11 @@ added nothing changes. To add one (stitched 2:1 JPG from DJI Fly's Sphere mode, 
     python3 -I interior/tools/add_view.py . B 7 PANO_0012.jpg        # -> public/views/B-07.jpg + manifest
 
 If a view turns out rotated, give the yaw in degrees as a fifth argument (clockwise).
+
+### Finish packages (Дулаан / Цайвар / Бараан)
+
+`FINISH=light` or `FINISH=dark` (environment) makes `upgrade_dress.py` swap the floor, joinery, doors and worktops
+(`FINISHES` there); `render_panos.py` then writes to `renders/<plan>_light` / `_dark`. `tools/add_finish_toggle.py`
+gives the tours three chips in the "Interior colors" panel, shown once a tour has the pictures
+(`add_evening.py <tour> <plan> <dir> light|dark`). `interior\render_next.bat` renders the evening and both packages
+(66 views, ~3.5-4 h) and pushes them to the `interior-renders` branch.

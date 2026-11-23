@@ -37,7 +37,8 @@ samples = int(args[1]) if len(args) > 1 and args[1].isdigit() else (128 if gpu e
 cams = json.load(open(os.path.join(here, f'{plan}_cams.json')))
 stops = args[2].split(',') if len(args) > 2 else (args[1].split(',') if len(args) > 1 and not args[1].isdigit() else list(cams))
 mood = os.environ.get('MOOD', 'day')  # evening renders go to renders/<plan>_evening
-out = os.path.join(here, 'renders', plan if mood == 'day' else f'{plan}_{mood}')
+finish = os.environ.get('FINISH', 'warm')  # the other finish packages go to renders/<plan>_<finish>
+out = os.path.join(here, 'renders', plan if mood == 'day' and finish == 'warm' else f'{plan}_{mood if mood != "day" else finish}')
 os.makedirs(out, exist_ok=True)
 
 r = sc.render
