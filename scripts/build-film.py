@@ -47,6 +47,11 @@ SHOTS = [
     dict(name="street", f=(624, 767), lens=30, cam=[(-62, 9, 1.7), (-40, 14, 1.7)], aim=[(-16, 17, 7), (-15, 18, 7)]),
     # from the west: from the south-west a real 15-storey slab just south of block D hides it (--osm)
     dict(name="finale", f=(768, 911), lens=35, cam=[(-97, -14, 48), (-202, -14, 96)], aim=[(1, -14, 24), (2, -16, 28)], ease=True),
+    # the listing commercial's own shots (scripts/build-ad.py), after the film's frames: render with --start 1000 --end 1391
+    # descent: from straight above, where the drone's top-down shot of the plot dissolves in, down to the towers
+    dict(name="descent", f=(1000, 1143), lens=35, cam=[(4, -12, 380), (-70, -105, 120)], aim=[(2, -6, 0), (1, -6, 22)], ease=True),
+    # entrance: eye level across the parking, through the curved glass into the hall
+    dict(name="entrance", f=(1200, 1391), lens=26, cam=[(-50, 30, 2.4), (-9, 18.5, 1.7)], aim=[(-18, 18.5, 3.4), (6, 17, 1.8)]),
 ]
 
 # ---- photo facades for the real city (--facades): ambientCG texture, height of one tile in m (6 or 8 storeys of 3 m) ----
@@ -482,6 +487,284 @@ def osm_city(path):
         far.data.materials[0] = walk_mat
 
 
+# ---- listing finish (--assets DIR): real materials and exterior furnishing, warm modern luxury. DIR holds Poly Haven
+# CC0 assets (scripts/fetch-film-assets.py): tex/<id>/<id>_{diff,rough,nor}.jpg and models/<id>/<id>_1k.gltf ----
+# material: (texture, tile size m, how, tint, roughness low..high, bump) - "multiply" keeps the model's own panel joints and
+# baked shadows under the texture, "replace" drops them, "swap" puts the texture into the material's own image slots
+FINISH = {
+    # (the street model's lawn, pavers and sidewalks already wear real textures: left as they are)
+    "Facade White PodiumAO": ("marble_01", 3.0, "multiply", (2.2, 2.1, 1.95), (0.3, 0.55), 0.15),   # warm limestone podium
+    "Facade White": ("marble_01", 3.0, "multiply", (2.2, 2.1, 1.95), (0.3, 0.55), 0.15),
+    "TB Panel White": ("plastered_wall_02", 3.0, "multiply", (1.4, 1.33, 1.2), (0.45, 0.7), 0.1),   # warm render, towers
+    "TB Panel White.001": ("plastered_wall_02", 3.0, "multiply", (1.4, 1.33, 1.2), (0.45, 0.7), 0.1),
+    "TB Slab Edge": ("marble_01", 3.0, "replace", (1.2, 1.15, 1.1), (0.3, 0.55), 0.1),
+    "TB Slab Edge.001": ("marble_01", 3.0, "replace", (1.2, 1.15, 1.1), (0.3, 0.55), 0.1),
+    "D Cladding": ("teak_veneer", 1.6, "replace", (0.8, 0.7, 0.62), (0.35, 0.6), 0.2),               # block D in teak
+    "Pavers": ("marble_01", 2.0, "replace", (1.1, 1.08, 1.05), (0.35, 0.75), 0.3),                   # stone paving
+    "RG_Deck_Tiles": ("hinoki_planks", 2.0, "replace", (0.95, 0.85, 0.75), (0.45, 0.8), 0.3),
+    "RG_Wood": ("teak_veneer", 1.0, "replace", (0.85, 0.75, 0.65), (0.35, 0.6), 0.2),
+    "Bench_Timber": ("teak_veneer", 1.0, "replace", (0.85, 0.75, 0.65), (0.35, 0.6), 0.2),
+    "Env Street Asphalt": ("asphalt_02", 5.0, "replace", (0.3, 0.3, 0.3), (0.6, 0.95), 0.2),
+    "Env Asphalt": ("asphalt_02", 5.0, "replace", (0.33, 0.33, 0.33), (0.6, 0.95), 0.2),
+}
+GLASS = {"TB Glass Curtain", "TB Glass Curtain.001", "TB Glass Window", "TB Glass Window.001", "Glass", "Glass.001",
+         "Glass Shopfront", "D Glass", "D Curtain Wall", "RG_Glass"}
+METAL = {   # base colour, roughness: bronze frames, champagne trims
+    "TB Mullion": ((0.2, 0.13, 0.08), 0.32), "TB Mullion.001": ((0.2, 0.13, 0.08), 0.32),
+    "Dark Metal PodiumAO": ((0.1, 0.065, 0.04), 0.35), "Dark Metal": ((0.1, 0.065, 0.04), 0.35),
+    "D Frame": ((0.2, 0.13, 0.08), 0.32), "D Railing": ((0.2, 0.13, 0.08), 0.32),
+    "A Tri Silver PodiumAO": ((0.62, 0.53, 0.41), 0.3), "A Tri Silver": ((0.62, 0.53, 0.41), 0.3),
+}
+# furnishing: (asset, x, y, turn deg, scale); the ground under each is found by ray, and a piece whose footprint isn't clear
+# paving, deck or lawn at one height is left out (and said so), so nothing lands in a wall, a car or a hedge
+FURNITURE = [
+    # north-west corner plaza on the main road, by the two benches
+    ("modular_street_seating", -37.5, 36.6, 0, 1), ("planter_box_02", -43.0, 35.5, 0, 1.2), ("planter_box_02", -32.0, 35.5, 0, 1.2),
+    ("tree_small_02", -44.0, 37.8, 30, 1.0), ("tree_small_02", -30.5, 37.8, 200, 0.9),
+    # roof garden courtyard: cafe tables and big planters round the pavilion
+    # (tower B overhangs the deck north of y 9.8 between x -4 and 18)
+    ("outdoor_table_chair_set_01", -6.0, -6.0, 15, 1), ("outdoor_table_chair_set_01", -10.0, 10.0, -20, 1),
+    ("outdoor_table_chair_set_01", 10.0, -6.0, 40, 1), ("outdoor_table_chair_set_01", -8.0, 18.0, 70, 1),
+    ("planter_box_01", -15.5, 8.0, 90, 1.3), ("potted_plant_04", -8.5, 4.5, 0, 1.6), ("potted_plant_01", 6.0, -7.5, 0, 1.6),
+]
+BOLLARDS = [(-44 + 4 * i, 39.8) for i in range(12)] + [(-21.5, -14 + 3.5 * i) for i in range(9)]
+BIKE_RACKS = [(-26.0 + 1.0 * i, 37.5) for i in range(5)]
+CANOPY = dict(x=(-22.6, -18.3), y=(-24.0, -16.0), z=5.9)   # teak canopy over the market's west entrance pavilion
+INTERIOR_LIGHTS = [(-13, 19), (-8, 21), (-8, 14), (-4, 6), (-3, -8), (6, 2), (8, -14), (12, 20)]   # hall and market ceilings
+PLANTING = dict(per_m2=0.8, box=(-60, -90, 60, 60), kinds=["shrub_01", "shrub_02", "shrub_04", "grass_medium_01"])
+
+
+def _img(path, colour=True):
+    im = bpy.data.images.load(path, check_existing=True)
+    if not colour:
+        im.colorspace_settings.name = "Non-Color"
+    return im
+
+
+def pbr(m, folder, tid, size, how, tint, rough, bump):
+    nt = m.node_tree
+    b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
+    f = lambda kind: os.path.join(folder, "tex", tid, f"{tid}_{kind}.jpg")
+    if how == "swap":   # same UVs, real images
+        for n in nt.nodes:
+            if n.type == "TEX_IMAGE" and n.image:
+                normal = n.image.colorspace_settings.name == "Non-Color" or "nor" in n.image.name.lower()
+                n.image = _img(f("nor"), False) if normal else _img(f("diff"))
+        return
+    geo = nt.nodes.new("ShaderNodeNewGeometry")   # world position: one scale in metres on every object
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / size,) * 3
+    nt.links.new(geo.outputs["Position"], mp.inputs["Vector"])
+
+    def tex(kind, colour=True):
+        t = nt.nodes.new("ShaderNodeTexImage")
+        t.image, t.projection, t.projection_blend = _img(f(kind), colour), "BOX", 0.25
+        nt.links.new(mp.outputs["Vector"], t.inputs["Vector"])
+        return t
+
+    d = tex("diff")
+    col = d.outputs["Color"]
+    if tint:
+        mt = nt.nodes.new("ShaderNodeMix"); mt.data_type, mt.blend_type = "RGBA", "MULTIPLY"
+        mt.inputs["Factor"].default_value = 1
+        nt.links.new(col, mt.inputs[6]); mt.inputs[7].default_value = (*tint, 1)
+        col = mt.outputs[2]
+    if how == "multiply" and b.inputs["Base Color"].is_linked:
+        prev = b.inputs["Base Color"].links[0].from_socket
+        mm = nt.nodes.new("ShaderNodeMix"); mm.data_type, mm.blend_type = "RGBA", "MULTIPLY"
+        mm.inputs["Factor"].default_value = 1
+        nt.links.new(prev, mm.inputs[6]); nt.links.new(col, mm.inputs[7])
+        col = mm.outputs[2]
+    nt.links.new(col, b.inputs["Base Color"])
+    if os.path.exists(f("rough")):
+        mr = nt.nodes.new("ShaderNodeMapRange")
+        nt.links.new(tex("rough", False).outputs["Color"], mr.inputs["Value"])
+        mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = rough
+        nt.links.new(mr.outputs["Result"], b.inputs["Roughness"])
+    b.inputs["Metallic"].default_value = 0
+    bp = nt.nodes.new("ShaderNodeBump")
+    bp.inputs["Strength"].default_value, bp.inputs["Distance"].default_value = bump, 0.02
+    nt.links.new(d.outputs["Color"], bp.inputs["Height"])
+    if b.inputs["Normal"].is_linked:
+        nt.links.new(b.inputs["Normal"].links[0].from_socket, bp.inputs["Normal"])
+    nt.links.new(bp.outputs["Normal"], b.inputs["Normal"])
+
+
+def plain(name, rgb, rough, metal=0.0, emit=0.0):
+    m = matte(name, rgb, rough)
+    b = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    b.inputs["Metallic"].default_value = metal
+    if emit:
+        b.inputs["Emission Color"].default_value = (1.0, 0.72, 0.42, 1)   # 2700 K
+        b.inputs["Emission Strength"].default_value = emit
+    return m
+
+
+def ground_at(x, y, top=80.0):
+    """The first surface straight down at (x, y): (z, object, material name), or None."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    hit, loc, _n, idx, ob, _m = bpy.context.scene.ray_cast(dg, Vector((x, y, top)), Vector((0, 0, -1)))
+    if not hit:
+        return None
+    ev = ob.evaluated_get(dg).data
+    mats = ev.materials
+    name = mats[ev.polygons[idx].material_index].name if mats and idx < len(ev.polygons) else ""
+    return loc.z, ob, name
+
+
+FLOOR = ("Pavers", "Paving", "Sidewalk", "Deck", "Lawn", "Concrete", "Rubber", "Planting")
+
+
+def clear_spot(x, y, r):
+    """Height of a level patch of floor of radius r round (x, y), or None if anything else is in the way."""
+    zs = []
+    for dx, dy in [(0, 0)] + [(r * math.cos(a), r * math.sin(a)) for a in (0, 1.57, 3.14, 4.71, 0.79, 2.36, 3.93, 5.5)]:
+        g = ground_at(x + dx, y + dy)
+        if not g or not any(k in g[2] for k in FLOOR):
+            return None
+        zs.append(g[0])
+    return zs[0] if max(zs) - min(zs) < 0.25 else None
+
+
+def model(folder, aid):
+    """A Poly Haven model, loaded once into a hidden collection with its base at z 0, for instancing."""
+    coll = bpy.data.collections.get("PH " + aid)
+    if coll:
+        return coll
+    coll = bpy.data.collections.new("PH " + aid)
+    before = set(bpy.data.objects)
+    path = next(os.path.join(folder, "models", aid, n) for n in os.listdir(os.path.join(folder, "models", aid)) if n.endswith(".gltf"))
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    for o in new:
+        for c in o.users_collection:
+            c.objects.unlink(o)
+        coll.objects.link(o)
+    pts = [o.matrix_world @ Vector(v) for o in new if o.type == "MESH" for v in o.bound_box]
+    coll.instance_offset = (sum(p.x for p in pts) / len(pts), sum(p.y for p in pts) / len(pts), min(p.z for p in pts))
+    coll["radius"] = max(max(p.x for p in pts) - min(p.x for p in pts), max(p.y for p in pts) - min(p.y for p in pts)) / 2
+    return coll
+
+
+def place(scene, coll, x, y, z, turn, scale):
+    e = bpy.data.objects.new("Film " + coll.name, None)
+    e.instance_type, e.instance_collection = "COLLECTION", coll
+    e.location, e.rotation_euler, e.scale = (x, y, z), (0, 0, math.radians(turn)), (scale,) * 3
+    scene.collection.objects.link(e)
+
+
+def finish(scene, folder):
+    t0 = time.time()
+    for name, spec in FINISH.items():
+        m = bpy.data.materials.get(name)
+        if m:
+            pbr(m, folder, *spec)
+    for m in bpy.data.materials:
+        b = m.node_tree and next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+        if not b:
+            continue
+        if m.name in GLASS:   # dark warm-grey glass that reflects the sky and the city, no more flat blue
+            b.inputs["Base Color"].default_value = (0.07, 0.09, 0.105, 1)
+            b.inputs["Roughness"].default_value, b.inputs["Metallic"].default_value = 0.04, 0.0
+            b.inputs["Specular IOR Level"].default_value = 0.7
+            if "--hall" in args and m.name in ("Glass", "Glass Shopfront"):   # the podium's ground floor: see the lit hall through it
+                b.inputs["Alpha"].default_value = 0.3
+                m.use_transparent_shadow = True
+        elif m.name in METAL:
+            b.inputs["Base Color"].default_value = (*METAL[m.name][0], 1)
+            b.inputs["Roughness"].default_value, b.inputs["Metallic"].default_value = METAL[m.name][1], 1.0
+
+
+    # the hidden library collection for instancing lives outside the view layer's render
+    lib = bpy.data.collections.new("Film Library")
+    scene.collection.children.link(lib)
+    skipped = []
+    for aid, x, y, turn, scale in FURNITURE:
+        coll = model(folder, aid)
+        if coll.name not in lib.children:
+            lib.children.link(coll)
+        z = clear_spot(x, y, coll["radius"] * scale)
+        if z is None:
+            skipped.append(f"{aid}@{x},{y}")
+            continue
+        place(scene, coll, x, y, z, turn, scale)
+
+    # planting: shrubs and grasses scattered over the site's lawns (not the far underlay), where a ray finds lawn
+    import random
+    rng = random.Random(7)
+    kinds = [model(folder, k) for k in PLANTING["kinds"]]
+    for c in kinds:
+        if c.name not in lib.children:
+            lib.children.link(c)
+    lawn = bpy.data.objects.get("Env_Lawn")
+    n_plants = 0
+    if lawn:
+        me = lawn.data
+        x0, y0, x1, y1 = PLANTING["box"]
+        for p in me.polygons:
+            c = lawn.matrix_world @ p.center
+            if not (x0 < c.x < x1 and y0 < c.y < y1):
+                continue
+            for _ in range(int(p.area * PLANTING["per_m2"] + rng.random())):
+                # a random point on the face: a random vertex pair blend (good enough on the lawn's small faces)
+                vs = [lawn.matrix_world @ me.vertices[i].co for i in p.vertices]
+                a, b2 = rng.random(), rng.random()
+                pt = vs[0].lerp(vs[1], a).lerp(vs[-1], b2 * (1 - a))
+                g = ground_at(pt.x, pt.y)
+                if g and g[1] == lawn:
+                    place(scene, rng.choice(kinds), pt.x, pt.y, g[0], rng.uniform(0, 360), rng.uniform(0.7, 1.3))
+                    n_plants += 1
+    # the originals stay out of the view layer (hiding them from render would hide every instance too)
+    scene.view_layers[0].layer_collection.children[lib.name].exclude = True
+
+    # entrance canopy: a thin slab, bronze edge, teak soffit, warm downlights in the soffit
+    teak = bpy.data.materials.new("Film Canopy Teak"); teak.use_nodes = True
+    pbr(teak, folder, "teak_veneer", 1.2, "replace", (1.0, 0.9, 0.8), (0.35, 0.55), 0.2)
+    bronze = plain("Film Bronze", (0.2, 0.13, 0.08), 0.32, 1.0)
+    (cx0, cx1), (cy0, cy1), cz = CANOPY["x"], CANOPY["y"], CANOPY["z"]
+    bpy.ops.mesh.primitive_cube_add(size=1, location=((cx0 + cx1) / 2, (cy0 + cy1) / 2, cz))
+    can = bpy.context.object
+    can.name, can.scale = "Film Canopy", (cx1 - cx0, cy1 - cy0, 0.3)
+    bpy.ops.object.transform_apply(scale=True)
+    can.data.materials.append(bronze); can.data.materials.append(teak)
+    for p in can.data.polygons:
+        p.material_index = 1 if p.normal.z < -0.5 else 0   # soffit in teak
+    lamp = plain("Film Lamp", (1, 0.9, 0.8), 0.4, emit=12.0)
+    for i in range(4):
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.09, depth=0.02, location=((cx0 + cx1) / 2, cy0 + (i + 0.5) * (cy1 - cy0) / 4, cz - 0.16))
+        bpy.context.object.data.materials.append(lamp)
+
+    # bollard lights along the main road's sidewalk and the parking edge: bronze posts with a lit band
+    for x, y in BOLLARDS:
+        g = ground_at(x, y)
+        if not g or not any(k in g[2] for k in FLOOR):
+            continue
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.08, depth=0.85, location=(x, y, g[0] + 0.425))
+        post = bpy.context.object; post.name = "Film Bollard"; post.data.materials.append(bronze)
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.082, depth=0.08, location=(x, y, g[0] + 0.74))
+        bpy.context.object.data.materials.append(lamp)
+    # bike racks: bronze staples
+    for x, y in BIKE_RACKS:
+        g = ground_at(x, y)
+        if not g:
+            continue
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.4, minor_radius=0.025, location=(x, y, g[0]), rotation=(math.radians(90), 0, 0))
+        bpy.context.object.data.materials.append(bronze)
+    # last (its 16 000 objects would slow every ray above): the podium's ground floor fitted out (interior/A1: the hall and the market, in the site's own frame), lit warm
+    # only with --hall (the entrance shot): its hundreds of shop materials take EEVEE half an hour to compile
+    if "--hall" not in args:
+        INTERIOR_LIGHTS.clear()
+    else:
+        bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, "public/models/interior/A1.glb"))
+    for x, y in INTERIOR_LIGHTS:
+        light = bpy.data.lights.new("Film Hall Light", "AREA")
+        light.energy, light.size, light.color = 900, 2.5, (1.0, 0.82, 0.62)
+        ob = bpy.data.objects.new("Film Hall Light", light)
+        ob.location = (x, y, 4.2)
+        scene.collection.objects.link(ob)
+    print(f"FILM finish: {len(FURNITURE) - len(skipped)} pieces, {n_plants} plants in {time.time() - t0:.0f} s; left out: {skipped}", flush=True)
+
+
 def build():
     t0 = time.time()
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -498,6 +781,8 @@ def build():
         b = m and next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
         if b:
             b.inputs["Base Color"].default_value = (*rgb, 1)
+    if arg("--assets"):
+        finish(scene, arg("--assets"))
 
     # ground out to the horizon, and a plain city round the site so the aerials aren't a model in a void
     # a grid of 400 m squares, not one 40 km quad: on two giant triangles the sun's shadows lose precision and
@@ -651,7 +936,7 @@ def encode(frames_dir, mp4):
     scene = bpy.data.scenes.new("film")
     se = scene.sequence_editor_create()
     strips = getattr(se, "strips", None) or se.sequences
-    names = sorted(n for n in os.listdir(frames_dir) if n.endswith(".jpg"))
+    names = sorted(n for n in os.listdir(frames_dir) if n.endswith(".jpg") and int(n[:4]) < 1000)   # 1000+ are the commercial's shots
     strip = strips.new_image("frames", os.path.join(frames_dir, names[0]), channel=1, frame_start=1)
     for n in names[1:]:
         strip.elements.append(n)
