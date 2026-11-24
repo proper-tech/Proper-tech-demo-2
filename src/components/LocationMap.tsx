@@ -8,22 +8,55 @@ import { distance } from '@/lib/geo';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 
-// Where the complex is, as a flight over the city map: Ulaanbaatar from above, then Chinggis
+// Where the complex is, as a flight over the city map: the 1.5 km round it from above, then Chinggis
 // (Sükhbaatar) Square and the Embassy of China lit up in turn, then down onto the complex, drawn in 3D
-// in amber among the city's buildings. Plays once when it comes into view; the steps can be picked
-// again by hand. The map is OpenFreeMap's (OpenStreetMap data, no key); if it can't be reached, a
+// in amber among the city's buildings. Plays once when it comes into view, and again on the button. The map is OpenFreeMap's (OpenStreetMap data, no key); if it can't be reached, a
 // plain map with only the complex and the places stands in.
 
 const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const AMBER = '#F2B632';
 const BLUE = '#2F6FDE';
 
+/** The map shows 1.5 km round the complex: everything further is faded out, and the map can't be
+ *  moved far past it (all the places shown are within it). */
+const RADIUS = 1500;
+/** A box round the complex, `ns` metres north and south and `ew` east and west. */
+const around = (ns: number, ew: number): [[number, number], [number, number]] => {
+  const [lon, lat] = sebotse.centre;
+  const dLat = ns / 111320;
+  const dLon = ew / (111320 * Math.cos((lat * Math.PI) / 180));
+  return [
+    [lon - dLon, lat - dLat],
+    [lon + dLon, lat + dLat],
+  ];
+};
+/** The circle's own box: what the opening view fits on screen. */
+const AREA = around(RADIUS, RADIUS);
+/** How far the map may go: a little past the circle north and south, and wider east and west, because the
+ *  map keeps its whole view inside this box and a wide map would otherwise have to cut the circle off. */
+const LIMIT = around(RADIUS * 2, RADIUS * 3);
+/** The faded-out world outside the circle: a polygon covering the limit, with the circle as its hole. */
+const OUTSIDE: GeoJSON.Feature<GeoJSON.Polygon> = (() => {
+  const [lon, lat] = sebotse.centre;
+  const circle: [number, number][] = [];
+  for (let i = 0; i <= 96; i++) {
+    const a = (i / 96) * 2 * Math.PI;
+    circle.push([lon + (RADIUS * Math.sin(a)) / (111320 * Math.cos((lat * Math.PI) / 180)), lat + (RADIUS * Math.cos(a)) / 111320]);
+  }
+  const [[w, s], [e, n]] = around(RADIUS * 4, RADIUS * 6);
+  return {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]], circle.reverse()] },
+  };
+})();
+
 type StepId = 'city' | LandmarkId | 'sebotse';
 const STEPS: { id: StepId; center: [number, number]; zoom: number; pitch: number; bearing: number }[] = [
-  { id: 'city', center: [106.917, 47.919], zoom: 12.2, pitch: 0, bearing: 0 },
+  // the whole area from above (its zoom is worked out from the map's size, see go)
+  { id: 'city', center: sebotse.centre, zoom: 14, pitch: 0, bearing: 0 },
   { id: 'square', center: landmarks.square, zoom: 15.8, pitch: 50, bearing: -18 },
   { id: 'embassy', center: landmarks.embassy, zoom: 16.2, pitch: 52, bearing: 24 },
-  { id: 'school', center: landmarks.school, zoom: 16.6, pitch: 55, bearing: 10 },
   { id: 'roundabout', center: landmarks.roundabout, zoom: 16.6, pitch: 55, bearing: -20 },
   { id: 'sebotse', center: sebotse.centre, zoom: 17.4, pitch: 62, bearing: -35 },
 ];
@@ -31,7 +64,7 @@ const PLACES = Object.keys(landmarks) as LandmarkId[];
 /** Tags shown over the whole city: the places near the complex would pile up on it at that zoom. */
 const CITY_TAGS: (LandmarkId | 'sebotse')[] = ['square', 'embassy', 'sebotse'];
 /** The ring round each place, metres. */
-const RING: Record<LandmarkId | 'sebotse', number> = { square: 170, embassy: 90, school: 70, roundabout: 60, sebotse: 110 };
+const RING: Record<LandmarkId | 'sebotse', number> = { square: 170, embassy: 90, roundabout: 60, sebotse: 110 };
 const isPlace = (id: StepId): id is LandmarkId => id in landmarks;
 const FLY = 3800;
 const HOLD = 2600;
@@ -54,7 +87,6 @@ export function LocationMap() {
   const box = useRef<HTMLDivElement>(null);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
-  const [step, setStep] = useState<StepId>('city');
   const [playing, setPlaying] = useState(false);
   const [near, setNear] = useState(false);
   const run = useRef(0);
@@ -88,8 +120,10 @@ export function LocationMap() {
       const m = new maplibre.Map({
         container: el.current,
         style: STYLE,
-        center: STEPS[0].center,
-        zoom: STEPS[0].zoom,
+        bounds: AREA,
+        fitBoundsOptions: { padding: 24 },
+        // can't be zoomed or dragged out far past the 1.5 km round the complex
+        maxBounds: LIMIT,
         pitch: 0,
         attributionControl: { compact: true },
         cooperativeGestures: true,
@@ -118,6 +152,15 @@ export function LocationMap() {
             m.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', lang], ['get', 'name:latin'], ['get', 'name']]);
           }
         }
+        // everything past 1.5 km faded out, and the circle's edge as a dashed amber line
+        m.addSource('outside', { type: 'geojson', data: OUTSIDE });
+        m.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: { 'fill-color': '#eef1f4', 'fill-opacity': 0.88 } });
+        m.addLayer({
+          id: 'radius',
+          type: 'line',
+          source: 'outside',
+          paint: { 'line-color': AMBER, 'line-width': 2, 'line-dasharray': [2, 2] },
+        });
         // the complex, in amber, in 3D
         m.addSource('sebotse', {
           type: 'geojson',
@@ -248,10 +291,11 @@ export function LocationMap() {
   const go = (id: StepId) => {
     const m = map.current;
     const s = STEPS.find((x) => x.id === id)!;
-    setStep(id);
     if (!m) return;
     m.getContainer().dataset.step = id;
-    m.flyTo({ center: s.center, zoom: s.zoom, pitch: s.pitch, bearing: s.bearing, duration: FLY, essential: true, curve: 1.5 });
+    // the opening view: the whole 1.5 km area, as close as this map's size allows
+    const fit = id === 'city' ? m.cameraForBounds(AREA, { padding: 24 }) : undefined;
+    m.flyTo({ center: fit?.center ?? s.center, zoom: fit?.zoom ?? s.zoom, pitch: s.pitch, bearing: s.bearing, duration: FLY, essential: true, curve: 1.5 });
     if (m.getLayer('links')) m.setPaintProperty('links', 'line-opacity', id === 'city' ? 0 : 0.85);
     for (const el2 of m.getContainer().querySelectorAll<HTMLElement>('.map-tag')) {
       const city = id === 'city' && CITY_TAGS.some((c) => el2.classList.contains(`map-tag-${c}`));
@@ -307,27 +351,6 @@ export function LocationMap() {
   return (
     <div className="location-map" ref={box}>
       <div className="location-canvas" ref={el} />
-      <ol className="location-steps">
-        {STEPS.map((s, i) => (
-          <li key={s.id}>
-            <button
-              type="button"
-              aria-pressed={step === s.id}
-              onClick={() => {
-                run.current++;
-                setPlaying(false);
-                go(s.id);
-              }}
-            >
-              <i>{i + 1}</i>
-              <span>
-                <b>{t.location[s.id]}</b>
-                {isPlace(s.id) ? <small>{km(landmarks[s.id])}</small> : <small>{t.location[`${s.id}Line`]}</small>}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ol>
       <div className="location-actions">
         <button type="button" className="pill" onClick={() => void play()} disabled={playing}>
           {playing ? t.location.playing : t.location.replay}

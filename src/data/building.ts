@@ -76,11 +76,17 @@ export interface Rect {
 }
 
 export interface CoreSpace {
-  id: 'corridor' | 'stair' | 'lifts' | 'shafts' | 'hoa' | 'trash';
+  /** hall: public floor beyond the lift lobby; room: a numbered room the drawing gives no use for;
+   *  steps: a flight within the hall; exit: the vestibule out onto the podium roof. */
+  id: 'corridor' | 'stair' | 'lifts' | 'shafts' | 'hoa' | 'trash' | 'hall' | 'room' | 'steps' | 'exit';
   x0: number;
   x1: number;
   y0: number;
   y1: number;
+  /** Its number on the architect's plan (shown on the 2D plan). */
+  no?: string;
+  /** A door out onto the roof playground, in the wall on this side, from a to b (m along that wall). */
+  door?: { side: 'N' | 'W'; a: number; b: number };
 }
 
 /** Lift and stair core, the same on every floor. */
@@ -91,11 +97,31 @@ export const core: CoreSpace[] = [
   { id: 'shafts', x0: 12.6, x1: 14.5, y0: 14.05, y1: 17.55 },
 ];
 
-/** Floor 4 of Block B: the homeowners' association room (403-406) replaces apartment B. */
-const hoa: CoreSpace = { id: 'hoa', x0: -1.75, x1: 7.33, y0: 7.15, y1: 13.55 };
+// Floor 4 (the podium roof's level), from the floor-4 plans: both towers open onto the roof playground.
+// On floor 4 the strip east of the lifts is lobby (grey like the corridor on both sheets), not shafts.
+const lobbyNorth: CoreSpace = { id: 'hall', x0: 12.6, x1: 14.4, y0: 14.05, y1: 21.0 };
+const floor4Core = [...core.filter((c) => c.id !== 'shafts'), lobbyNorth];
+
+/** Block B, floor 4: apartment B's place is the homeowners' association (403, 404), a hall with steps
+ *  down to vestibule 406 and its double doors in the west wall out to the playground, and room 405. */
+const floor4B: CoreSpace[] = [
+  { id: 'hall', x0: -0.45, x1: 7.33, y0: 7.15, y1: 10.85 },
+  { id: 'hall', x0: 7.33, x1: 9.0, y0: 8.6, y1: 10.85 }, // through to the lift lobby
+  { id: 'steps', x0: 1.6, x1: 2.8, y0: 7.3, y1: 10.7 },
+  { id: 'hoa', x0: -0.45, x1: 3.14, y0: 10.85, y1: 13.55, no: '403' },
+  { id: 'room', x0: -1.75, x1: -0.45, y0: 10.85, y1: 13.55, no: '404' },
+  { id: 'room', x0: 7.33, x1: 9.0, y0: 7.15, y1: 8.6, no: '405' },
+  { id: 'exit', x0: -1.75, x1: -0.45, y0: 7.15, y1: 10.85, no: '406', door: { side: 'W', a: 8.1, b: 9.9 } },
+];
+
+/** Block C, floor 4: the lobby runs north past the lifts to double doors in the north wall, into
+ *  vestibule 403 out on the podium roof, next to the playground. */
+const floor4C: CoreSpace[] = [
+  { id: 'exit', x0: 6.9, x1: 14.2, y0: 21.2, y1: 23.3, no: '403', door: { side: 'N', a: 12.75, b: 14.25 } },
+];
 
 export const coreFor = (tower: TowerId, floor: number): CoreSpace[] =>
-  tower === 'B' && floor === FLOOR_MIN ? [...core, hoa] : core;
+  floor !== FLOOR_MIN ? core : [...floor4Core, ...(tower === 'B' ? floor4B : floor4C)];
 
 const POSITIONS: { pos: Unit['pos']; plan: PlanId; facing: Facing }[] = [
   { pos: 1, plan: 'A', facing: 'NW' },

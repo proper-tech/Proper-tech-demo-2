@@ -42,7 +42,20 @@ function CorePlan({ space: c, label }: { space: CoreSpace; label: string | null 
   const cx = x + w / 2;
   const cy = y + h / 2;
   let body: ReactNode;
-  if (c.id === 'corridor') body = <rect className="plan-corridor" x={x} y={y} width={w} height={h} fill="url(#plan-stone)" />;
+  if (c.id === 'corridor' || c.id === 'hall' || c.id === 'exit') body = <rect className="plan-corridor" x={x} y={y} width={w} height={h} fill="url(#plan-stone)" />;
+  else if (c.id === 'steps') {
+    // treads across the hall (north-south lines), 30 cm apart
+    const treads: number[] = [];
+    for (let tx = x + 0.15; tx < x + w; tx += 0.3) treads.push(tx);
+    body = (
+      <g className="plan-stair">
+        <rect x={x} y={y} width={w} height={h} />
+        {treads.map((tx) => (
+          <line key={tx} x1={tx} y1={y + 0.1} x2={tx} y2={y + h - 0.1} />
+        ))}
+      </g>
+    );
+  }
   else if (c.id === 'shafts' || c.id === 'trash') body = <rect className="plan-core" x={x} y={y} width={w} height={h} fill="url(#plan-hatch)" />;
   else if (c.id === 'lifts') {
     // cars about 1.9 m apart, doors to the south onto the lobby
@@ -84,10 +97,23 @@ function CorePlan({ space: c, label }: { space: CoreSpace; label: string | null 
       </g>
     );
   } else body = <rect className="plan-core" x={x} y={y} width={w} height={h} />;
+  // an exit's label stands outside the door if the vestibule is inside the tower (block B's, 1.3 m wide)
+  const labelOutside = c.id === 'exit' && c.y0 < PLATE.y1;
   return (
     <g>
       {body}
-      {label && (
+      {c.door && <PlanDoor door={c.door} />}
+      {c.no && (
+        <text className="plan-room-no" x={x + 0.15} y={y + 0.35}>
+          {c.no}
+        </text>
+      )}
+      {label && labelOutside && (
+        <text className="plan-name plan-core-name plan-exit-name" x={-1.15} y={cy} transform={`rotate(-90 -1.15 ${cy})`}>
+          {label}
+        </text>
+      )}
+      {label && !labelOutside && (
         <text
           className="plan-name plan-core-name"
           x={cx}
@@ -97,6 +123,29 @@ function CorePlan({ space: c, label }: { space: CoreSpace; label: string | null 
           {label}
         </text>
       )}
+    </g>
+  );
+}
+
+/** Double doors in the facade, opening out: the wall line from a to b (m), a leaf hinged at each end. */
+function PlanDoor({ door }: { door: NonNullable<CoreSpace['door']> }) {
+  const leaf = (door.b - door.a) / 2;
+  if (door.side === 'W') {
+    const X = PX(PLATE.x0 + 0.15);
+    const [ya, yb, ym] = [PY(door.a), PY(door.b), PY((door.a + door.b) / 2)];
+    return (
+      <g className="plan-door">
+        <line className="plan-door-gap" x1={X} y1={ya} x2={X} y2={yb} />
+        <path d={`M${X} ${ya} H${X - leaf} A${leaf} ${leaf} 0 0 1 ${X} ${ym} M${X} ${yb} H${X - leaf} A${leaf} ${leaf} 0 0 0 ${X} ${ym}`} />
+      </g>
+    );
+  }
+  const Y = PY(PLATE.y1 - 0.1);
+  const [xa, xb, xm] = [PX(door.a), PX(door.b), PX((door.a + door.b) / 2)];
+  return (
+    <g className="plan-door">
+      <line className="plan-door-gap" x1={xa} y1={Y} x2={xb} y2={Y} />
+      <path d={`M${xa} ${Y} V${Y - leaf} A${leaf} ${leaf} 0 0 1 ${xm} ${Y} M${xb} ${Y} V${Y - leaf} A${leaf} ${leaf} 0 0 0 ${xm} ${Y}`} />
     </g>
   );
 }
@@ -119,6 +168,11 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   // block B, floor 4: the homeowners' association room takes apartment 02's place (floor-4 plan),
   // so it is listed there under that number instead of leaving a gap
   const hoa = core.some((c) => c.id === 'hoa') ? `${tower}${floor}02` : null;
+  // the plan's frame: wider where floor 4's exit and its label stand outside the tower
+  const vb = {
+    left: core.some((c) => c.door?.side === 'W') ? -1.6 : -0.6,
+    top: Math.min(-0.6, ...core.map((c) => PY(c.y1) - 0.4)),
+  };
   const layer = useRef<HTMLDivElement>(null);
   const open = (id: string) => router.push(`/${locale}/apartments/${id}`);
 
@@ -152,11 +206,16 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 <span>{t.floor.core.hoa}</span>
               </div>
             )}
+            {core.some((c) => c.door) && (
+              <div className="unit-tag unit-tag-exit" data-anchor="core:exit">
+                <b>{t.floor.core.exit}</b>
+              </div>
+            )}
           </div>
         </div>
         {(view === '2d' || !drawn) && (
           <div className={view === '2d' ? 'floor-plan' : 'floor-plan is-standin'}>
-            <svg className="plan-svg" viewBox={`-0.6 -0.6 ${PLAN_W + 1.2} ${PLAN_H + 1.2}`} role="img">
+            <svg className="plan-svg" viewBox={`${vb.left} ${vb.top} ${PLAN_W + 0.6 - vb.left} ${PLAN_H + 0.6 - vb.top}`} role="img">
               <rect className="plan-slab" x={0} y={0} width={PLAN_W} height={PLAN_H} rx={PLATE.corner} />
               {PLATE.grid.x.map((X) => (
                 <line key={`gx${X}`} className="plan-grid" x1={PX(X)} y1={-0.5} x2={PX(X)} y2={PLAN_H + 0.5} />
@@ -181,8 +240,8 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   <rect x={PX(MIRROR_X)} y={-1} width={PLAN_W} height={PLAN_H + 2} />
                 </clipPath>
               </defs>
-              {core.map((c) => (
-                <CorePlan key={c.id} space={c} label={c.id === 'shafts' ? null : t.floor.core[c.id]} />
+              {core.map((c, i) => (
+                <CorePlan key={`${c.id}${i}`} space={c} label={t.floor.core[c.id] || null} />
               ))}
               {summary.units.map((u) => {
                 const layout = layouts[u.layout];

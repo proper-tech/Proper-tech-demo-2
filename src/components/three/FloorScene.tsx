@@ -100,7 +100,33 @@ const CORE_LOOK: Record<Exclude<CoreSpace['id'], 'stair' | 'lifts'>, { h: number
   shafts: { h: 1.25, color: '#EDEBE6' },
   hoa: { h: 1.25, color: '#EDEBE6' },
   trash: { h: 1.25, color: '#EDEBE6' },
+  hall: { h: 0, color: '#DDE2E7' },
+  steps: { h: 0, color: '#DDE2E7' },
+  exit: { h: 0, color: '#DDE2E7' },
+  room: { h: 1.25, color: '#EDEBE6' },
 };
+
+/** Floor 4's double doors out to the roof playground: a glass pane in an amber frame, in the facade. */
+function ExitDoor({ door }: { door: NonNullable<CoreSpace['door']> }) {
+  const len = door.b - door.a;
+  const mid = (door.a + door.b) / 2;
+  const west = door.side === 'W';
+  const [x, z] = west ? [sx(PLATE.x0 + 0.15), sz(mid)] : [sx(mid), sz(PLATE.y1 - 0.1)];
+  // [along the wall, through it] -> box size in x and z
+  const size = (along: number, across: number, h: number): [number, number, number] => (west ? [across, h, along] : [along, h, across]);
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 1.05, 0]}>
+        <boxGeometry args={size(len + 0.1, 0.12, 2.1)} />
+        <meshStandardMaterial color="#F2B632" />
+      </mesh>
+      <mesh position={[0, 1.0, 0]}>
+        <boxGeometry args={size(len - 0.2, 0.16, 1.9)} />
+        <meshStandardMaterial color="#9FC3D9" />
+      </mesh>
+    </group>
+  );
+}
 
 function CoreBlock({ space }: { space: CoreSpace }) {
   if (space.id === 'stair' || space.id === 'lifts') return null;
@@ -282,6 +308,12 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
       ...core
         .filter((c) => c.id === 'hoa')
         .map((c): Anchor => ({ id: 'core:hoa', position: [sx((c.x0 + c.x1) / 2), CORE_LOOK.hoa.h + 0.6, sz((c.y0 + c.y1) / 2)] })),
+      // floor 4: the door out to the roof playground
+      ...core.flatMap((c): Anchor[] => {
+        if (!c.door) return [];
+        const mid = (c.door.a + c.door.b) / 2;
+        return [{ id: 'core:exit', position: c.door.side === 'W' ? [sx(PLATE.x0), 2.6, sz(mid)] : [sx(mid), 2.6, sz(PLATE.y1)] }];
+      }),
     ],
     [units, core],
   );
@@ -316,9 +348,10 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
       <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
 
       <Slab hole={hole} />
-      {core.map((space) => (
-        <CoreBlock key={space.id} space={space} />
+      {core.map((space, i) => (
+        <CoreBlock key={`${space.id}${i}`} space={space} />
       ))}
+      {core.map((space, i) => space.door && <ExitDoor key={`door${i}`} door={space.door} />)}
       {stair && <Stairs {...stair} wallH={WALL_H} cap />}
       {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap color="#EDEBE6" />}
       {units.map((unit) => (

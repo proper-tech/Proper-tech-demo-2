@@ -686,65 +686,58 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   padding-right: 0;
 }
 
+/* the film, full screen under the header, its words over the bottom left on a dark fade */
 .video {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(16rem, 24rem) 1fr;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  align-items: center;
+  align-content: end;
+  height: calc(100svh - var(--header));
+  min-height: 26rem;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.video-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgb(10 20 38 / 0.8), transparent 45%);
 }
 
 .video-text {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  max-width: 38rem;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.35);
 }
 
 .video-text p:not(.note) {
-  color: var(--stone);
+  color: #dbe3ee;
 }
 
-.video-frame {
-  aspect-ratio: 16 / 9;
-  max-width: 60rem;
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--ink);
+.video-text .note {
+  color: #aab6c6;
 }
 
-.video-frame video,
-.video-frame button {
-  display: block;
-  width: 100%;
-  height: 100%;
+/* with the player's controls showing (reduced motion), the words must not sit on them */
+.video:has(video[controls]) .video-text {
+  padding-bottom: 3.5rem;
 }
 
-.video-frame button {
-  display: grid;
-  place-items: center;
-  border: 0;
-  padding: 0;
-  background-size: cover;
-  background-position: center;
-}
-
-.play {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.8rem 1.4rem 0.8rem 1rem;
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.play svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  fill: currentColor;
-}
-
-.video-frame button:hover .play {
-  background: var(--amber);
+.video:has(video[controls])::after {
+  display: none;
 }
 
 /* Shared controls */
@@ -1524,6 +1517,32 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   stroke-width: 0.1px;
 }
 
+/* floor 4: the doors out to the roof playground (amber, like the complex on the map) and the room
+   numbers from the architect's plan */
+.unit-tag-exit {
+  background: var(--amber);
+}
+
+.plan-door path {
+  fill: none;
+  stroke: #14233b;
+  stroke-width: 0.05;
+}
+
+.plan-door-gap {
+  stroke: var(--amber);
+  stroke-width: 0.3;
+}
+
+.plan-exit-name {
+  fill: #9a6a00;
+}
+
+.plan-room-no {
+  font-size: 0.2px;
+  fill: #5d6875;
+}
+
 /* Floor plan: slab, column grid and the lift and stair core */
 
 .plan-slab {
@@ -1637,7 +1656,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
     grid-template-columns: 1fr;
   }
 
-  .video,
   .site {
     grid-template-columns: 1fr;
   }
@@ -2600,7 +2618,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 0;
   height: 100svh;
   overflow: hidden;
-  background: var(--ink) url('/media/film-poster.webp') center / cover; /* the film's first frame */
+  background: var(--ink);
 }
 
 .story-film {
@@ -2712,6 +2730,28 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   color: #dbe3ee;
 }
 
+/* the four captions on one screen: four across, two by two on tablets, stacked on phones */
+.chapter-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  width: min(100%, 78rem);
+}
+
+.chapter-cards .chapter-caption {
+  max-width: none;
+  align-content: start;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.chapter-cards .chapter-caption h2 {
+  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+}
+
+.chapter-cards .chapter-caption p {
+  font-size: 1rem;
+}
+
 /* which chapter you are in: a dot per chapter on the right of the film */
 .story-dots {
   position: absolute;
@@ -2735,10 +2775,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .story[data-at='intro'] [data-dot='intro'],
-.story[data-at='location'] [data-dot='location'],
-.story[data-at='towers'] [data-dot='towers'],
-.story[data-at='podium'] [data-dot='podium'],
-.story[data-at='homes'] [data-dot='homes'] {
+.story[data-at='cards'] [data-dot='cards'] {
   background: var(--amber);
   transform: scale(1.5);
 }
@@ -2939,13 +2976,140 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   }
 }
 
+/* the home page pages: one scroll moves to the next section (the intro, the cards, the map, ...). A section
+   taller than the screen still scrolls freely inside; the footer is reached by its bottom edge. */
+html:has(main.home) {
+  scroll-snap-type: y mandatory;
+}
+
+.home .story-chapter,
+.home > section:not(.story),
+.home .picker {
+  scroll-snap-align: start;
+}
+
+.home .site-footer {
+  scroll-snap-align: end;
+}
+
+/* the header is see-through over the film: the chapters snap to the very top, not under the header */
+.home .story-chapter {
+  scroll-margin-top: calc(-1 * var(--header));
+}
+
+/* on a desktop screen every section is exactly one screen under the header, its main picture (map, photo
+   cards, plans, site plan) taking whatever height the heading leaves; phones and short windows keep the
+   flowing layout and page through a tall section a screen at a time (Motion.tsx) */
+@media (min-width: 60rem) and (min-height: 40rem) {
+  .home .location,
+  .home .explore,
+  .home .layouts,
+  .home .site,
+  .home .picker {
+    height: calc(100svh - var(--header));
+    min-height: 0;
+  }
+
+  .home .location,
+  .home .explore,
+  .home .layouts {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: clamp(1.5rem, 4vh, 3rem);
+  }
+
+  .home .location .centre-head,
+  .home .explore .centre-head,
+  .home .layouts .centre-head {
+    flex: none;
+    margin-bottom: clamp(1rem, 3vh, 2.25rem);
+  }
+
+  .home .location-map {
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .home .explore-cards {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .home .explore-cards > li {
+    min-height: 0;
+  }
+
+  .home .explore-card {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .home .types {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .home .type-plan {
+    height: clamp(8rem, calc(100svh - 36rem), 17rem);
+  }
+
+  .home .layouts .centre-note {
+    margin-top: clamp(0.75rem, 2vh, 1.5rem);
+  }
+
+  /* the floor picker: the 3D building fills the screen beside the panel, which scrolls on its own */
+  .home .picker {
+    align-items: stretch;
+  }
+
+  .home .picker-side {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .home .tower {
+    position: relative;
+    top: 0;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* the site plan: the sheet as tall as the screen allows, the drawing shrinking to fit in it */
+  .home .site {
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    padding-block: clamp(1.5rem, 4vh, 3rem);
+  }
+
+  .home .sheet {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  .home .sheet-drawing {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .home .site-svg {
+    height: 100%;
+    max-height: none;
+  }
+}
+
 /* ---- motion (Motion.tsx): only under html.js-motion, which the layout sets when motion is fine */
 html.js-motion .fx.rv {
   opacity: 0;
   filter: blur(8px);
   transform: translateY(32px) scale(0.98);
-  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out), filter 0.9s var(--ease-out);
-  transition-delay: calc(var(--i, 0) * 100ms);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out), filter 0.7s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 80ms);
 }
 
 html.js-motion .fx.rv.is-in {
@@ -3683,88 +3847,28 @@ html.js-motion .fx.rv.is-in {
   height: 100%;
 }
 
-.location-steps {
-  position: absolute;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  max-width: calc(100% - 2rem);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.location-steps button {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.9rem 0.55rem 0.55rem;
-  border: 1px solid rgb(255 255 255 / 0.6);
-  border-radius: 14px;
-  background: rgb(255 255 255 / 0.9);
-  backdrop-filter: blur(8px);
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgb(20 35 59 / 0.14);
-  transition: transform 0.15s var(--ease-out), background 0.15s;
-}
-
-.location-steps button:hover {
-  transform: translateY(-2px);
-}
-
-.location-steps button i {
-  display: grid;
-  place-items: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 50%;
-  background: var(--board);
-  font-style: normal;
-  font-weight: 700;
-  font-size: 0.8rem;
-}
-
-.location-steps button span {
-  display: grid;
-  line-height: 1.2;
-}
-
-.location-steps button b {
-  font-size: 0.9rem;
-}
-
-.location-steps button small {
-  font-size: 0.72rem;
-  color: var(--stone);
-}
-
-.location-steps button[aria-pressed="true"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
-.location-steps button[aria-pressed="true"] i {
-  background: var(--amber);
-  color: var(--ink);
-}
-
-.location-steps button[aria-pressed="true"] small {
-  color: #b9c6d8;
-}
-
 .location-actions {
   position: absolute;
   top: 1rem;
   left: 1rem;
+  right: 3.5rem; /* clear of the zoom buttons on the right */
   z-index: 2;
   display: flex;
+  flex-wrap: wrap; /* on a phone the two buttons stack instead of running off the map */
   gap: 0.5rem;
+  pointer-events: none; /* the empty part of the row doesn't block the map... */
+}
+
+.location-actions > * {
+  pointer-events: auto; /* ...the buttons themselves still do */
+}
+
+@media (max-width: 40rem) {
+  .location-actions .pill {
+    min-height: 40px;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+  }
 }
 
 .location-actions .pill:not(.pill-primary) {
@@ -3835,21 +3939,4 @@ html.js-motion .fx.rv.is-in {
 
 .map-tag-sebotse b {
   font-size: 1rem;
-}
-
-@media (max-width: 640px) {
-  .location-steps button small {
-    display: none;
-  }
-
-  /* one row to swipe through, so the steps don't stack over the map */
-  .location-steps {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .location-steps li {
-    flex: none;
-  }
 }
