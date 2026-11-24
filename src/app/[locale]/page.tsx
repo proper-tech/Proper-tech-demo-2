@@ -1,7 +1,6 @@
 import type React from 'react';
 import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
-import { HeroFilm } from '@/components/HeroFilm';
 import { LocationMap } from '@/components/LocationMap';
 import { Motion } from '@/components/Motion';
 import { VideoSection } from '@/components/VideoSection';
@@ -14,14 +13,13 @@ import { fmt, getDict } from '@/i18n/config';
 import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
-// The home page as a short film in chapters: the film (scripts/build-film.py) stays pinned full-screen
-// while the intro and four chapters scroll over it, then the floor picker, four ways to explore as photo
+// The home page in screens, one scroll each (Motion.tsx): the sunset render stays pinned full-screen
+// while the intro and the four chapter cards scroll over it, then the floor picker, four ways to explore as photo
 // cards, the apartment types in a sideways row, the site plan on an amber band, the film with controls and
 // a contact close. Motion.tsx (mounted last) fades things in, counts the figures and tracks the chapter.
 
-/** The cinematic flight round the complex, and its first frame, shown before it plays. */
-const FILM = '/media/film.mp4';
-const FILM_POSTER = '/media/film-poster.webp';
+/** The complex at sunset, behind the intro and the cards. */
+const HERO = '/media/hero-photo.webp';
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -50,9 +48,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="story">
         {/* pinned while the chapters scroll over it; the dots show which chapter you are in */}
         <div className="story-stage">
-          <HeroFilm src={FILM} poster={FILM_POSTER} />
+          <img className="story-film" src={HERO} alt="" width={1200} height={896} fetchPriority="high" />
           <ol className="story-dots" aria-hidden="true">
-            {['intro', ...chapters].map((k) => (
+            {['intro', 'cards'].map((k) => (
               <li key={k} data-dot={k} />
             ))}
           </ol>
@@ -69,14 +67,17 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </div>
 
-        {chapters.map((key) => (
-          <div key={key} className="story-chapter" data-chapter={key}>
-            <div className="chapter-caption fx">
-              <h2>{t.story[key].title}</h2>
-              <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
-            </div>
+        {/* the four captions side by side, one screen, revealed together (one .fx round them all) */}
+        <div className="story-chapter" data-chapter="cards">
+          <div className="chapter-cards fx">
+            {chapters.map((key) => (
+              <div key={key} className="chapter-caption">
+                <h2>{t.story[key].title}</h2>
+                <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </section>
 
       <section className="location" id="location">

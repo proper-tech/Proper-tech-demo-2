@@ -803,7 +803,9 @@ def build():
     nt = world.node_tree
     bg = next(n for n in nt.nodes if n.type == "BACKGROUND")
     sky_path = arg("--sky")
-    if sky_path and os.path.exists(sky_path):
+    hour = float(arg("--time", 10.5))   # local time on 15 June; ~20.3 is the golden hour before sunset
+    golden = hour > 18                  # then the physical sky, which follows the low sun (the HDRI is a midday sky)
+    if sky_path and os.path.exists(sky_path) and not golden:
         env = nt.nodes.new("ShaderNodeTexEnvironment")
         env.image = bpy.data.images.load(sky_path)
         nt.links.new(env.outputs["Color"], bg.inputs["Color"])
@@ -825,7 +827,12 @@ def build():
         p = scene.sun_pos_properties
         p.sun_object = sun
         p.latitude, p.longitude, p.UTC_zone = 47.918, 106.917, 8
-        p.year, p.month, p.day, p.time = 2026, 6, 15, 10.5
+        p.year, p.month, p.day, p.time = 2026, 6, 15, hour
+        if golden:   # the sky's sun follows the light's; warm, low light
+            sky.sky_type = "NISHITA"
+            p.sky_texture = sky.name
+            bg.inputs["Strength"].default_value = 0.25
+            sun_data.color, sun_data.energy = (1.0, 0.62, 0.36), 4.0
         print("FILM sun from Sun Position: elevation", round(math.degrees(p.sun_elevation), 1), "azimuth", round(math.degrees(p.sun_azimuth), 1))
     else:
         sun.rotation_euler = (math.radians(32), 0, math.radians(-118))  # about the same: high, from the south-east
