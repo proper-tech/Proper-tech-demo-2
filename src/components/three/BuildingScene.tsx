@@ -13,6 +13,8 @@ import { bounds, offsetPolygon } from '@/lib/geometry';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
 import { SafeCanvas } from './SafeCanvas';
 import { CameraRig, HOME, type Tour } from './Tour';
+import { Atmosphere, Effects } from './Atmosphere';
+import { tintCity } from './cityTint';
 import { Sun, type SunSettings } from './Sun';
 import { fixPeople, usePeopleMotion } from './people';
 import { useTraffic } from './traffic';
@@ -329,6 +331,12 @@ function City() {
       const match = m.name.startsWith('City ') && own.get(m.name.replace('City ', 'Env '));
       if (match) mesh.material = match;
       else if (m.map) m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
+      // every building its own shade (cityTint.ts); they cast shadows too, onto the street and the site, within the
+      // sun's shadow area round the complex
+      if (/^Film (Facade|Roof)/.test(m.name)) {
+        tintCity(mesh);
+        mesh.castShadow = true;
+      }
     });
   }, [scene, env, gl]);
   return (
@@ -809,6 +817,8 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
   return (
     <SafeCanvas shadows="percentage" frameloop={active ? 'always' : 'never'} dpr={[1, 1.5]} gl={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }} camera={{ fov: 30, near: 1, far: 1200, position: HOME.position.toArray() }}>
       <Sun sun={sun} overview={tour.kind === 'overview'} />
+      <Atmosphere sun={sun} />
+      <Effects sun={sun} />
       <NightDriver />
       <CameraRig tour={tour} autoRotate={autoRotate} targetY={TOP / 2 - 6} />
 
