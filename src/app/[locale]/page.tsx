@@ -13,9 +13,9 @@ import { fmt, getDict } from '@/i18n/config';
 import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
-// The home page in screens, one scroll each (Motion.tsx): a sunset loop stays pinned full-screen behind the
-// intro, then a drone flight round the complex plays with the scroll under the four chapters (one screen and one
-// leg each), then the floor picker, four ways to explore as photo
+// The home page in screens, scrolling freely: a sunset loop stays pinned full-screen behind the intro, then a
+// drone flight round the complex plays with the scroll under the four chapters (a screen and a leg each), then
+// the floor picker, four ways to explore as photo
 // cards, the apartment types in a sideways row, the site plan on an amber band, the film with controls and
 // a contact close. Motion.tsx (mounted last) fades things in, counts the figures and tracks the chapter.
 

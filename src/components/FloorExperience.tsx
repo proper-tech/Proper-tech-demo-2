@@ -16,6 +16,8 @@ import { PlanGroup, type PlanTx } from './Plan2D';
 import { photoModels } from '@/data/photoModels';
 import { unitCentre } from '@/lib/unitCentre';
 import { preloadFloor3D } from './three/preload';
+import { filterQuery, isFiltered, matches, NO_FILTER, readFilter, type UnitFilter } from '@/lib/unitFilter';
+import { UnitActions } from './UnitActions';
 
 // the 3D view's code and pictures start downloading as soon as this page's code runs
 preloadFloor3D('B');
@@ -164,6 +166,12 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   const [drawn, setDrawn] = useState(false);
   const ready = useCallback(() => setDrawn(true), []);
   const [hovered, setHovered] = useState<string | null>(null);
+  // the home page finder's choice (?beds=2&sun=am): apartments that don't match it are dimmed
+  const [filter, setFilter] = useState<UnitFilter>(NO_FILTER);
+  useEffect(() => setFilter(readFilter(location.search)), []);
+  const filtered = isFiltered(filter);
+  const q = filterQuery(filter);
+  const dim = (u: (typeof summary.units)[number]) => filtered && !matches(u, filter);
   const summary = getFloor(tower, floor)!;
   const core = coreFor(tower, floor);
   // block B, floor 4: the homeowners' association room takes apartment 02's place (floor-4 plan),
@@ -243,7 +251,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
           />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
-              <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
+              <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
                 <b>{tags[u.id].title}</b>
                 <span>{tags[u.id].detail}</span>
               </div>
@@ -303,7 +311,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 return (
                   <g
                     key={u.id}
-                    className={`plan-unit${available ? ' is-available' : ''}${hovered === u.id ? ' is-hovered' : ''}`}
+                    className={`plan-unit${available ? ' is-available' : ''}${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`}
                     style={flat(u.plan)}
                     onMouseEnter={() => setHovered(u.id)}
                     onMouseLeave={() => setHovered(null)}
@@ -346,6 +354,16 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
           </Link>
           <h1>{fmt(t.floor.title, { t: tower, n: floor })}</h1>
           <p>{summary.available > 0 ? t.floor.lead : t.floor.leadNone}</p>
+          {filtered && (
+            <p className="floor-filter">
+              {fmt(t.find.showing, {
+                what: [filter.beds !== null && t.beds[filter.beds as 1 | 2 | 3], filter.sun && t.find[filter.sun]].filter(Boolean).join(' · '),
+              })}{' '}
+              <button type="button" className="text-button" onClick={() => (history.replaceState(null, '', location.pathname), setFilter(NO_FILTER))}>
+                {t.find.clear}
+              </button>
+            </p>
+          )}
           <div className="segmented" role="group">
             <button type="button" aria-pressed={view === '3d'} onClick={() => setView('3d')}>
               {t.floor.view3d}
@@ -397,7 +415,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             return (
               <Fragment key={u.id}>
                 <li
-                  className={hovered === u.id ? 'is-hovered' : undefined}
+                  className={[hovered === u.id && 'is-hovered', dim(u) && 'is-dim'].filter(Boolean).join(' ') || undefined}
                   onMouseEnter={() => setHovered(u.id)}
                   onMouseLeave={() => setHovered(null)}
                 >
@@ -435,7 +453,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
         </ul>
         <nav className="apt-nav">
           {floor > FLOOR_MIN ? (
-            <Link href={`/${locale}/floors/${tower}/${floor - 1}`}>
+            <Link href={`/${locale}/floors/${tower}/${floor - 1}${q}`}>
               <span>{t.floor.prev}</span>
               {floor - 1}
             </Link>
@@ -443,7 +461,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             <span />
           )}
           {floor < FLOOR_MAX ? (
-            <Link href={`/${locale}/floors/${tower}/${floor + 1}`}>
+            <Link href={`/${locale}/floors/${tower}/${floor + 1}${q}`}>
               <span>{t.floor.next}</span>
               {floor + 1}
             </Link>
@@ -454,6 +472,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             </Link>
           )}
         </nav>
+        <UnitActions subject={fmt(t.floor.title, { t: tower, n: floor })} />
       </aside>
     </div>
   );

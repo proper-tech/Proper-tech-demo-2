@@ -97,6 +97,14 @@ vases, books, bowls, kitchen things), placed by rule. The assets are not in git:
 3. Tours: run `tools/passes.py ids|top` on `<plan>_day.blend`, then repanos / retop / build_tour / mirror_tour /
    make_plans / split_tours as in `tools/finalize.sh`.
 
+### Windows (Цонх)
+
+`tools/upgrade_windows.py` (called by `upgrade_interior.py`) replaces the plain posts around each pane with a built
+window: outer frame with head and bottom rail, mullions, one tilt-and-turn sash per opening with its handle, glazing
+beads and black gaskets, softened edges, anthracite satin paint. The window board now overhangs the wall by 3.5 cm
+(it stood flush, which left a dark seam). After new renders the ID passes must be made again from the upgraded
+scenes so the window-glass masks (drone views) follow the new frames.
+
 ### Evening (Орой) panoramas
 
 `interior\render_evening.bat` renders the same 22 stops at dusk (lamps on, twilight outside) into

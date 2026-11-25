@@ -19,6 +19,8 @@ export function Header() {
   return (
     <header className={`site-header${home ? ' is-over' : ''}`}>
       <Link href={`/${locale}`} className="brand">
+        {/* the badge (public/logo, cut out of the logo artwork); the name beside it is the link's text */}
+        <img className="brand-logo" src="/logo/sebotse-96.png" alt="" width={40} height={40} />
         {t.site.name}
       </Link>
       <div className="header-end">

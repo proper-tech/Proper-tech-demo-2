@@ -5242,10 +5242,18 @@ function setupTourPaletteMaterial(material) {
       if (tourOutsideOn > 0.5) {
         float glass = texture2D(tourWindow, vMapUv).r;
         if (glass > 0.002) {
-          vec3 outside = texture2D(tourOutside, vec2(fract(vMapUv.x + tourOutsideShift), vMapUv.y)).rgb;
-          outside = mix(outside, vec3(dot(outside, vec3(0.299, 0.587, 0.114))), 0.10);
-          outside = mix(outside, vec3(1.0), 0.18) * 1.06;
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(outside, diffuseColor.rgb, 0.06), glass);
+          // exposed for the room, like a photo: the street is a touch soft and brighter than the room
+          vec2 ou = vec2(fract(vMapUv.x + tourOutsideShift), vMapUv.y);
+          vec2 px = vec2(0.00045, 0.0009);
+          vec3 outside = texture2D(tourOutside, ou).rgb * 0.4
+            + (texture2D(tourOutside, ou + vec2(px.x, 0.0)).rgb + texture2D(tourOutside, ou - vec2(px.x, 0.0)).rgb
+             + texture2D(tourOutside, ou + vec2(0.0, px.y)).rgb + texture2D(tourOutside, ou - vec2(0.0, px.y)).rgb) * 0.15;
+          outside = (1.0 - exp(-outside * 1.5)) / (1.0 - exp(-1.5));
+          outside *= vec3(0.98, 1.0, 1.03);
+          // keep some of the rendered glass: reflections of the room, sheer curtains, frame shadows
+          vec3 rendered = diffuseColor.rgb;
+          vec3 glassed = outside + rendered * 0.08 * (1.0 - outside);
+          diffuseColor.rgb = mix(rendered, min(glassed, vec3(1.0)), glass);
         }
       }
       #endif`);
