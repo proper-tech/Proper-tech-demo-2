@@ -12,69 +12,6 @@ import { useEffect } from 'react';
 // is paused. Mount it last on the page so its effect runs after hydration.
 
 export function Motion() {
-  // paging: one turn of the wheel (or one trackpad swipe) goes to the next section, the same ones the CSS
-  // snaps to (globals.css, "the home page pages"). On a desktop screen each section is one screen; where one
-  // is taller (phones, short windows) it is paged through a screen at a time first. Touch and keys are left
-  // to the CSS snapping.
-  useEffect(() => {
-    const html = document.documentElement;
-    const stops = () => {
-      const pad = parseFloat(getComputedStyle(html).scrollPaddingTop) || 0;
-      return [...document.querySelectorAll<HTMLElement>('.home .story-chapter, .home > section:not(.story), .home .picker')].map((el) => {
-        const top = el.getBoundingClientRect().top + scrollY - (el.classList.contains('story-chapter') ? 0 : pad);
-        return { top, end: top + el.offsetHeight + (el.classList.contains('story-chapter') ? 0 : pad) };
-      });
-    };
-    let busy = false;
-    let quiet = 0;
-    // where the page is sliding to, so a second step goes on from there; forgotten after the slide (1.2 s),
-    // so a jump by link, keys or scrollbar in between is never undone
-    let goal: number | null = null;
-    let goalAt = 0;
-    const onWheel = (e: WheelEvent) => {
-      // a 3D view or a tour zooming with the wheel, pinch zoom, sideways swipes, a full-screen stage: not ours
-      if (e.defaultPrevented || e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || html.classList.contains('has-full-stage')) return;
-      // a panel of its own that can still scroll this way (the floor picker's side): let it
-      for (let el = e.target as HTMLElement | null; el && el !== document.body; el = el.parentElement) {
-        const oy = getComputedStyle(el).overflowY;
-        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
-          const room = e.deltaY > 0 ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
-          if (room > 1) return;
-        }
-      }
-      e.preventDefault();
-      // one gesture, one step: a trackpad keeps firing for a while after the swipe, so wait for it to go quiet
-      clearTimeout(quiet);
-      quiet = window.setTimeout(() => (busy = false), 180);
-      if (busy || Math.abs(e.deltaY) < 4) return;
-      busy = true;
-      const max = html.scrollHeight - innerHeight;
-      // still sliding to the last step's section: count from there, not from halfway
-      const y = goal !== null && performance.now() - goalAt < 1200 && Math.abs(scrollY - goal) > 2 ? goal : scrollY;
-      const all = stops();
-      const i = all.findLastIndex((s) => s.top <= y + 2); // the section on screen
-      const cur = all[i];
-      const page = innerHeight * 0.85;
-      const small = innerHeight * 0.3; // a move shorter than this is not worth a step: go to the next section
-      let to: number;
-      if (e.deltaY > 0) {
-        // the rest of a tall section first, then the next section (or the footer, at the very end)
-        const rest = cur ? cur.end - innerHeight - y : 0;
-        to = rest > small ? Math.min(y + page, y + rest) : (all[i + 1]?.top ?? max);
-      } else if (cur && y - cur.top > small) {
-        to = Math.max(cur.top, y - page); // back up through the section we are in
-      } else {
-        const prev = all[i - 1]; // the section above: its last screen if it is tall, else its top
-        to = prev ? Math.max(prev.top, prev.end - innerHeight) : 0;
-      }
-      goal = Math.max(0, Math.min(max, to));
-      goalAt = performance.now();
-      scrollTo({ top: goal, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-    };
-    addEventListener('wheel', onWheel, { passive: false });
-    return () => removeEventListener('wheel', onWheel);
-  }, []);
-
   useEffect(() => {
     const html = document.documentElement;
     if (!html.classList.contains('js-motion')) {

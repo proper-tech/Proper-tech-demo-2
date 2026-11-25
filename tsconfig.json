@@ -36,7 +36,6 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "backup-before-schematics"
+    "node_modules"
   ]
 }

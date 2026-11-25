@@ -13,7 +13,7 @@ import { fmt, getDict } from '@/i18n/config';
 import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
-// The home page in screens, one scroll each (Motion.tsx): the sunset render stays pinned full-screen
+// The home page in screens: the sunset render stays pinned full-screen
 // while the intro and the four chapter cards scroll over it, then the floor picker, four ways to explore as photo
 // cards, the apartment types in a sideways row, the site plan on an amber band, the film with controls and
 // a contact close. Motion.tsx (mounted last) fades things in, counts the figures and tracks the chapter.

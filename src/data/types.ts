@@ -31,9 +31,6 @@ export interface Room {
    *  counted with that room and it is not listed on its own. Join the two with an
    *  'open' opening along the edge they share. */
   partOf?: string;
-  /** Optional equirectangular 360° photo (path under /public). When set, the 360° view
-   *  shows the photo instead of the 3D model for this room. */
-  panorama?: string;
 }
 
 export interface Opening {

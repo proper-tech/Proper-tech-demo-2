@@ -9,7 +9,7 @@ import { layouts } from '@/data/layouts';
 import type { Finish, Unit } from '@/data/types';
 import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
-import { doorLinks, hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
+import { hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
 import { ApartmentPlan } from './Plan2D';
 import { fitTourFrame } from './tourFrame';
 import type { RoomLabel } from './three/ApartmentScene';
@@ -19,13 +19,9 @@ const ApartmentScene = dynamic(() => import('./three/ApartmentScene'), {
   loading: () => <div className="stage-loading" />,
 });
 
+/** The 360° tour is the rendered one in public/tour/<plan>/index.html (a self-contained file per plan, A to F),
+ *  keyed by plan letter, so A4 (plan A on floor 4) opens plan A's tour. */
 type Mode = 'model' | 'plan' | 'tour';
-
-/**
- * Plans with a rendered 360° tour in public/tour/<plan>/index.html (self-contained files); these replace the 3D tour.
- * Keyed by plan letter, so A4 (plan A on floor 4) opens plan A's tour.
- */
-const PHOTO_TOURS: string[] = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 export function ApartmentExperience({ unit }: { unit: Unit }) {
   const { locale, t } = useI18n();
@@ -52,13 +48,11 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const layer = useRef<HTMLDivElement>(null);
-  const doors = useMemo(() => doorLinks(layout, room.id), [layout, room.id]);
   const index = availableUnits.findIndex((u) => u.id === unit.id);
   const prev = availableUnits[(index - 1 + availableUnits.length) % availableUnits.length];
   const next = availableUnits[(index + 1) % availableUnits.length];
   const suffix = mode === 'tour' ? '?view=tour' : '';
-  // Plan D has a rendered 360° tour (public/tour, a self-contained file); it replaces the 3D tour.
-  const photoTour = mode === 'tour' && PHOTO_TOURS.includes(layout.plan);
+  const photoTour = mode === 'tour';
   const modes: [Mode, string][] = [
     ['model', t.apt.modeModel],
     ['plan', t.apt.modePlan],
@@ -69,28 +63,15 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     <div className="apt">
       <section className="apt-stage">
         {/* The canvas stays mounted while the 2D plan is shown, so switching back is instant. */}
-        <div className={mode === 'plan' || photoTour ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <ApartmentScene
-            layout={layout}
-            finish={finish}
-            mode={mode === 'tour' ? 'tour' : 'model'}
-            roomId={room.id}
-            layer={layer}
-            onSelectRoom={selectRoom}
-          />
+        <div className={mode === 'model' ? 'stage-canvas' : 'stage-canvas is-hidden'}>
+          <ApartmentScene layout={layout} finish={finish} roomId={room.id} layer={layer} onSelectRoom={selectRoom} />
           <div className="label-layer" ref={layer}>
-            {mode === 'tour'
-              ? doors.map((door) => (
-                  <button key={door.to.id} type="button" className="hotspot" data-anchor={`door:${door.to.id}`} onClick={() => setRoomId(door.to.id)}>
-                    {labels[door.to.id].name}
-                  </button>
-                ))
-              : rooms.map((r) => (
-                  <div key={r.id} className={`room-tag${r.id === room.id ? ' is-selected' : ''}`} data-anchor={`room:${r.id}`}>
-                    <b>{labels[r.id].name}</b>
-                    <span>{labels[r.id].area}</span>
-                  </div>
-                ))}
+            {rooms.map((r) => (
+              <div key={r.id} className={`room-tag${r.id === room.id ? ' is-selected' : ''}`} data-anchor={`room:${r.id}`}>
+                <b>{labels[r.id].name}</b>
+                <span>{labels[r.id].area}</span>
+              </div>
+            ))}
           </div>
         </div>
         {photoTour && (
@@ -128,23 +109,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </div>
         </div>
 
-        {mode === 'tour' && !photoTour && (
-          <div className="tour-bar">
-            <p className="tour-room">
-              <b>{labels[room.id].name}</b>
-              {hasParts(layout, room) ? '' : `${m(room.w)} × ${m(room.d)} m, `}
-              {labels[room.id].area}, {t.apt.colCeiling.toLowerCase()} {m(room.h)} m
-            </p>
-            <div className="tour-rooms">
-              {rooms.map((r) => (
-                <button key={r.id} type="button" aria-pressed={r.id === room.id} onClick={() => setRoomId(r.id)}>
-                  {labels[r.id].name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {mode !== 'plan' && !photoTour && <p className="stage-hint">{mode === 'tour' ? t.apt.hintTour : t.apt.hintModel}</p>}
+        {mode === 'model' && <p className="stage-hint">{t.apt.hintModel}</p>}
       </section>
 
       <aside className="apt-panel">

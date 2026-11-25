@@ -1050,38 +1050,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   box-shadow: none;
 }
 
-.hotspot {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.85rem 0.4rem 0.45rem;
-  border: 0;
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  box-shadow: 0 2px 10px rgb(20 35 59 / 0.25);
-}
-
-.hotspot::before {
-  content: "";
-  width: 1.1rem;
-  height: 1.1rem;
-  border-radius: 50%;
-  background: var(--amber);
-  box-shadow:
-    inset 0 0 0 4px var(--paper),
-    0 0 0 2px var(--amber);
-}
-
-.hotspot:hover {
-  background: var(--sky);
-  color: var(--paper);
-}
-
 /* 360° tour bar */
 
 .tour-bar {
@@ -1098,44 +1066,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 .tour-bar > * {
   pointer-events: auto;
-}
-
-.tour-room {
-  justify-self: start;
-  padding: 0.45rem 0.8rem;
-  border-radius: 10px;
-  background: rgb(255 255 255 / 0.92);
-  font-size: 0.875rem;
-  color: var(--stone);
-}
-
-.tour-room b {
-  margin-right: 0.6rem;
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.tour-rooms {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding: 3px;
-  margin: -3px;
-  scrollbar-width: none;
-}
-
-.tour-rooms button {
-  flex: none;
-  padding: 0.4rem 0.85rem;
-  border: 0;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.92);
-  font-size: 0.875rem;
-}
-
-.tour-rooms button[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--paper);
 }
 
 /* Side panel */
@@ -2976,30 +2906,9 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   }
 }
 
-/* the home page pages: one scroll moves to the next section (the intro, the cards, the map, ...). A section
-   taller than the screen still scrolls freely inside; the footer is reached by its bottom edge. */
-html:has(main.home) {
-  scroll-snap-type: y mandatory;
-}
-
-.home .story-chapter,
-.home > section:not(.story),
-.home .picker {
-  scroll-snap-align: start;
-}
-
-.home .site-footer {
-  scroll-snap-align: end;
-}
-
-/* the header is see-through over the film: the chapters snap to the very top, not under the header */
-.home .story-chapter {
-  scroll-margin-top: calc(-1 * var(--header));
-}
-
 /* on a desktop screen every section is exactly one screen under the header, its main picture (map, photo
    cards, plans, site plan) taking whatever height the heading leaves; phones and short windows keep the
-   flowing layout and page through a tall section a screen at a time (Motion.tsx) */
+   flowing layout */
 @media (min-width: 60rem) and (min-height: 40rem) {
   .home .location,
   .home .explore,
