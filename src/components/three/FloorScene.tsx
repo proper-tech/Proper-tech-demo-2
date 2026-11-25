@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3 } from 'three';
+import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
@@ -18,7 +18,7 @@ import { Lights } from './ApartmentScene';
 import { stoneTexture } from './textures';
 import { Lifts, Stairs, stairOpening, type StairSpec } from './Cores';
 import { Projector, type Anchor, type LabelLayer } from './Projector';
-import { ARRIVE_KEY } from '@/lib/arrive';
+import { ARRIVE_KEY, FLOOR_FOV, FLOOR_VIEW, fitScale } from '@/lib/arrive';
 
 interface Props {
   units: Unit[];
@@ -30,6 +30,11 @@ interface Props {
   onOpen: (id: string) => void;
   /** Called once the plan pictures are in, the shaders compiled and the first frames drawn. */
   onReady?: () => void;
+  /** The page's compass, turned to match the camera (CompassNeedle). */
+  compass?: React.RefObject<HTMLElement | null>;
+  /** An apartment being opened: the camera flies down onto it (EnterUnit), then onEntered. */
+  entering?: string | null;
+  onEntered?: () => void;
 }
 
 // Floor-plate coordinates (X east, Y north, see layouts.ts) -> scene: x east, z south,
@@ -46,6 +51,9 @@ const WALL_H = 1.25;
 /** C and D are mirror images that meet on the plate's mirror line; their pictures stop there. */
 const MIRROR_X = 10.8;
 const PHOTO_CLIP: Partial<Record<string, [number, number]>> = { C: [-99, MIRROR_X], D: [MIRROR_X, 99] };
+/** The party wall between C and D on the mirror line (plate metres: west, south, east, north). Each picture's own
+ *  side wall lies past the line and is cut away with it, so it is drawn here, as thick as the facade walls. */
+const PARTY_WALL = [MIRROR_X - 0.175, 0.193, MIRROR_X + 0.175, 9.864] as const;
 /** The podium's top storey, under the first apartment floor (sections). */
 const PODIUM_TOP = getPodiumFloor(PODIUM_FLOORS)!;
 
@@ -167,22 +175,87 @@ function StoneFloor({ x, z, w, d }: { x: number; z: number; w: number; d: number
   );
 }
 
+/** Turns the page's compass (an element outside the canvas) so its N points north on screen. North is
+ *  -z in the scene (z runs south), so facing north the needle points straight up. */
+function CompassNeedle({ el }: { el: React.RefObject<HTMLElement | null> }) {
+  const camera = useThree((s) => s.camera);
+  const look = useMemo(() => new Vector3(), []);
+  const last = useRef<number | null>(null);
+  useFrame(() => {
+    if (!el.current) return;
+    camera.getWorldDirection(look);
+    // looking straight down there is no forward on the ground: use the camera's up instead
+    if (look.x * look.x + look.z * look.z < 1e-4) look.copy(camera.up).applyQuaternion(camera.quaternion);
+    const heading = Math.atan2(look.x, -look.z); // 0 facing north, +90° facing east
+    const deg = Math.round(-MathUtils.radToDeg(heading));
+    if (deg !== last.current) {
+      last.current = deg;
+      el.current.style.setProperty('--heading', `${deg}deg`);
+    }
+  });
+  return null;
+}
+
+/** Seconds the camera takes to fly down onto an opened apartment. */
+const ENTER_TIME = 0.8;
+
+/**
+ * An apartment opened from the floor: the camera dives straight down into its living room, where the
+ * apartment page's 360° tour opens, ending just over the cut walls; then the page changes. The stage
+ * dips to the page background meanwhile (FloorExperience, .is-entering), and the apartment page holds
+ * that colour until the tour's first panorama is up (ApartmentExperience, .apt-cover).
+ */
+function EnterUnit({ unit, onDone }: { unit: Unit; onDone: () => void }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
+  const run = useRef<{ p0: Vector3; t0: Vector3; p1: Vector3; t1: Vector3; f0: number; k: number; done: boolean } | null>(null);
+  useEffect(() => {
+    const [X, Y] = unitCentre(layouts[unit.layout]);
+    const t1 = new Vector3(sx(X), 0.4, sz(Y));
+    // a little south of straight down, as the floor view looks, so the dive keeps its heading
+    const p1 = t1.clone().add(new Vector3(0, 3.4, 1.1));
+    run.current = { p0: camera.position.clone(), t0: controls ? controls.target.clone() : new Vector3(), p1, t1, f0: camera.fov, k: 0, done: false };
+    if (controls) controls.enabled = false;
+    return () => {
+      if (controls) controls.enabled = true;
+    };
+  }, [unit, camera, controls]);
+  useFrame((_, dt) => {
+    const r = run.current;
+    if (!r || r.done) return;
+    r.k = Math.min(1, r.k + Math.min(dt, 0.05) / ENTER_TIME);
+    const e = r.k * r.k * (3 - 2 * r.k);
+    const target = r.t0.clone().lerp(r.t1, e);
+    camera.position.lerpVectors(r.p0, r.p1, e);
+    camera.lookAt(target);
+    if (controls) controls.target.copy(target);
+    camera.fov = MathUtils.lerp(r.f0, 50, e);
+    camera.updateProjectionMatrix();
+    if (r.k >= 1) {
+      r.done = true;
+      onDone();
+    }
+  });
+  return null;
+}
+
 /** Looks down steeply so the floor reads like the plan, and steps back on narrow (phone) screens
  *  so the whole floor plate fits across. */
-function FitCamera() {
+function FitCamera({ hold }: { hold: boolean }) {
   const camera = useThree((s) => s.camera);
   const aspect = useThree((s) => s.size.width / s.size.height);
   const arrive = useRef<{ from: Vector3; to: Vector3; k: number } | null>(null);
   useEffect(() => {
-    const k = Math.max(1, 1.05 / aspect);
-    const to = new Vector3(4 * k, 40 * k, 22 * k);
+    const k = fitScale(aspect);
+    const to = new Vector3(...FLOOR_VIEW).multiplyScalar(k);
     // just zoomed in from the building (BuildingScene's ZoomIn): come down from the side the zoom came from
     let from: Vector3 | null = null;
     try {
-      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number; inside?: boolean } | null;
+      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { x: number; z: number; at: number; inside?: boolean; lift?: boolean } | null;
       sessionStorage.removeItem(ARRIVE_KEY);
-      // came in through the glass: start just inside that facade at eye height, then rise over the plan
-      if (a && Date.now() - a.at < 8000) from = a.inside ? new Vector3(a.x * 11, 1.7, a.z * 9) : new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
+      // came in through the glass: start just inside that facade at eye height, then rise over the plan;
+      // lifted out of the tower (LiftOut): the building view already ended at this very view
+      if (a && !a.lift && Date.now() - a.at < 8000) from = a.inside ? new Vector3(a.x * 11, 1.7, a.z * 9) : new Vector3(a.x * 30 * k, 4, a.z * 30 * k);
     } catch {
       // no storage: plain view
     }
@@ -194,7 +267,7 @@ function FitCamera() {
   }, [camera, aspect]);
   useFrame((_, dt) => {
     const a = arrive.current;
-    if (!a) return;
+    if (!a || hold) return;
     a.k = Math.min(1, a.k + dt / 1.6);
     const e = 1 - (1 - a.k) ** 3;
     // swing up over the floor on an arc rather than a straight line
@@ -259,6 +332,22 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
   );
 }
 
+/** The wall between C and D (PARTY_WALL): white sides and the dark cap the apartments' cut walls have. */
+function PartyWall() {
+  const [w, s, e, n] = PARTY_WALL;
+  return (
+    <mesh position={[sx((w + e) / 2), WALL_H / 2, sz((s + n) / 2)]}>
+      <boxGeometry args={[e - w, WALL_H, n - s]} />
+      <meshStandardMaterial attach="material-0" color="#F7F6F2" roughness={0.95} />
+      <meshStandardMaterial attach="material-1" color="#F7F6F2" roughness={0.95} />
+      <meshStandardMaterial attach="material-2" color="#14233B" roughness={0.9} />
+      <meshStandardMaterial attach="material-3" color="#F7F6F2" roughness={0.95} />
+      <meshStandardMaterial attach="material-4" color="#F7F6F2" roughness={0.95} />
+      <meshStandardMaterial attach="material-5" color="#F7F6F2" roughness={0.95} />
+    </mesh>
+  );
+}
+
 /** The furnished plan pictures (PhotoApartment); asked for as soon as this module loads. */
 const PLAN_PICTURES = Object.values(photoModels).flatMap((m) => (m ? [m.image.src] : []));
 useLoader.preload(TextureLoader, PLAN_PICTURES);
@@ -296,7 +385,14 @@ function WhenReady({ onReady }: { onReady?: () => void }) {
   return null;
 }
 
-export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady }: Props) {
+export default function FloorScene({ units, core, layer, hovered, onHover, onOpen, onReady, compass, entering, onEntered }: Props) {
+  const enteringUnit = entering ? units.find((u) => u.id === entering) : undefined;
+  // the camera's rise out of the facade waits until the view is ready, so it is seen, not missed
+  const [ready, setReady] = useState(false);
+  const whenReady = useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
   const anchors = useMemo<Anchor[]>(
     () => [
       ...units.map((u): Anchor => {
@@ -318,6 +414,28 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
     [units, core],
   );
 
+  return (
+    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: FLOOR_FOV, near: 1, far: 400, position: [...FLOOR_VIEW] }}>
+      <Lights />
+      <FitCamera hold={!ready} />
+      {compass && <CompassNeedle el={compass} />}
+      <Suspense fallback={null}>
+        <WhenReady onReady={whenReady} />
+      </Suspense>
+      <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
+      <FloorModel units={units} core={core} hovered={hovered} onHover={onHover} onOpen={onOpen} />
+      {enteringUnit && <EnterUnit unit={enteringUnit} onDone={() => onEntered?.()} />}
+      <Projector anchors={anchors} layer={layer} />
+    </SafeCanvas>
+  );
+}
+
+/**
+ * A floor as the floor page shows it: slab, core, the doors out to the roof playground, stair, lifts
+ * and the apartments, centred on the plate (x east, z south). The building view lifts the same model
+ * out of its tower when a floor is picked (BuildingScene's LiftOut).
+ */
+export function FloorModel({ units, core, hovered = null, onHover = () => {}, onOpen = () => {} }: Pick<Props, 'units' | 'core'> & Partial<Pick<Props, 'hovered' | 'onHover' | 'onOpen'>>) {
   // The stair: the flight on the east side goes up, the door opens east onto the lift lobby, the
   // flight down goes to the floor below (on floor 4 that is the podium's top storey). The lifts
   // open south onto the corridor.
@@ -337,16 +455,8 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
     [stairSpace, floor],
   );
   const hole = useMemo(() => (stair ? stairOpening(stair) : null), [stair]);
-
   return (
-    <SafeCanvas flat dpr={[1, 2]} camera={{ fov: 38, near: 1, far: 400, position: [4, 40, 22] }}>
-      <Lights />
-      <FitCamera />
-      <Suspense fallback={null}>
-        <WhenReady onReady={onReady} />
-      </Suspense>
-      <OrbitControls makeDefault target={[0, 0, 0]} enablePan={false} minDistance={18} maxDistance={80} minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.3} />
-
+    <>
       <Slab hole={hole} />
       {core.map((space, i) => (
         <CoreBlock key={`${space.id}${i}`} space={space} />
@@ -354,10 +464,10 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
       {core.map((space, i) => space.door && <ExitDoor key={`door${i}`} door={space.door} />)}
       {stair && <Stairs {...stair} wallH={WALL_H} cap />}
       {liftSpace && <Lifts r={sceneRect(liftSpace)} doors="S" wallH={WALL_H} cap color="#EDEBE6" />}
+      {units.some((u) => u.plan === 'C') && units.some((u) => u.plan === 'D') && <PartyWall />}
       {units.map((unit) => (
         <UnitOnFloor key={unit.id} unit={unit} hovered={hovered === unit.id} onHover={onHover} onOpen={onOpen} />
       ))}
-      <Projector anchors={anchors} layer={layer} />
-    </SafeCanvas>
+    </>
   );
 }

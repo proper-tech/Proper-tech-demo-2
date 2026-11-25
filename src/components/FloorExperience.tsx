@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { ARRIVE_KEY, handoff } from '@/lib/arrive';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -174,7 +175,43 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
     top: Math.min(-0.6, ...core.map((c) => PY(c.y1) - 0.4)),
   };
   const layer = useRef<HTMLDivElement>(null);
-  const open = (id: string) => router.push(`/${locale}/apartments/${id}`);
+  const compass = useRef<HTMLDivElement>(null);
+  // opening an apartment: in the 3D view the camera flies down onto it first (FloorScene's EnterUnit),
+  // ending where the apartment page's view starts; elsewhere (2D plan, reduced motion) straight there
+  const [entering, setEntering] = useState<string | null>(null);
+  const aptHref = (id: string) => `/${locale}/apartments/${id}`;
+  const open = (id: string) => {
+    if (entering) return;
+    router.prefetch(aptHref(id));
+    if (view === '3d' && drawn && !matchMedia('(prefers-reduced-motion: reduce)').matches) setEntering(id);
+    else router.push(aptHref(id));
+  };
+
+  // Just arrived from the floor picker's zoom (it ends with the screen faded to the board colour):
+  // the page opens under the same colour and lifts it once the 3D view is ready, so the flight runs on
+  // into this floor without a cut. Read before paint; FloorScene reads (and clears) the same key.
+  const [cover, setCover] = useState<'on' | 'off' | null>(null);
+  // lifted out of the tower (BuildingScene's LiftOut): the cover is the building view's last frame,
+  // which this page's 3D view starts on exactly, so the crossfade between them doesn't show
+  const [shot, setShot] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    try {
+      const a = JSON.parse(sessionStorage.getItem(ARRIVE_KEY) ?? 'null') as { at: number; lift?: boolean } | null;
+      if (!a || Date.now() - a.at >= 8000) return;
+      if (a.lift && handoff.image && Date.now() - handoff.at < 8000) setShot(handoff.image);
+      handoff.image = null;
+      setCover('on');
+    } catch {
+      // no storage: no cover
+    }
+  }, []);
+  useEffect(() => {
+    if (cover !== 'on') return;
+    if (drawn) return setCover('off');
+    // a slow 3D view: don't keep a blank screen, show the 2D plan standing in for it
+    const id = window.setTimeout(() => setCover('off'), 3000);
+    return () => clearTimeout(id);
+  }, [cover, drawn]);
 
   const tags = useMemo(() => {
     const out: Record<string, { title: string; detail: string }> = {};
@@ -189,10 +226,21 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
   }, [summary, t]);
 
   return (
-    <div className="floor">
-      <section className="floor-stage">
+    <div className={shot ? "floor is-arriving" : "floor"}>
+      <section className={entering ? 'floor-stage is-entering' : 'floor-stage'}>
         <div className={view === '2d' ? 'stage-canvas is-hidden' : 'stage-canvas'}>
-          <FloorScene units={summary.units} core={core} layer={layer} hovered={hovered} onHover={setHovered} onOpen={open} onReady={ready} />
+          <FloorScene
+            units={summary.units}
+            core={core}
+            layer={layer}
+            hovered={hovered}
+            onHover={setHovered}
+            onOpen={open}
+            onReady={ready}
+            compass={compass}
+            entering={entering}
+            onEntered={() => entering && router.push(aptHref(entering))}
+          />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
               <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
@@ -308,6 +356,24 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
           </div>
         </div>
         {view === '3d' && <p className="stage-hint">{t.floor.hint}</p>}
+        {/* the compass: the 3D view turns it with the camera (FloorScene); the 2D plan is drawn north up */}
+        <div className={view === '2d' ? 'compass is-plan' : 'compass'} ref={compass} aria-hidden="true">
+          <svg viewBox="-20 -20 40 40">
+            <circle r="18" className="compass-ring" />
+            <path d="M0 -13 L4.5 0 L0 -2 L-4.5 0 Z" className="compass-north" />
+            <path d="M0 13 L4.5 0 L0 2 L-4.5 0 Z" className="compass-south" />
+            <text y="-8" className="compass-n">
+              N
+            </text>
+          </svg>
+        </div>
+        {cover &&
+          (shot ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className={`arrive-shot${cover === 'off' ? ' is-off' : ''}`} src={shot} alt="" onTransitionEnd={() => setCover(null)} />
+          ) : (
+            <div className={`arrive-cover${cover === 'off' ? ' is-off' : ''}`} onTransitionEnd={() => setCover(null)} />
+          ))}
       </section>
 
       <aside className="apt-panel">
@@ -336,7 +402,16 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   onMouseLeave={() => setHovered(null)}
                 >
                   {available ? (
-                    <Link href={`/${locale}/apartments/${u.id}`} aria-label={fmt(t.floor.apartmentN, { id: u.id })}>
+                    <Link
+                      href={aptHref(u.id)}
+                      aria-label={fmt(t.floor.apartmentN, { id: u.id })}
+                      onClick={(e) => {
+                        // a plain click flies in like a click on the floor; new-tab clicks stay links
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                        e.preventDefault();
+                        open(u.id);
+                      }}
+                    >
                       {body}
                     </Link>
                   ) : (

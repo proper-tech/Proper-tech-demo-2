@@ -288,7 +288,7 @@ function Piece({ item, finish }: { item: FurnitureItem; finish: Finish }) {
       );
     }
     case 'bed':
-      return <Bed w={1.6} wood={wood} fabric={fabric} />;
+      return <Bed w={1.4} wood={wood} fabric={fabric} />; // a 1.4 x 2.0 m double, as in the plan pictures
     case 'singleBed':
       return <Bed w={1} wood={wood} fabric={fabric} />;
     case 'nightstand':

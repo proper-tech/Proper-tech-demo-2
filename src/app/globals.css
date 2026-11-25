@@ -788,6 +788,58 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   color: var(--paper);
 }
 
+/* the 360° tour: amber with its ring icon, and a soft pulse while it isn't open, so it isn't missed */
+.icon-360 {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+}
+
+.segmented .seg-360,
+.button-360 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.segmented .seg-360:not([aria-pressed="true"]) {
+  margin-left: 3px;
+  background: var(--amber);
+  color: var(--ink);
+  animation: pulse-360 2.4s ease-out infinite;
+}
+
+.segmented .seg-360[aria-pressed="true"] .icon-360 {
+  color: var(--amber);
+}
+
+.button-360 {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+.button-360:hover {
+  background: #e2a41c;
+}
+
+@keyframes pulse-360 {
+  0% {
+    box-shadow: 0 0 0 0 rgb(242 182 50 / 0.6);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px rgb(242 182 50 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented .seg-360 {
+    animation: none;
+  }
+}
+
 /* Sale status: a coloured dot and plain text, so it never reads as a button (amber is for actions). */
 .status {
   display: inline-flex;
@@ -855,6 +907,59 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   height: 100%;
   border: 0;
   background: #1c201e;
+}
+
+/* switching between the 3D view, the 2D plan and the 360° tour: a short crossfade, not a pop. The 3D
+   canvas fades out (kept laid out, so switching back is instant), the plan or tour fades in over it. */
+.floor-stage > .stage-canvas,
+.apt-stage > .stage-canvas {
+  transition: opacity 0.35s ease;
+}
+
+.floor-stage > .stage-canvas.is-hidden,
+.apt-stage > .stage-canvas.is-hidden {
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+}
+
+.floor-plan:not(.is-standin),
+.apt-plan,
+.apt-tour-frame {
+  animation: view-in 0.35s ease both;
+}
+
+/* the 360° tour, covered in the page background until its first panorama is up (ApartmentExperience);
+   under the heading and mode switch, which stay readable */
+.apt-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--board);
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.apt-cover.is-off {
+  opacity: 0;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floor-stage > .stage-canvas,
+  .apt-stage > .stage-canvas,
+  .floor-plan:not(.is-standin),
+  .apt-plan,
+  .apt-tour-frame {
+    transition: none;
+    animation: none;
+  }
 }
 
 .stage-canvas {
@@ -2531,14 +2636,38 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   transition: opacity 0.25s ease;
 }
 
-.tower.is-zooming::after {
+/* the whole window below the header fades, not just the 3D view: the floor page opens under the same
+   colour (.arrive-cover) and lifts it, so the two pages join without a cut */
+.tower.is-zooming:not(.is-lifting)::after {
   content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 40;
+  position: fixed;
+  inset: var(--header) 0 0;
+  z-index: 25;
   background: var(--board);
   pointer-events: none;
   animation: tower-zoom-fade 2.8s ease-in forwards;
+}
+
+/* a tower floor lifting out (BuildingScene's LiftOut): the 3D view stays in sight and slides to where
+   the floor page's 3D view will be (FloorPicker), over the rest of the page faded to the background */
+.lift-backdrop {
+  position: fixed;
+  inset: var(--header) 0 0;
+  z-index: 25;
+  background: var(--board);
+  pointer-events: none;
+  animation: lift-backdrop-in 0.8s ease forwards;
+}
+
+@keyframes lift-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.tower.is-lifting {
+  border-radius: 0;
+  box-shadow: none;
 }
 
 @keyframes tower-zoom-fade {
@@ -2730,26 +2859,143 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   color: #dbe3ee;
 }
 
-/* the four captions on one screen: four across, two by two on tablets, stacked on phones */
-.chapter-cards {
+/* the flight behind the chapters (Motion.tsx scrubs it with the scroll): fades in over the sunset loop as the
+   intro scrolls away (--flight) */
+.story-flight {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: var(--flight, 0);
+}
+
+/* the chapters: one screen each, the caption to one side so the flight stays in view, sides alternating */
+.story-leg {
+  justify-items: start;
+  text-align: left;
+  padding-inline: clamp(1rem, 6vw, 6rem);
+}
+
+.story-leg[data-side='right'] {
+  justify-items: end;
+}
+
+.story-leg .chapter-caption {
+  position: relative;
+  justify-items: start;
+  max-width: 30rem;
+  text-align: left;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgb(14 26 46 / 0.62), rgb(14 26 46 / 0.38));
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+/* the amber line draws itself in when the caption arrives (.fx reveal) */
+.story-leg .chapter-caption::before {
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out) 250ms;
+}
+
+html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
+  transform: scaleX(0);
+}
+
+/* the chapter's number, large and outlined behind the title */
+.chapter-index {
+  position: absolute;
+  top: -0.45em;
+  right: 0.35em;
+  font-size: clamp(4.5rem, 9vw, 8rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.28);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the flight's instruments: the chapter counter and a rail of the four chapters that fills as you fly (--p) */
+.story-hud {
+  position: absolute;
+  left: clamp(1rem, 3vw, 2.5rem);
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: clamp(1rem, 3.5vh, 2rem);
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  opacity: var(--flight, 0);
+  pointer-events: none;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.hud-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-count b {
+  display: none;
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.hud-rail {
+  position: relative;
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-  gap: clamp(0.75rem, 1.5vw, 1.25rem);
-  width: min(100%, 78rem);
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0.75rem 0 0;
+  list-style: none;
 }
 
-.chapter-cards .chapter-caption {
-  max-width: none;
-  align-content: start;
-  padding: clamp(1.25rem, 2.5vw, 2rem);
+/* the track and its fill */
+.hud-rail::before,
+.hud-rail::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 1px;
+  background: rgb(255 255 255 / 0.25);
+  width: 100%;
 }
 
-.chapter-cards .chapter-caption h2 {
-  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+.hud-rail::after {
+  width: calc((100% - 100% / 4) * var(--p, 0));
+  height: 2px;
+  top: -0.5px;
+  background: var(--amber);
+  box-shadow: 0 0 12px var(--amber);
 }
 
-.chapter-cards .chapter-caption p {
-  font-size: 1rem;
+.hud-rail li {
+  position: relative;
+  transition: color 300ms;
+}
+
+.hud-rail li::before {
+  content: '';
+  position: absolute;
+  top: calc(-0.75rem - 3px);
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  transition: background-color 300ms, border-color 300ms, transform 300ms var(--ease-out);
 }
 
 /* which chapter you are in: a dot per chapter on the right of the film */
@@ -2774,10 +3020,37 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   transition: transform 300ms var(--ease-out), background-color 300ms;
 }
 
-.story[data-at='intro'] [data-dot='intro'],
-.story[data-at='cards'] [data-dot='cards'] {
+.story[data-at='intro'] .story-dots [data-dot='intro'],
+.story[data-at='location'] .story-dots [data-dot='location'],
+.story[data-at='towers'] .story-dots [data-dot='towers'],
+.story[data-at='podium'] .story-dots [data-dot='podium'],
+.story[data-at='homes'] .story-dots [data-dot='homes'] {
   background: var(--amber);
   transform: scale(1.5);
+}
+
+/* the chapter you are in, on the rail and the counter */
+.story[data-at='location'] .hud-rail [data-dot='location'],
+.story[data-at='towers'] .hud-rail [data-dot='towers'],
+.story[data-at='podium'] .hud-rail [data-dot='podium'],
+.story[data-at='homes'] .hud-rail [data-dot='homes'] {
+  color: #fff;
+}
+
+.story[data-at='location'] .hud-rail [data-dot='location']::before,
+.story[data-at='towers'] .hud-rail [data-dot='towers']::before,
+.story[data-at='podium'] .hud-rail [data-dot='podium']::before,
+.story[data-at='homes'] .hud-rail [data-dot='homes']::before {
+  background: var(--amber);
+  border-color: var(--amber);
+  transform: scale(1.4);
+}
+
+.story:not([data-at='towers']):not([data-at='podium']):not([data-at='homes']) .hud-count [data-dot='location'],
+.story[data-at='towers'] .hud-count [data-dot='towers'],
+.story[data-at='podium'] .hud-count [data-dot='podium'],
+.story[data-at='homes'] .hud-count [data-dot='homes'] {
+  display: inline;
 }
 
 /* the floor picker: its side column is a dark panel beside the 3D building */
@@ -2949,10 +3222,14 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-size: 1.125rem;
 }
 
-/* on phones the chapter cards fill the width, so the dots would sit on them */
+/* on phones the chapter cards fill the width, so the dots would sit on them; the rail keeps its points, not its words */
 @media (max-width: 40rem) {
   .story-dots {
     display: none;
+  }
+
+  .hud-rail li {
+    font-size: 0;
   }
 }
 
@@ -3572,6 +3849,165 @@ html.js-motion .fx.rv.is-in {
   stroke: #fffffff0;
   stroke-width: 0.35px;
   stroke-linejoin: round;
+}
+
+/* The floor page's compass, top right of the stage; --heading is set by the 3D view (FloorScene) */
+.compass {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  width: 3.5rem;
+  height: 3.5rem;
+  pointer-events: none;
+}
+
+.compass svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(var(--heading, 0deg));
+}
+
+.compass.is-plan svg {
+  transform: none;
+}
+
+.compass-ring {
+  fill: rgb(255 255 255 / 0.92);
+  stroke: var(--line);
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 4px rgb(20 35 59 / 0.18));
+}
+
+.compass-north {
+  fill: #d64534;
+}
+
+.compass-south {
+  fill: #9aa3ad;
+}
+
+.compass-n {
+  font: 700 7px var(--display);
+  fill: var(--ink);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Arriving from the floor picker's zoom: the board colour it faded to, lifted once the 3D view is
+   ready (FloorExperience). Below the header, which stays put across the two pages. */
+.arrive-cover {
+  position: fixed;
+  inset: var(--header) 0 0;
+  z-index: 25;
+  background: var(--board);
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+
+.arrive-cover.is-off {
+  opacity: 0;
+}
+
+/* opening an apartment from the floor: as the camera comes down onto it (FloorScene's EnterUnit), the
+   stage dips to the page background, from which the apartment page fades in; labels step aside */
+.floor-stage.is-entering::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--board);
+  pointer-events: none;
+  animation: enter-dip 0.8s ease-in forwards;
+}
+
+.floor-stage.is-entering .label-layer,
+.floor-stage.is-entering .stage-hint {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+@keyframes enter-dip {
+  0%,
+  55% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* every page opens with a short fade (app/[locale]/template.tsx); opacity only, so fixed elements in a
+   page keep the window as their frame. A floor taking over from the lift-out (or its cover) skips it. */
+.page-enter {
+  animation: page-in 0.45s ease both;
+}
+
+.page-enter:has(.floor.is-arriving),
+.page-enter:has(.arrive-cover) {
+  animation: none;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
+/* lifted out of the tower: the building view's last frame, exactly where this page's 3D view starts,
+   crossfaded once that has drawn; the page's own parts come in round it */
+.arrive-shot {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.arrive-shot.is-off {
+  opacity: 0;
+}
+
+.floor.is-arriving .apt-panel,
+.floor.is-arriving .apt-head,
+.floor.is-arriving .compass,
+.floor.is-arriving .stage-hint {
+  animation: arrive-in 0.4s ease both;
+}
+
+.floor.is-arriving .apt-panel {
+  animation-name: arrive-panel-in;
+}
+
+@keyframes arrive-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes arrive-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floor.is-arriving .apt-panel,
+  .floor.is-arriving .apt-head,
+  .floor.is-arriving .compass,
+  .floor.is-arriving .stage-hint {
+    animation: none;
+  }
 }
 
 /* The 2D plan standing in for a floor's 3D view while that loads (FloorExperience). */

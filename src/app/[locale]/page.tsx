@@ -13,13 +13,21 @@ import { fmt, getDict } from '@/i18n/config';
 import { SALES_PHONE } from '@/data/contact';
 import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 
-// The home page in screens, one scroll each (Motion.tsx): the sunset render stays pinned full-screen
-// while the intro and the four chapter cards scroll over it, then the floor picker, four ways to explore as photo
+// The home page in screens, one scroll each (Motion.tsx): a sunset loop stays pinned full-screen behind the
+// intro, then a drone flight round the complex plays with the scroll under the four chapters (one screen and one
+// leg each), then the floor picker, four ways to explore as photo
 // cards, the apartment types in a sideways row, the site plan on an amber band, the film with controls and
 // a contact close. Motion.tsx (mounted last) fades things in, counts the figures and tracks the chapter.
 
-/** The complex at sunset, behind the intro and the cards. */
-const HERO = '/media/hero-photo.webp';
+/** The complex at sunset, behind the intro: a still (the loop's poster) and the loop made from it (Magnific,
+ *  Kling 2.5: clouds, traffic and window lights moving, the building still). */
+const HERO = '/media/hero-sunset-2400.webp';
+const HERO_LOOP = '/media/hero-loop.mp4';
+/** The drone flight behind the chapters, made from four frames of the film (scripts/build-film.py --stills
+ *  1000,240,550,700), each sharpened with Magnific, and Kling 2.5 legs between them; a keyframe every few
+ *  frames, so it seeks smoothly as you scroll. */
+const FLIGHT = '/media/flight.mp4';
+const FLIGHT_POSTER = '/media/flight-poster.jpg';
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -46,11 +54,31 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   return (
     <main className="home">
       <section className="story">
-        {/* pinned while the chapters scroll over it; the dots show which chapter you are in */}
+        {/* pinned while the chapters scroll over it: the sunset loop behind the intro, then a drone flight round
+            the complex whose frames follow the scroll (Motion.tsx), one leg per chapter; the rail and the dots
+            show which chapter you are in */}
         <div className="story-stage">
-          <img className="story-film" src={HERO} alt="" width={1200} height={896} fetchPriority="high" />
+          <video className="story-film" src={HERO_LOOP} poster={HERO} autoPlay muted loop playsInline preload="auto" aria-hidden="true" />
+          <video className="story-flight" src={FLIGHT} poster={FLIGHT_POSTER} muted playsInline preload="auto" aria-hidden="true" />
+          <div className="story-hud" aria-hidden="true">
+            <p className="hud-count">
+              {chapters.map((key, i) => (
+                <b key={key} data-dot={key}>
+                  {String(i + 1).padStart(2, '0')}
+                </b>
+              ))}
+              <span>/ {String(chapters.length).padStart(2, '0')}</span>
+            </p>
+            <ol className="hud-rail">
+              {chapters.map((key) => (
+                <li key={key} data-dot={key}>
+                  {t.story[key].title}
+                </li>
+              ))}
+            </ol>
+          </div>
           <ol className="story-dots" aria-hidden="true">
-            {['intro', 'cards'].map((k) => (
+            {['intro', ...chapters].map((k) => (
               <li key={k} data-dot={k} />
             ))}
           </ol>
@@ -67,17 +95,16 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </div>
 
-        {/* the four captions side by side, one screen, revealed together (one .fx round them all) */}
-        <div className="story-chapter" data-chapter="cards">
-          <div className="chapter-cards fx">
-            {chapters.map((key) => (
-              <div key={key} className="chapter-caption">
-                <h2>{t.story[key].title}</h2>
-                <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
-              </div>
-            ))}
+        {/* a screen per chapter, the flight landing on what its caption is about; captions alternate sides */}
+        {chapters.map((key, i) => (
+          <div key={key} className="story-chapter story-leg" data-chapter={key} data-side={i % 2 ? 'right' : 'left'}>
+            <div className="chapter-caption fx">
+              <span className="chapter-index">{String(i + 1).padStart(2, '0')}</span>
+              <h2>{t.story[key].title}</h2>
+              <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
+            </div>
           </div>
-        </div>
+        ))}
       </section>
 
       <section className="location" id="location">
