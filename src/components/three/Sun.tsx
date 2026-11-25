@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { interiorNight, nightFactor } from './interiorGlass';
 import site from '@/data/site.json';
 import type { SunSettings } from './sunSettings';
-import { BackSide, CanvasTexture, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type ShaderMaterial, type Group, type PerspectiveCamera, type Sprite } from 'three';
+import { BackSide, CanvasTexture, Fog, Object3D, SRGBColorSpace, Vector3, type DirectionalLight, type ShaderMaterial, type Group, type PerspectiveCamera, type Sprite } from 'three';
 
 export { DEFAULT_SUN, type SunSettings } from './sunSettings';
 
@@ -19,6 +19,10 @@ const DISTANCE = 260;
  *  like the real sky. Radius of the dome, distance of the disc (inside the camera's far plane
  *  of 1200 m) and the disc's size including its glow (about 12° across). */
 const SKY_RADIUS = 1000;
+/** Haze over the city (metres from the camera): clear over the site, the far edge of the city (cut by the
+ *  camera's far plane at 1200 m) almost all horizon colour. */
+const FOG_NEAR = 420;
+const FOG_FAR = 1250;
 const DISC_DISTANCE = 900;
 const DISC_SIZE = 2 * DISC_DISTANCE * Math.tan((6 * Math.PI) / 180);
 /** In the building overview the camera looks down on the complex and the real sky is out of
@@ -53,12 +57,37 @@ const SKY_VERTEX = /* glsl */ `
  *  Set to true to bring the visible sun disc back. */
 const SHOW_SUN_DISC = false;
 
+/**
+ * The mountains round Ulaanbaatar's valley, drawn in the sky so they sit infinitely far away: Bogd Khan
+ * Uul high along the south, lower hills to the north and north-east, the valley open to the east and
+ * west. ponytail: the crest is a hand-shaped approximation of those bearings (a few degrees high, as
+ * seen from the city), not elevation data; swap in a sampled profile if it ever needs to be exact.
+ */
+const MOUNTAINS = /* glsl */ `
+  float bump(float a, float c, float w) {
+    float d = atan(sin(a - c), cos(a - c));
+    return exp(-d * d / (2.0 * w * w));
+  }
+  // height of the crest above the horizon (radians) at a true compass bearing (radians, 0 north, clockwise)
+  float crest(float b) {
+    float r = 0.008
+      + 0.055 * bump(b, 3.14159, 0.55)   // Bogd Khan Uul, south
+      + 0.036 * bump(b, -0.35, 0.45)     // the hills to the north-north-west
+      + 0.016 * bump(b, 1.20, 0.30);     // east-north-east
+    r += 0.0055 * sin(b * 7.0 + 1.3) + 0.0035 * sin(b * 13.0 + 0.4) + 0.0020 * sin(b * 31.0 + 2.1) + 0.0010 * sin(b * 67.0 + 0.7);
+    return max(r, 0.004);
+  }
+`;
+
 const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 sunDir;
   uniform float low;
   uniform float brightness;
   uniform float night;
+  uniform float north;
+  uniform float foot;
   varying vec3 vDir;
+  ${MOUNTAINS}
   void main() {
     vec3 dir = normalize(vDir);
     float h = max(dir.y, 0.0);
@@ -67,7 +96,21 @@ const SKY_FRAGMENT = /* glsl */ `
     vec3 col = mix(horizon, zenith, pow(h, 0.55));
     float d = max(dot(dir, sunDir), 0.0);
     col += vec3(1.0, 0.90, 0.72) * (pow(d, 8.0) * (0.05 + 0.1 * low));
+    // the mountains: blue-grey, the side facing the sun a little lighter, hazier towards their foot. The
+    // foot starts where the ground stops (the camera's far plane, below the horizon by the camera's height:
+    // foot), so they stand on the hazy far city instead of floating over a strip of sky
+    float bearing = atan(dir.x, -dir.z) - north;
+    float el = asin(clamp(dir.y, -1.0, 1.0));
+    float top = crest(bearing);
+    float m = (1.0 - smoothstep(top - 0.0012, top + 0.0012, el)) * smoothstep(foot - 0.006, foot, el);
+    float t = clamp((el - foot) / (top - foot), 0.0, 1.0);
+    vec3 rock = mix(vec3(0.40, 0.45, 0.50), vec3(0.56, 0.60, 0.66), t);
+    float lit = 0.5 + 0.5 * dot(normalize(dir.xz + 1e-5), normalize(sunDir.xz + 1e-5));
+    rock *= 0.88 + 0.22 * lit;
+    rock = mix(rock, horizon, mix(0.86, 0.42, smoothstep(0.0, 0.75, t)));
+    col = mix(col, rock, m);
     vec3 nightCol = mix(vec3(0.17, 0.22, 0.34), vec3(0.04, 0.07, 0.16), pow(h, 0.5));
+    nightCol = mix(nightCol, vec3(0.08, 0.10, 0.16), m);
     col = mix(col, nightCol, night);
     col *= mix(0.75, 1.0, clamp(brightness, 0.0, 1.0)) + max(brightness - 1.0, 0.0) * 0.15;
     gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
@@ -150,9 +193,19 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   const sky = useRef<Group>(null);
   const skyMat = useRef<ShaderMaterial>(null);
   const uniforms = useMemo(
-    () => ({ sunDir: { value: new Vector3() }, low: { value: 0 }, brightness: { value: 1 }, night: { value: 0 } }),
+    () => ({ sunDir: { value: new Vector3() }, low: { value: 0 }, brightness: { value: 1 }, night: { value: 0 }, north: { value: (site.rotation * Math.PI) / 180 }, foot: { value: 0 } }),
     [],
   );
+  // haze: the city fades into the sky's own horizon colour (the shader's, in the same sRGB values) from a
+  // few hundred metres out, so it melts into the distance instead of stopping at the camera's far plane
+  const fog = useMemo(() => new Fog('#ffffff', FOG_NEAR, FOG_FAR), []);
+  {
+    const k = low * 0.7;
+    const s = Math.min(1, Math.max(0, b)) * 0.25 + 0.75 + Math.max(b - 1, 0) * 0.15;
+    const n = 1 - day;
+    const ch = (dayC: number, nightC: number) => Math.min(1, (dayC + (nightC - dayC) * n) * s);
+    fog.color.setRGB(ch(0.8 + 0.15 * k, 0.17), ch(0.87 - 0.05 * k, 0.22), ch(0.94 - 0.24 * k, 0.34), SRGBColorSpace);
+  }
   uniforms.sunDir.value.set(dx, dy, dz);
   uniforms.low.value = low;
   uniforms.brightness.value = b;
@@ -178,6 +231,12 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
       u.low.value = uniforms.low.value;
       u.brightness.value = uniforms.brightness.value;
       u.night.value = uniforms.night.value;
+      u.north.value = uniforms.north.value;
+    }
+    if (u) {
+      // how far below the horizon the ground stops: at the camera's far plane (1200 m), seen from its height
+      const cam = camera as PerspectiveCamera;
+      u.foot.value = -Math.atan2(Math.max(cam.position.y, 0), cam.far * 0.97);
     }
     const disc = arcSun.current;
     if (!disc || !showArc || f === undefined) return;
@@ -203,6 +262,7 @@ export function Sun({ sun, overview = false }: { sun: SunSettings; overview?: bo
   return (
     <>
       <primitive object={target} />
+      <primitive object={fog} attach="fog" />
       <group ref={sky}>
         {/* sky dome */}
         <mesh renderOrder={-2} frustumCulled={false}>
