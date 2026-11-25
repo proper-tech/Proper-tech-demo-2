@@ -21,6 +21,7 @@ Image.fromarray(a).save(f'{P}/D/top.png')
 PY
 python3 -I $T/add_mood_toggle.py $R/interior/tours/D/index.html
 python3 -I $T/add_window_views.py $R/interior/tours/D/index.html
+python3 -I $T/tune_window_views.py $R/interior/tours/D/index.html
 python3 -I $T/add_finish_toggle.py $R/interior/tours/D/index.html
 python3 -I $T/repanos.py $R/interior/tours/D/index.html $R/interior/renders/D $P/D $MAP
 python3 -I $T/retop.py $R/interior/tours/D/index.html $P/D $MAP
