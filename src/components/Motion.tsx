@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 // The home page's motion layer:
 //   - the header floats over the film and turns solid once the film's chapters have scrolled past;
 //   - the dots beside the film follow the chapter you are reading (html .story[data-at]);
+//   - the drone flight behind the chapters plays as you scroll (its frames follow the scroll position);
 //   - everything marked .fx fades up out of a slight blur as it comes into view, siblings one after
 //     another, and numbers marked data-count count up to their value.
 // Nothing moves for visitors who ask for reduced motion: the pre-paint script in the layout only adds
@@ -40,6 +41,57 @@ export function Motion() {
       removeEventListener('scroll', onScroll);
       html.removeAttribute('data-scrolled');
     });
+
+    // the flight behind the chapters: its frames follow the scroll. Chapter n's screen shows the flight's
+    // n-th waypoint, so scrolling from one chapter to the next flies that leg; on the way down from the intro it
+    // fades in over the sunset loop (--flight), which then pauses. --p fills the rail.
+    const flight = document.querySelector<HTMLVideoElement>('.story-flight');
+    const hero = document.querySelector<HTMLVideoElement>('.story-film');
+    const intro = document.querySelector<HTMLElement>('.story-intro');
+    const legs = [...document.querySelectorAll<HTMLElement>('.story-leg')];
+    if (story && flight && intro && legs.length > 1) {
+      let want = 0;
+      let frame = 0;
+      const seek = () => {
+        // one seek at a time: setting currentTime again mid-seek makes it start over and lag
+        if (flight.readyState >= 1 && !flight.seeking && Math.abs(flight.currentTime - want) > 1 / 60) flight.currentTime = want;
+      };
+      const update = () => {
+        frame = 0;
+        const top = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
+        const y = scrollY;
+        const stops = legs.map(top);
+        const fade = Math.min(1, Math.max(0, (y - top(intro)) / (stops[0] - top(intro))));
+        let k = 0; // legs flown so far, fractional
+        for (let i = 0; i < stops.length - 1; i++) {
+          if (y >= stops[i + 1]) k = i + 1;
+          else if (y > stops[i]) k = i + (y - stops[i]) / (stops[i + 1] - stops[i]);
+        }
+        story.style.setProperty('--flight', fade.toFixed(3));
+        story.style.setProperty('--p', (k / (stops.length - 1)).toFixed(4));
+        if (flight.duration) want = (k / (stops.length - 1)) * flight.duration;
+        seek();
+        if (hero) {
+          if (fade >= 1 && !hero.paused) hero.pause();
+          else if (fade < 1 && hero.paused && html.classList.contains('js-motion')) hero.play().catch(() => {});
+        }
+      };
+      const onFlightScroll = () => {
+        if (!frame) frame = requestAnimationFrame(update);
+      };
+      update();
+      addEventListener('scroll', onFlightScroll, { passive: true });
+      addEventListener('resize', onFlightScroll);
+      flight.addEventListener('seeked', seek);
+      flight.addEventListener('loadedmetadata', update);
+      off.push(() => {
+        removeEventListener('scroll', onFlightScroll);
+        removeEventListener('resize', onFlightScroll);
+        flight.removeEventListener('seeked', seek);
+        flight.removeEventListener('loadedmetadata', update);
+        cancelAnimationFrame(frame);
+      });
+    }
 
     // reveals: only what is still below the fold waits for its turn (no flicker on a mid-page reload)
     const count = (el: HTMLElement) => {

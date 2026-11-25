@@ -28,11 +28,15 @@ interrupted render resumes. --encode joins DIR's frames into a silent H.264 MP4 
 names, default MEDIUM; --width: output width, default the frames'). The site's film: --crf VERYLOW --width 1280 (720p, about 5 MB).
   blender -b -P scripts/build-film.py -- --city-glb public/models/blocks/city.glb --osm ... --facades DIR
 writes the same city for the website's 3D view.
+  blender -b -P scripts/build-film.py -- --sphere B:10,C:15 --out DIR [--res 2048] [--samples 32] [--date 11-23 --time 13.4]
+renders 360° views from inside the towers (Cycles) for the tours' window views, as stand-ins until drone spheres
+replace them (see sphere()).
 """
 import bpy, addon_utils, math, os, sys, time
 from mathutils import Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+COMPLEX = set()   # names of the objects that came from complex.glb (build())
 FPS, LAST = 24, 911
 args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 def arg(name, default=None):
@@ -769,8 +773,12 @@ def build():
     t0 = time.time()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
+    global COMPLEX
     for f in ("public/models/complex.glb", "public/models/blocks/environment.glb"):
+        before = set(bpy.data.objects.keys())
         bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, f))
+        if "complex" in f:
+            COMPLEX = set(bpy.data.objects.keys()) - before   # the complex's own objects (sphere()'s :bare hides them)
     print(f"FILM imported {len(bpy.data.objects)} objects in {time.time() - t0:.0f} s")
 
     # the street model's paving is plain white (the website never shows it): real tones, for the film only
@@ -827,10 +835,12 @@ def build():
         p = scene.sun_pos_properties
         p.sun_object = sun
         p.latitude, p.longitude, p.UTC_zone = 47.918, 106.917, 8
-        p.year, p.month, p.day, p.time = 2026, 6, 15, hour
-        if golden:   # the sky's sun follows the light's; warm, low light
+        month, day = (int(x) for x in arg("--date", "06-15").split("-"))   # --date MM-DD (default mid-June)
+        p.year, p.month, p.day, p.time = 2026, month, day, hour
+        if "sky" in locals():   # the physical sky (no HDRI, or golden hour): its sun follows the light's
             sky.sky_type = "NISHITA"
             p.sky_texture = sky.name
+        if golden:   # warm, low light
             bg.inputs["Strength"].default_value = 0.25
             sun_data.color, sun_data.energy = (1.0, 0.62, 0.36), 4.0
         print("FILM sun from Sun Position: elevation", round(math.degrees(p.sun_elevation), 1), "azimuth", round(math.degrees(p.sun_azimuth), 1))
@@ -899,8 +909,9 @@ def build():
 
 def export_city(path):
     """The film's city (--osm, --facades) for the website's 3D view (three/BuildingScene.tsx): only the buildings
-    and streets, with only the colour maps, scaled to 512 px (the view never comes close enough to need more),
-    Draco-compressed. Same frame as the site's other models."""
+    and streets, with only the colour maps, scaled to 1024 px (enough for the window reflections and brick of the
+    Magnific-enhanced facades to survive; the view never comes closer), Draco-compressed. Same frame as the
+    site's other models."""
     obs = [bpy.data.objects["Film OSM Buildings"], bpy.data.objects["Film OSM Streets"]]
     for m in obs[0].data.materials:
         nt = m.node_tree
@@ -909,7 +920,7 @@ def export_city(path):
             if n.type == "NORMAL_MAP" or (n.type == "TEX_IMAGE" and n.image.colorspace_settings.name == "Non-Color"):
                 nt.nodes.remove(n)   # roughness, metalness and normal maps: not worth their weight on the web
             elif n.type == "TEX_IMAGE":
-                n.image.scale(512, 512)
+                n.image.scale(1024, 1024)
         b.inputs["Roughness"].default_value = 0.45 if FACADE_TALL[0] in m.name else 0.9   # glass a little glossy
     # the streets wear the street model's own materials: plain stand-ins named after them here ("City Sidewalk" for
     # "Env Sidewalk"), which the website swaps for the ones it already has from environment.glb (no second copy)
@@ -965,6 +976,60 @@ def encode(frames_dir, mp4):
     print("FILM wrote", mp4, os.path.getsize(mp4) // 1024, "KB")
 
 
+def sphere(scene, specs, out):
+    """360° views from inside the towers, for the window views of the apartment tours (public/views): an
+    equirectangular picture per TOWER:FLOOR (e.g. B:15), taken at the tower's centre at eye height on that floor
+    (floor 4 is 11.7 m up, 3 m a storey, eye 1.5 m above the floor), with true north in the middle as the tours
+    expect (the site's north is 8.89° west of true north, see interior/tools/add_window_views.py). The tower it is
+    taken from is hidden, so the camera sees out; everything else (the other tower, the podium, the city) stays.
+    Cycles (EEVEE has no panoramic camera). Writes OUT/sphere-<T>-<FF>.jpg."""
+    import json
+    site = json.load(open(os.path.join(ROOT, "src", "data", "site.json")))
+    os.makedirs(out, exist_ok=True)
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = int(arg("--samples", 32))
+    scene.cycles.use_denoising = True
+    w = int(arg("--res", 2048))
+    scene.render.resolution_x, scene.render.resolution_y = w, w // 2
+    cam = bpy.data.objects.new("Cam Sphere", bpy.data.cameras.new("Cam Sphere"))
+    scene.collection.objects.link(cam)
+    cam.data.type = "PANO"
+    try:
+        cam.data.panorama_type = "EQUIRECTANGULAR"
+    except AttributeError:
+        cam.data.cycles.panorama_type = "EQUIRECTANGULAR"   # Blender before 4.0
+    cam.data.clip_start, cam.data.clip_end = 0.3, 4000
+    scene.camera = cam
+    scene.timeline_markers.clear()   # the film's shot markers would switch the camera back
+    for spec in specs:
+        tower, floor, *opts = spec.split(":")
+        t = site["towers"][{"B": 1, "C": 0}[tower]]   # building.ts towerSiteIndex
+        # the plate's centre: grid origin 0.5 m in from the site rectangle, plate x -2.05..23.65, y -0.15..21.2
+        u = t["u0"] + 0.5 + (-2.05 + 23.65) / 2
+        v = t["v0"] + 0.5 + (-0.15 + 21.2) / 2
+        z = 11.7 + (int(floor) - 4) * 3.0 + 1.5
+        # "Tower_B" in the model (as the website names it); Blender's glTF import makes that "Tower B"
+        hidden = [o for o in bpy.data.objects if o.name in (f"Tower_{tower}", f"Tower {tower}")]
+        # B:5:bare -- the whole complex hidden, the site as it was when the drone flew (for matching its photo)
+        if "bare" in opts:
+            hidden = [o for o in bpy.data.objects if o.name in COMPLEX]
+        for o in hidden:
+            for c in [o, *o.children_recursive]:
+                c.hide_render = True
+        # looking along +y (site north) is rotation (90°, 0, 0); turn east by 8.89° so true north is the middle
+        cam.location = (u, v, z)
+        cam.rotation_euler = (math.radians(90), 0, math.radians(-8.89))
+        path = os.path.join(out, f"sphere-{tower}-{int(floor):02d}{'-bare' if 'bare' in opts else ''}.jpg")
+        scene.render.filepath = path
+        t0 = time.time()
+        bpy.ops.render.render(write_still=True)
+        print(f"FILM sphere {tower}:{floor} at ({u:.1f}, {v:.1f}, {z:.1f}) hid {len(hidden)} -> {path} {time.time() - t0:.0f}s", flush=True)
+        for o in hidden:
+            for c in [o, *o.children_recursive]:
+                c.hide_render = False
+
+
 out = arg("--out", os.path.join(ROOT, "film_frames"))
 if "--encode" in args:
     encode(out, arg("--mp4", os.path.join(ROOT, "public", "media", "film.mp4")))
@@ -976,3 +1041,5 @@ else:
         render(sc, range(int(arg("--start", 0)), int(arg("--end", LAST)) + 1), out)
     elif "--city-glb" in args:
         export_city(arg("--city-glb"))
+    elif "--sphere" in args:
+        sphere(sc, arg("--sphere").split(","), out)

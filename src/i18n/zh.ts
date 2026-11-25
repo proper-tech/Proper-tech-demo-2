@@ -44,7 +44,7 @@ const zh: Dict = {
     },
     apartment: {
       title: '走进公寓',
-      line: '以3D方式打开任意一套公寓，更换装修，并在360°全景中走进各个房间。',
+      line: '以3D方式打开任意一套公寓，并在360°全景中走进各个房间。',
       cta: '打开公寓 {id}',
     },
     podium: {
@@ -195,13 +195,13 @@ const zh: Dict = {
   },
   floor: {
     title: '{t} 座 {n} 层',
-    lead: '彩色的公寓正在出售。选择一套,以 3D 方式打开。',
+    lead: '彩色的公寓正在出售。选择一套,以 360° 全景进入。',
     leadNone: '本层所有公寓均已售出或已预订。',
     view3d: '3D',
     view2d: '平面图',
     back: '全部楼层',
     apartmentN: '{id} 号公寓',
-    open: '3D 查看',
+    open: '360° 查看',
     prev: '下一层',
     next: '上一层',
     hint: '拖动旋转,滚轮缩放',

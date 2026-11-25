@@ -4711,8 +4711,8 @@ function setTourOutsideRoom(room) {
   if (tourOutside.texture && source && !tourOutside.masks.has(room)) {
     tourOutside.masks.set(room, 'loading');
     tourTextureLoader.load(source, texture => {
-      texture.colorSpace = ''; texture.minFilter = TourThree.LinearFilter; texture.magFilter = TourThree.LinearFilter;
-      texture.generateMipmaps = false;
+      texture.colorSpace = ''; texture.minFilter = 1008; texture.magFilter = TourThree.LinearFilter;
+      texture.generateMipmaps = true;
       tourOutside.masks.set(room, texture);
       refreshTourOutside();
     }, undefined, () => tourOutside.masks.delete(room));
@@ -4733,12 +4733,14 @@ async function initTourOutside() {
     tourOutside.shift = 0.25 - 8.89 / 360 + (entry.yaw || 0) / 360;
     tourOutside.texture = await new Promise((resolve, reject) => tourTextureLoader.load(entry.src, texture => {
       texture.colorSpace = TourThree.SRGBColorSpace; texture.minFilter = TourThree.LinearFilter;
-      texture.magFilter = TourThree.LinearFilter; texture.generateMipmaps = false; resolve(texture);
+      texture.magFilter = TourThree.LinearFilter; texture.minFilter = 1008; texture.generateMipmaps = true; resolve(texture);
     }, undefined, reject));
     const badge = document.createElement('div');
     badge.id = 'tourOutsideBadge';
     badge.className = 'tour-outside-badge';
-    badge.textContent = `Цонхоор: ${tower} блок, ${nearest}-р давхраас авсан бодит зураг`;
+    badge.textContent = entry.kind === 'render'
+      ? `Цонхоор: ${tower} блок, ${nearest}-р давхрын харагдах байдлын дүрслэл`
+      : `Цонхоор: ${tower} блок, ${nearest}-р давхраас авсан бодит зураг`;
     badge.hidden = true;
     tourElement('pano').appendChild(badge);
     if (interiorTour.room) setTourOutsideRoom(interiorTour.room);

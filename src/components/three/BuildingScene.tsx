@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
-import { NeutralToneMapping, ExtrudeGeometry, MathUtils, Raycaster, Shape, Vector3, type Material, type Object3D, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three';
-import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, floorLevel, towerPlate, towers, type FloorSummary } from '@/data/building';
+import site from '@/data/site.json';
+import { Color, EquirectangularReflectionMapping, Fog, NeutralToneMapping, SRGBColorSpace, TextureLoader, ExtrudeGeometry, MathUtils, Plane, Raycaster, Shape, Spherical, Vector3, type Group, type Material, type Object3D, type Mesh, MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, coreFor, floorLevel, getFloor, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
 import { ROOF_FLOOR, TECH_HEIGHT, techBlock } from '@/data/roof';
@@ -19,7 +20,8 @@ import { useTraffic } from './traffic';
 import { interiorFocus, interiorGlass, nightFactor } from './interiorGlass';
 import { NightDriver, StreetLights, registerFacadeWash, registerNightGlow } from './nightLights';
 import { removeStrayKerbs } from './strayKerbs';
-import { ARRIVE_KEY } from '@/lib/arrive';
+import { CityTrees, dressGround, dressRoofs } from './cityDressing';
+import { ARRIVE_KEY, FLOOR_FOV, FLOOR_VIEW, fitScale, handoff, liftsOut } from '@/lib/arrive';
 
 // The complex: a detailed model (public/models/complex.glb: towers, podium with the roof
 // playground, media screen, annex) standing in the environment model
@@ -328,21 +330,48 @@ function City() {
       const m = mesh.material as MeshStandardMaterial;
       const match = m.name.startsWith('City ') && own.get(m.name.replace('City ', 'Env '));
       if (match) mesh.material = match;
-      else if (m.map) m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
+      else if (m.name === 'Film Roof' && !m.userData.dressed) {
+        m.userData.dressed = true;
+        dressRoofs(m);
+      } else if (m.map) m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
     });
   }, [scene, env, gl]);
+  // trees go only where neither the city nor the site's own street model has anything (cityDressing)
+  const blockers = useMemo(() => [scene, env], [scene, env]);
+  // the film's ground colour, in patches of earth and grass (cityDressing)
+  const ground = useMemo(() => {
+    const m = new MeshStandardMaterial({ color: '#6B6A65', roughness: 1 });
+    dressGround(m);
+    return m;
+  }, []);
   return (
     <>
       <primitive object={scene} />
-      {/* the film's ground colour; below the streets (+0.02) and the site model (0) */}
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.15} receiveShadow raycast={noRaycast}>
+      {/* below the streets (+0.02) and the site model (0) */}
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.15} receiveShadow raycast={noRaycast} material={ground}>
         <planeGeometry args={[3000, 3000]} />
-        <meshStandardMaterial color="#6B6A65" roughness={1} />
       </mesh>
+      <CityTrees blockers={blockers} />
     </>
   );
 }
 // not preloaded: loads with the street, after the buildings are on screen (see BuildingScene)
+
+/** The drone's 360° photo from block B, floor 5 (public/views/B-05-v2.jpg, scaled to 1024 px: reflections
+ *  are blurred anyway). Its middle is true north; three puts an equirectangular map's middle at the plan's
+ *  north (-z), so it is turned by the plan's own turn from true north (site.rotation). Checked against the
+ *  photo's sun (winter noon, bearing about 192°). */
+const REFLECTION_URL = '/hdri/ub-sphere-1k.jpg';
+const REFLECTION_TURN = (site.rotation * Math.PI) / 180;
+
+function Reflections({ intensity }: { intensity: number }) {
+  const map = useLoader(TextureLoader, REFLECTION_URL);
+  useMemo(() => {
+    map.mapping = EquirectangularReflectionMapping;
+    map.colorSpace = SRGBColorSpace;
+  }, [map]);
+  return <Hdri map={map} environmentIntensity={intensity} environmentRotation={[0, REFLECTION_TURN, 0]} />;
+}
 
 /** Reports download progress of the models to the page's loader. */
 function Progress({ onProgress }: { onProgress?: (percent: number) => void }) {
@@ -773,6 +802,199 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   return null;
 }
 
+/** Seconds the lift-out takes, from the click to the floor page's view. */
+const LIFT_TIME = 3.4;
+/** How far the picked floor rises out of its tower (m). */
+const LIFT = 30;
+/** The page background (--board in globals.css): the city fades into it as the floor rises. */
+const BOARD = '#e9edf0';
+/** The floor as the floor page shows it: loaded on demand (the pick has already started fetching it). */
+const FloorModel = lazy(() => import('./FloorScene').then((m) => ({ default: m.FloorModel })));
+
+/**
+ * A tower floor picked: the camera flies round and level with it as ZoomIn does, then the tower opens
+ * there (cut away from the top down to the floor), and the floor, furnished as on its page, rises out of
+ * it and up towards the camera, which swings over it, while the rest of the city fades into the page
+ * background. It ends on the floor page's own view (FLOOR_VIEW), so the page can take over from the
+ * last frame (handoff) without a cut.
+ */
+function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const controls = useThree((s) => s.controls) as unknown as { target: Vector3; enabled: boolean } | null;
+  const scene = useThree((s) => s.scene);
+  const gl = useThree((s) => s.gl);
+  const size = useThree((s) => s.size);
+  const group = useRef<Group>(null);
+  const summary = getFloor(to.tower, to.floor);
+  const core = useMemo(() => coreFor(to.tower as TowerId, to.floor), [to]);
+  type Run = { p0: Vector3; t0: Vector3; p1: Vector3; p1b: Vector3; t1: Vector3; origin: Vector3; dir: Vector3; f0: number; cut: Plane; cutTop: number; tower: [Material, number][]; fading: boolean; k: number; done: boolean };
+  const run = useRef<Run | null>(null);
+  // the picked floor glows amber on the way in, so it is clear which one is opening
+  const glow = useRef<Mesh>(null);
+  const plate = towerPlate(to.tower as TowerId);
+
+  useEffect(() => {
+    const t = towerPlate(to.tower as TowerId);
+    // the floor page's scene origin: the plate's centre, on the floor's slab
+    const origin = new Vector3((t.u0 + t.u1) / 2, floorLevel(to.floor), -(t.v0 + t.v1) / 2);
+    const t1 = floorPoint(to);
+    const t0 = controls ? controls.target.clone() : t1.clone();
+    // round to the facade nearest the camera, square on, the whole floor across the view (as ZoomIn)
+    const dir = camera.position.clone().sub(t1).setY(0);
+    if (dir.lengthSq() < 1) dir.set(-1, 0, 1);
+    dir.normalize();
+    const hx = (t.u1 - t.u0) / 2;
+    const hz = (t.v1 - t.v0) / 2;
+    if (Math.abs(dir.x) * hz > Math.abs(dir.z) * hx) dir.set(Math.sign(dir.x), 0, 0);
+    else dir.set(0, 0, Math.sign(dir.z));
+    const d1 = 13 / Math.tan(MathUtils.degToRad(15)) / 0.66;
+    // far enough to see the storeys round it, a little above it, looking slightly down
+    const p1 = t1.clone().add(dir.clone().multiplyScalar((dir.x !== 0 ? hx : hz) + d1 * 0.75)).add(new Vector3(0, 7, 0));
+    // while the tower opens, the camera keeps drifting back and up, so the cut is seen coming down to it
+    const p1b = p1.clone().add(dir.clone().multiplyScalar(6)).add(new Vector3(0, 10, 0));
+
+    // the tower's own materials, copied, cut at a plane that sweeps down to the floor; the other
+    // tower and everything else keep theirs
+    const cutTop = ROOF_LEVEL + TECH_HEIGHT + 2;
+    const cut = new Plane(new Vector3(0, -1, 0), cutTop); // keeps y below the constant
+    const swaps: [Mesh, Material | Material[]][] = [];
+    // the copies and their own opacity: the stump left under the rising floor fades out (useFrame)
+    const tower: [Material, number][] = [];
+    const copy = (m: Material) => {
+      const c = m.clone();
+      c.onBeforeCompile = m.onBeforeCompile; // the glass's lit homes (interiorGlass) aren't copied by clone()
+      c.customProgramCacheKey = m.customProgramCacheKey;
+      c.clippingPlanes = [cut];
+      c.clipShadows = true;
+      tower.push([c, m.opacity]);
+      return c;
+    };
+    scene.getObjectByName(`Tower_${to.tower}`)?.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh) return;
+      swaps.push([mesh, mesh.material]);
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(copy) : copy(mesh.material);
+    });
+    gl.localClippingEnabled = true;
+    const fog0 = scene.fog;
+    const bg0 = scene.background;
+    scene.fog = new Fog(BOARD, 3000, 4000);
+
+    run.current = { p0: camera.position.clone(), t0, p1, p1b, t1, origin, dir, f0: camera.fov, cut, cutTop, tower, fading: false, k: 0, done: false };
+    if (controls) controls.enabled = false;
+    return () => {
+      if (controls) controls.enabled = true;
+      for (const [mesh, m] of swaps) {
+        for (const c of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) c.dispose();
+        mesh.material = m;
+      }
+      gl.localClippingEnabled = false;
+      scene.fog = fog0;
+      scene.background = bg0;
+    };
+  }, [to, camera, controls, scene, gl]);
+
+  const sph0 = useMemo(() => new Spherical(), []);
+  const sph1 = useMemo(() => new Spherical(), []);
+  useFrame((_, dt) => {
+    const z = run.current;
+    if (!z || z.done) return;
+    // a stalled tab (hidden, busy) pauses the lift instead of skipping it: one frame moves it 1/20 s at most
+    z.k = Math.min(1, z.k + Math.min(dt, 0.05) / LIFT_TIME);
+    // The moves overlap, so the camera never stops: 0 – 0.28 round to the floor; 0.22 – 0.46 the tower
+    // opens down to it while the camera drifts back and up; 0.46 – 1 the floor rises and the camera
+    // swings over it to the floor page's view.
+    const a = smooth(Math.min(1, z.k / 0.28));
+    const b = smooth(MathUtils.clamp((z.k - 0.22) / 0.24, 0, 1));
+    const drift = smooth(MathUtils.clamp((z.k - 0.2) / 0.3, 0, 1));
+    const c = smooth(MathUtils.clamp((z.k - 0.46) / 0.54, 0, 1));
+
+    z.cut.constant = MathUtils.lerp(z.cutTop, z.origin.y - 0.03, b);
+    const lift = LIFT * c;
+    const centre = z.origin.clone().add(new Vector3(0, lift, 0));
+    if (group.current) {
+      group.current.visible = b > 0.5;
+      group.current.position.copy(centre);
+    }
+    if (glow.current) (glow.current.material as Material).opacity = 0.4 * a * (1 - b);
+
+    // round to the floor (ZoomIn's first move), keeping height until near the end, then drifting
+    const pos = new Vector3().lerpVectors(z.p0, z.p1, a);
+    pos.y = MathUtils.lerp(z.p0.y, z.p1.y, a * a);
+    pos.lerp(z.p1b, drift);
+    let target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15));
+    let fov = MathUtils.lerp(z.f0, 30, a);
+    if (c > 0) {
+      // then about the rising floor, on a sphere: from beside it to the floor page's view above it
+      const end = new Vector3(...FLOOR_VIEW).multiplyScalar(fitScale(size.width / size.height));
+      sph0.setFromVector3(z.p1b.clone().sub(z.origin));
+      sph1.setFromVector3(end);
+      let dTheta = sph1.theta - sph0.theta;
+      dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta)); // the short way round
+      const s = new Spherical(MathUtils.lerp(sph0.radius, sph1.radius, c), MathUtils.lerp(sph0.phi, sph1.phi, c), sph0.theta + dTheta * c);
+      pos.setFromSpherical(s).add(centre);
+      target = z.t1.clone().lerp(centre, c);
+      fov = MathUtils.lerp(30, FLOOR_FOV, c);
+      // the city fades into the page background as soon as the floor starts rising, gone by two thirds
+      // of the way; the fog closes in geometrically (km to tens of metres) to just past the floor as
+      // the camera is now, so the floor stays clear while the towers round it go early, no ghost left
+      const f = smooth(MathUtils.clamp((z.k - 0.46) / 0.2, 0, 1));
+      const r = pos.distanceTo(centre);
+      const fog = scene.fog as Fog;
+      fog.near = 3000 * ((r + 14) / 3000) ** f;
+      fog.far = 4000 * ((r + 28) / 4000) ** f;
+      if (f > 0.5 && !scene.background) scene.background = new Color(BOARD);
+      // the tower's own stump, just under the floor, is too near for the fog: it fades out by itself,
+      // quicker still, so no ghost of it is left under the floor
+      const g = smooth(MathUtils.clamp((z.k - 0.46) / 0.14, 0, 1));
+      if (g > 0 && !z.fading) {
+        z.fading = true;
+        for (const [m] of z.tower) {
+          m.transparent = true;
+          m.depthWrite = false;
+          m.needsUpdate = true;
+        }
+      }
+      for (const [m, o] of z.tower) m.opacity = o * (1 - g);
+    }
+    camera.position.copy(pos);
+    camera.lookAt(target);
+    if (controls) controls.target.copy(target);
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+
+    if (z.k >= 1) {
+      z.done = true;
+      // the last frame, for the floor page to show until its own view has drawn
+      try {
+        gl.render(scene, camera);
+        handoff.image = gl.domElement.toDataURL('image/jpeg', 0.9);
+        handoff.at = Date.now();
+      } catch {
+        handoff.image = null;
+      }
+      try {
+        sessionStorage.setItem(ARRIVE_KEY, JSON.stringify({ x: z.dir.x, z: z.dir.z, at: Date.now(), lift: true }));
+      } catch {
+        // storage blocked: the floor page just opens at its usual view
+      }
+      onDone?.();
+    }
+  });
+
+  return (
+    <>
+      <group ref={group} visible={false}>
+        <Suspense fallback={null}>{summary && <FloorModel units={summary.units} core={core} />}</Suspense>
+      </group>
+      <mesh ref={glow} position={[(plate.u0 + plate.u1) / 2, floorLevel(to.floor) + FLOOR_HEIGHT / 2, -(plate.v0 + plate.v1) / 2]}>
+        <boxGeometry args={[plate.u1 - plate.u0 + 0.8, FLOOR_HEIGHT + 0.2, plate.v1 - plate.v0 + 0.8]} />
+        <meshBasicMaterial color="#F2B632" transparent opacity={0} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </>
+  );
+}
+
 export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRotate, layer, tour, sun, onReady, onProgress, zoomTo, onZoomed, active = true }: Props) {
   const hoverAnchor = useMemo<Anchor[]>(() => {
     if (!hovered || hovered.floor === 0) return [];
@@ -823,10 +1045,10 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       </Suspense>
       {streetOn && (
         <Suspense fallback={null}>
-          {/* real sky (Poly Haven HDRI) for reflections in glass, metal and car paint; the sky you
-              see stays the Sun component's dome */}
-          {/* the HDRI is a day sky: dimmed in the evening, so the facades go dark and the lit windows carry */}
-          <Hdri files="/hdri/sky-1k.hdr" environmentIntensity={0.35 * (1 - 0.75 * nightFactor(sun.elevation))} />
+          {/* the real view from the site (the drone's 360° photo) for reflections in glass, metal and car
+              paint; the sky you see stays the Sun component's dome. A day photo: dimmed in the evening,
+              so the facades go dark and the lit windows carry */}
+          <Reflections intensity={0.6 * (1 - 0.75 * nightFactor(sun.elevation))} />
           <Environment />
           <City />
         </Suspense>
@@ -846,7 +1068,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
         </>
       )}
 
-      {zoomTo && <ZoomIn to={zoomTo} onDone={onZoomed} />}
+      {zoomTo && (liftsOut(zoomTo.tower, zoomTo.floor) ? <LiftOut to={zoomTo} onDone={onZoomed} /> : <ZoomIn to={zoomTo} onDone={onZoomed} />)}
       <Projector anchors={zoomTo ? anchors : [...anchors, ...hoverAnchor]} layer={layer} />
     </SafeCanvas>
   );

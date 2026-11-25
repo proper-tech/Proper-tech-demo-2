@@ -1,3 +1,16 @@
+/** Calls `done` once the tour has its first panorama up: the tour file marks #pano with data-quality
+ *  (preview, then full) when it shows one. A file without #pano counts as shown. */
+export function onTourShown(frame: HTMLIFrameElement, done: () => void) {
+  const pano = frame.contentDocument?.getElementById('pano');
+  if (!pano || pano.dataset.quality) return done();
+  const watch = new MutationObserver(() => {
+    if (!pano.dataset.quality) return;
+    watch.disconnect();
+    done();
+  });
+  watch.observe(pano, { attributes: true, attributeFilter: ['data-quality'] });
+}
+
 /** Hides the tour page's own back button and heading when it is shown inside the site (same origin). */
 export function fitTourFrame(frame: HTMLIFrameElement) {
   const doc = frame.contentDocument;

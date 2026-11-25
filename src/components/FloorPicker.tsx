@@ -18,6 +18,7 @@ import { TourBar } from './TourBar';
 import { SunPanel } from './SunPanel';
 import { DEFAULT_SUN, type SunSettings } from './three/sunSettings';
 import { preloadFloor3D } from './three/preload';
+import { floorStageRect, liftsOut } from '@/lib/arrive';
 import { bedroomOptions, filterQuery, isFiltered, matches, NO_FILTER, type UnitFilter } from '@/lib/unitFilter';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
@@ -42,6 +43,11 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [tour, setTour] = useState<Tour>({ kind: 'overview' });
   // a picked floor: the 3D view zooms in to it, then the floor page opens
   const [zoom, setZoom] = useState<{ key: FloorKey; href: string } | null>(null);
+  // a tower floor lifts out of its tower (BuildingScene's LiftOut): meanwhile the 3D view slides from
+  // its place here to where the floor page's 3D view will be, so that page can take over from its last
+  // frame; the rest of the page fades to the background behind it
+  const lifting = zoom !== null && liftsOut(zoom.key.tower, zoom.key.floor);
+  const [slide, setSlide] = useState<React.CSSProperties | null>(null);
   const open = (key: FloorKey, href: string) => {
     // the floor's 3D view downloads during the zoom animation
     preloadFloor3D(key.tower);
@@ -53,6 +59,20 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     router.prefetch(href);
     setHovered(key);
     setZoom({ key, href });
+    if (liftsOut(key.tower, key.floor) && stage.current) {
+      // pinned where it is now, then (next frame) eased to the floor page's place; the canvas follows
+      const r = stage.current.getBoundingClientRect();
+      const at = (b: { top: number; left: number; width: number; height: number }): React.CSSProperties => ({
+        position: 'fixed',
+        top: b.top,
+        left: b.left,
+        width: b.width,
+        height: b.height,
+        zIndex: 26,
+      });
+      setSlide(at(r));
+      requestAnimationFrame(() => requestAnimationFrame(() => setSlide({ ...at(floorStageRect()), transition: 'top 1s ease, left 1s ease, width 1s ease, height 1s ease' })));
+    }
   };
   /** Lift buttons are links; a plain click zooms first instead of jumping straight there. */
   const onLiftClick = (e: React.MouseEvent) => {
@@ -358,7 +378,13 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <div ref={stage} className={`tower${zoom ? ' is-zooming' : ''}${full ? ' is-full' : ''}`} onPointerDown={() => setTouched(true)}>
+      {lifting && <div className="lift-backdrop" />}
+      <div
+        ref={stage}
+        className={`tower${zoom ? ' is-zooming' : ''}${lifting ? ' is-lifting' : ''}${full ? ' is-full' : ''}`}
+        style={slide ?? undefined}
+        onPointerDown={() => setTouched(true)}
+      >
         {near && (
           <BuildingScene
             floors={floors}

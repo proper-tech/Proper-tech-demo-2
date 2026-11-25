@@ -42,7 +42,7 @@ const en = {
     },
     apartment: {
       title: 'Walk through an apartment',
-      line: 'Open any apartment in 3D, change its finishes, and stand in its rooms in the 360° tour.',
+      line: 'Open any apartment in 3D and stand in its rooms in the 360° tour.',
       cta: 'Open apartment {id}',
     },
     podium: {
@@ -200,13 +200,13 @@ const en = {
   },
   floor: {
     title: 'Block {t}, floor {n}',
-    lead: 'Coloured apartments are for sale. Select one to open it in 3D.',
+    lead: 'Coloured apartments are for sale. Select one to step inside in 360°.',
     leadNone: 'Every apartment on this floor is sold or reserved.',
     view3d: '3D',
     view2d: '2D plan',
     back: 'All floors',
     apartmentN: 'Apartment {id}',
-    open: 'Open in 3D',
+    open: 'Open in 360°',
     prev: 'Floor below',
     next: 'Floor above',
     hint: 'Drag to rotate, scroll to zoom',
