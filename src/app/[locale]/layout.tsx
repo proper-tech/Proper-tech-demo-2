@@ -7,6 +7,7 @@ import '../globals.css';
 import { Header } from '@/components/Header';
 import { getDict, htmlLang, isLocale, locales } from '@/i18n/config';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { pageMeta, siteUrl } from '@/lib/meta';
 
 type Params = Promise<{ locale: string }>;
 
@@ -14,8 +15,10 @@ export const dynamicParams = false;
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const t = getDict((await params).locale);
-  return { title: { default: t.site.name, template: `%s | ${t.site.name}` }, description: t.site.description };
+  const { locale } = await params;
+  const t = getDict(locale);
+  // the home page's; every other page sets its own with pageMeta too (title, address, share card)
+  return { metadataBase: siteUrl, title: { default: t.site.name, template: `%s | ${t.site.name}` }, ...pageMeta(locale, '', null, t.site.description) };
 }
 
 export default async function LocaleLayout({ children, params }: { children: ReactNode; params: Params }) {

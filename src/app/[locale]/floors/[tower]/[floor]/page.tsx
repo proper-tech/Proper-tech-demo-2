@@ -8,6 +8,7 @@ import { floorName, getPodiumFloor, podiumFloors } from '@/data/podium';
 import { ROOF_FLOOR } from '@/data/roof';
 import type { TowerId } from '@/data/types';
 import { fmt, getDict } from '@/i18n/config';
+import { pageMeta } from '@/lib/meta';
 
 type Params = Promise<{ locale: string; tower: string; floor: string }>;
 
@@ -25,10 +26,12 @@ export const generateStaticParams = () => [
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { locale, tower, floor } = await params;
   const dict = getDict(locale);
-  if (tower === 'A') return { title: floor === 'B1' ? dict.basement.title : fmt(dict.podium.title, { n: floor }) };
-  if (tower === 'D') return { title: floor === 'B1' ? dict.blockD.basementTitle : fmt(dict.blockD.title, { n: floor }) };
-  if (Number(floor) === ROOF_FLOOR) return { title: fmt(dict.roof.title, { t: tower }) };
-  return { title: fmt(dict.floor.title, { t: tower, n: floor }) };
+  const meta = (title: string, description = dict.site.description) => pageMeta(locale, `/floors/${tower}/${floor}`, title, description);
+  if (tower === 'A') return meta(floor === 'B1' ? dict.basement.title : fmt(dict.podium.title, { n: floor }));
+  if (tower === 'D') return meta(floor === 'B1' ? dict.blockD.basementTitle : fmt(dict.blockD.title, { n: floor }));
+  if (Number(floor) === ROOF_FLOOR) return meta(fmt(dict.roof.title, { t: tower }));
+  const summary = getFloor(tower as TowerId, Number(floor));
+  return meta(fmt(dict.floor.title, { t: tower, n: floor }), summary && summary.available > 0 ? `${fmt(dict.home.forSaleN, { n: summary.available })}. ${dict.floor.lead}` : dict.floor.leadNone);
 }
 
 export default async function FloorPage({ params }: { params: Params }) {

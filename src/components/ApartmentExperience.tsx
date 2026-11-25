@@ -11,6 +11,7 @@ import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
 import { ApartmentPlan } from './Plan2D';
+import { UnitActions } from './UnitActions';
 import { fitTourFrame } from './tourFrame';
 import type { RoomLabel } from './three/ApartmentScene';
 
@@ -35,6 +36,14 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
     const view = new URLSearchParams(window.location.search).get('view');
     if (view === 'tour' || view === 'plan') setMode(view);
   }, []);
+  // ...and the address bar follows the view, so a shared link opens where the buyer was looking
+  const pick = (next: Mode) => {
+    setMode(next);
+    const url = new URL(location.href);
+    if (next === 'model') url.searchParams.delete('view');
+    else url.searchParams.set('view', next);
+    history.replaceState(history.state, '', url);
+  };
 
   const rooms = useMemo(() => listedRooms(layout), [layout]);
   const labels = useMemo(() => {
@@ -102,7 +111,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </p>
           <div className="segmented" role="group">
             {modes.map(([id, label]) => (
-              <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)}>
+              <button key={id} type="button" aria-pressed={mode === id} onClick={() => pick(id)}>
                 {label}
               </button>
             ))}
@@ -113,6 +122,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
       </section>
 
       <aside className="apt-panel">
+        <UnitActions subject={fmt(t.apt.title, { id: unit.id })} />
         <section>
           <h2>{t.apt.tabRooms}</h2>
           <table className="rooms">
@@ -148,7 +158,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             </tfoot>
           </table>
           {mode !== 'tour' && (
-            <button type="button" className="button" onClick={() => setMode('tour')}>
+            <button type="button" className="button" onClick={() => pick('tour')}>
               {fmt(t.apt.openTour, { room: labels[room.id].name })}
             </button>
           )}

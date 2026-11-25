@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { floors, towers } from '@/data/building';
+import { floors, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDLabel } from '@/data/blockD';
 import { layouts } from '@/data/layouts';
 import { floorName, podiumFloors } from '@/data/podium';
@@ -18,6 +18,7 @@ import { TourBar } from './TourBar';
 import { SunPanel } from './SunPanel';
 import { DEFAULT_SUN, type SunSettings } from './three/sunSettings';
 import { preloadFloor3D } from './three/preload';
+import { bedroomOptions, filterQuery, isFiltered, matches, NO_FILTER, type UnitFilter } from '@/lib/unitFilter';
 
 const BuildingScene = dynamic(() => import('./three/BuildingScene'), {
   ssr: false,
@@ -120,17 +121,23 @@ export function FloorPicker({ children }: { children: ReactNode }) {
     setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
+  // the finder (bedrooms, sunlight): narrows every count below and goes along to the floor page in its link
+  const [filter, setFilter] = useState<UnitFilter>(NO_FILTER);
+  const filtered = isFiltered(filter);
+  const q = filterQuery(filter);
+  const forSale = (f: FloorSummary) => (filtered ? f.units.filter((u) => u.status === 'available' && matches(u, filter)).length : f.available);
+  const forSaleText = (f: FloorSummary) => (filtered ? fmt(t.find.matchN, { n: forSale(f) }) : fmt(t.home.forSaleN, { n: f.available }));
   const panel = floors.filter((f) => f.tower === tower).sort((a, b) => panelOrder(a.floor, b.floor));
   // the figures over the lift panel: the picked tower's, or the whole complex's for the podium and block D
   const statFloors = tower === 'B' || tower === 'C' ? floors.filter((f) => f.tower === tower) : floors;
   const stats = {
-    units: statFloors.reduce((n, f) => n + f.available, 0),
-    floors: statFloors.filter((f) => f.available > 0).length,
-    layouts: new Set(statFloors.flatMap((f) => f.units.filter((u) => u.status === 'available').map((u) => layouts[u.layout].plan))).size,
+    units: statFloors.reduce((n, f) => n + forSale(f), 0),
+    floors: statFloors.filter((f) => forSale(f) > 0).length,
+    layouts: new Set(statFloors.flatMap((f) => f.units.filter((u) => u.status === 'available' && matches(u, filter)).map((u) => layouts[u.layout].plan))).size,
   };
   const current = hovered && floors.find((f) => f.tower === hovered.tower && f.floor === hovered.floor);
   const types = current
-    ? [...new Set(current.units.filter((u) => u.status === 'available').map((u) => layouts[u.layout].bedrooms))]
+    ? [...new Set(current.units.filter((u) => u.status === 'available' && matches(u, filter)).map((u) => layouts[u.layout].bedrooms))]
         .sort()
         .map((n) => t.beds[n as 1 | 2 | 3])
         .join(', ')
@@ -164,6 +171,29 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             <dd>{stats.layouts}</dd>
           </div>
         </dl>
+        <div className="finder" role="group" aria-label={t.find.label}>
+          <div className="finder-row">
+            <span className="finder-label">{t.find.beds}</span>
+            <div className="chips">
+              {[null, ...bedroomOptions].map((n) => (
+                <button key={n ?? 'any'} type="button" aria-pressed={filter.beds === n} onClick={() => setFilter((f) => ({ ...f, beds: n }))}>
+                  {n === null ? t.find.any : n}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="finder-row">
+            <span className="finder-label">{t.find.sun}</span>
+            <div className="chips">
+              {([null, 'am', 'pm'] as const).map((v) => (
+                <button key={v ?? 'any'} type="button" aria-pressed={filter.sun === v} onClick={() => setFilter((f) => ({ ...f, sun: v }))}>
+                  {v === null ? t.find.any : t.find[v]}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filtered && stats.units === 0 && <p className="finder-none">{t.find.none}</p>}
+        </div>
         <div className="lift">
           <div className="segmented" role="group">
             {(['A', ...towers, 'D'] as BlockId[]).map((id) => (
@@ -211,7 +241,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                 current.available > 0 ? (
                   <>
                     <b>
-                      {fmt(t.home.towerN, { t: current.tower })}, {fmt(t.home.forSaleN, { n: current.available })}
+                      {fmt(t.home.towerN, { t: current.tower })}, {forSaleText(current)}
                     </b>
                     {types}
                   </>
@@ -277,16 +307,20 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               <li key={f.floor}>
                 {f.available > 0 ? (
                   <Link
-                    href={`/${locale}/floors/${tower}/${f.floor}`}
-                    className={isHovered(f.floor) ? 'is-hovered' : undefined}
-                    aria-label={`${fmt(t.home.openFloor, { n: f.floor })}, ${fmt(t.home.forSaleN, { n: f.available })}`}
+                    href={`/${locale}/floors/${tower}/${f.floor}${q}`}
+                    className={[isHovered(f.floor) && 'is-hovered', forSale(f) === 0 && 'is-nomatch'].filter(Boolean).join(' ') || undefined}
+                    aria-label={`${fmt(t.home.openFloor, { n: f.floor })}, ${forSaleText(f)}`}
                     onMouseEnter={() => hover(f.floor)}
                     onMouseLeave={() => hover(null)}
                     onFocus={() => hover(f.floor)}
                     onBlur={() => hover(null)}
                   >
                     {f.floor}
-                    <i className="lift-count" aria-hidden="true">{f.available}</i>
+                    {forSale(f) > 0 && (
+                      <i className="lift-count" aria-hidden="true">
+                        {forSale(f)}
+                      </i>
+                    )}
                   </Link>
                 ) : (
                   <span
@@ -335,7 +369,9 @@ export function FloorPicker({ children }: { children: ReactNode }) {
               setHovered(key);
               if (key) setTower(key.tower);
             }}
-            onOpen={(key) => open(key, `/${locale}/floors/${key.tower}/${key.tower === 'A' || key.tower === 'D' ? (key.floor === 0 ? 'B1' : key.floor) : key.floor}`)}
+            onOpen={(key) =>
+              open(key, `/${locale}/floors/${key.tower}/${key.tower === 'A' || key.tower === 'D' ? (key.floor === 0 ? 'B1' : key.floor) : `${key.floor}${key.floor === ROOF_FLOOR ? '' : q}`}`)
+            }
             autoRotate={ready && !touched && !reducedMotion && hovered === null && !zoom}
             zoomTo={zoom?.key ?? null}
             onZoomed={() => zoom && router.push(zoom.href)}
@@ -363,7 +399,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                     ? fmt(t.home.towerN, { t: hovered.tower })
                     : fmt(t.home.floorN, { n: hovered.floor })}
               </strong>
-              {current && <span>{current.available > 0 ? fmt(t.home.forSaleN, { n: current.available }) : t.home.soldOut}</span>}
+              {current && <span>{current.available > 0 ? forSaleText(current) : t.home.soldOut}</span>}
             </div>
           )}
         </div>
