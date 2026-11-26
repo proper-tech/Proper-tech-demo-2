@@ -4,7 +4,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { Environment as Hdri, useGLTF, useProgress } from '@react-three/drei';
 import site from '@/data/site.json';
-import { Color, EquirectangularReflectionMapping, Fog, NeutralToneMapping, SRGBColorSpace, TextureLoader, ExtrudeGeometry, MathUtils, Plane, Raycaster, Shape, Spherical, Vector3, type Group, type Material, type Object3D, type Mesh, MeshStandardMaterial, type PerspectiveCamera } from 'three';
+import { Color, EquirectangularReflectionMapping, Fog, Mesh as ThreeMesh, Scene, NeutralToneMapping, SRGBColorSpace, TextureLoader, ExtrudeGeometry, MathUtils, Plane, Raycaster, Shape, Spherical, Vector3, type Group, type Material, type Object3D, type Mesh, MeshStandardMaterial, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MAX, FLOOR_MIN, PODIUM_HEIGHT, ROOF_LEVEL, coreFor, floorLevel, getFloor, towerPlate, towers, type FloorSummary } from '@/data/building';
 import { blockDFloors, blockDOutline, blockDToSite, D_PARAPET } from '@/data/blockD';
 import { podiumFloors, podiumOutline, terraceOutline } from '@/data/podium';
@@ -307,7 +307,9 @@ function Environment() {
  *  OpenStreetMap contributors), on plain ground out to the horizon. Not raycast, so the eye-level tour only
  *  walks on the site model; casts no shadows, since most heights are guesses (untagged in OpenStreetMap),
  *  too rough for the sun study. */
-const CITY_URL = '/models/blocks/city.glb';
+// ?v= changes with every rebuild of the file: browsers keep /models for up to 8 days (next.config.ts), so the
+// same address would show visitors the old city for that long
+const CITY_URL = '/models/blocks/city.glb?v=2026-11-26b';
 const noRaycast = () => {};
 
 function City() {
@@ -631,8 +633,8 @@ function floorPoint({ tower, floor }: FloorKey): Vector3 {
   return new Vector3((b.u0 + b.u1) / 2, f ? Math.max(1, (f.z0 + f.z1) / 2) : 1, -(b.v0 + b.v1) / 2);
 }
 
-/** Zoom duration (seconds) when a floor is picked. */
-const ZOOM_TIME = 2.8;
+/** Zoom duration (seconds) when a floor is picked (globals.css: tower-zoom-fade runs as long). */
+const ZOOM_TIME = 1.9;
 
 const smooth = (k: number) => k * k * (3 - 2 * k);
 
@@ -802,21 +804,85 @@ function ZoomIn({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   return null;
 }
 
-/** Seconds the lift-out takes, from the click to the floor page's view. */
-const LIFT_TIME = 3.4;
+/** Seconds the lift-out takes, from the click to the floor page's view (FloorPicker's slide runs as long). */
+export const LIFT_TIME = 1.6;
 /** How far the picked floor rises out of its tower (m). */
-const LIFT = 30;
+const LIFT = 22;
+/** Ease out with a small overshoot: the floor pops up a little past its place and settles back. */
+const springOut = (k: number) => 1 + 2.2 * (k - 1) ** 3 + 1.2 * (k - 1) ** 2;
+/** Ease in and out, steeper than smooth(): quick in the middle, so a short move still reads as gentle. */
+const smoother = (k: number) => k * k * k * (k * (6 * k - 15) + 10);
 /** The page background (--board in globals.css): the city fades into it as the floor rises. */
 const BOARD = '#e9edf0';
+/**
+ * A tower material as the lift-out cuts it: clipped at `cut`, and see-through from the start (at its own
+ * opacity until the stump fades), so it compiles once and not again halfway through the lift.
+ */
+function cutCopy(m: Material, cut: Plane) {
+  const c = m.clone();
+  c.onBeforeCompile = m.onBeforeCompile; // the glass's lit homes (interiorGlass) aren't copied by clone()
+  c.customProgramCacheKey = m.customProgramCacheKey;
+  c.clippingPlanes = [cut];
+  c.clipShadows = true;
+  c.transparent = true;
+  return c;
+}
+
+/**
+ * Compiles the lift-out's cut tower materials ahead of time, once the view is idle: the GPU keeps a compiled
+ * program for every material set up the same way, so the lift-out's own copies find theirs ready instead of
+ * stalling the first frames after the click (a second or more on a slow machine).
+ */
+function PrewarmLift() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    let off = false;
+    // a moment after the view settles, not during its first frames
+    const id = window.setTimeout(async () => {
+      const cut = new Plane(new Vector3(0, -1, 0), 0);
+      const warm = new Scene();
+      const made: Material[] = [];
+      for (const t of towers) {
+        scene.getObjectByName(`Tower_${t}`)?.traverse((o) => {
+          const mesh = o as Mesh;
+          if (!mesh.isMesh) return;
+          const mats = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map((m) => cutCopy(m, cut));
+          made.push(...mats);
+          const stand = new ThreeMesh(mesh.geometry, mats.length > 1 ? mats : mats[0]);
+          stand.matrixAutoUpdate = false;
+          stand.matrix.copy(mesh.matrixWorld);
+          warm.add(stand);
+        });
+      }
+      const was = gl.localClippingEnabled;
+      gl.localClippingEnabled = true;
+      try {
+        await gl.compileAsync(warm, camera, scene);
+      } catch {
+        // nothing lost: the lift-out compiles them itself, as before
+      }
+      if (!off) gl.localClippingEnabled = was;
+      for (const m of made) m.dispose();
+    }, 1500);
+    return () => {
+      off = true;
+      window.clearTimeout(id);
+    };
+  }, [gl, scene, camera]);
+  return null;
+}
+
 /** The floor as the floor page shows it: loaded on demand (the pick has already started fetching it). */
 const FloorModel = lazy(() => import('./FloorScene').then((m) => ({ default: m.FloorModel })));
 
 /**
- * A tower floor picked: the camera flies round and level with it as ZoomIn does, then the tower opens
- * there (cut away from the top down to the floor), and the floor, furnished as on its page, rises out of
- * it and up towards the camera, which swings over it, while the rest of the city fades into the page
- * background. It ends on the floor page's own view (FLOOR_VIEW), so the page can take over from the
- * last frame (handoff) without a cut.
+ * A tower floor picked, in one continuous move (LIFT_TIME): the floor lights up amber at once, the tower is
+ * sliced away from the top down to it, and the floor, furnished as on its page, pops up out of it (a small
+ * spring) carrying the glow, which fades as it settles; meanwhile the camera swings in one arc from wherever
+ * it was to the floor page's own view (FLOOR_VIEW) and the city fades into the page background. The page
+ * takes over from the last frame (handoff) without a cut.
  */
 function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
@@ -827,7 +893,7 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   const group = useRef<Group>(null);
   const summary = getFloor(to.tower, to.floor);
   const core = useMemo(() => coreFor(to.tower as TowerId, to.floor), [to]);
-  type Run = { p0: Vector3; t0: Vector3; p1: Vector3; p1b: Vector3; t1: Vector3; origin: Vector3; dir: Vector3; f0: number; cut: Plane; cutTop: number; tower: [Material, number][]; fading: boolean; k: number; done: boolean };
+  type Run = { p0: Vector3; t0: Vector3; origin: Vector3; dir: Vector3; f0: number; cut: Plane; cutTop: number; tower: [Material, number][]; fading: boolean; k: number; done: boolean };
   const run = useRef<Run | null>(null);
   // the picked floor glows amber on the way in, so it is clear which one is opening
   const glow = useRef<Mesh>(null);
@@ -837,21 +903,11 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
     const t = towerPlate(to.tower as TowerId);
     // the floor page's scene origin: the plate's centre, on the floor's slab
     const origin = new Vector3((t.u0 + t.u1) / 2, floorLevel(to.floor), -(t.v0 + t.v1) / 2);
-    const t1 = floorPoint(to);
-    const t0 = controls ? controls.target.clone() : t1.clone();
-    // round to the facade nearest the camera, square on, the whole floor across the view (as ZoomIn)
-    const dir = camera.position.clone().sub(t1).setY(0);
+    const t0 = controls ? controls.target.clone() : origin.clone();
+    // the side the camera came from, for the floor page (ARRIVE_KEY)
+    const dir = camera.position.clone().sub(origin).setY(0);
     if (dir.lengthSq() < 1) dir.set(-1, 0, 1);
     dir.normalize();
-    const hx = (t.u1 - t.u0) / 2;
-    const hz = (t.v1 - t.v0) / 2;
-    if (Math.abs(dir.x) * hz > Math.abs(dir.z) * hx) dir.set(Math.sign(dir.x), 0, 0);
-    else dir.set(0, 0, Math.sign(dir.z));
-    const d1 = 13 / Math.tan(MathUtils.degToRad(15)) / 0.66;
-    // far enough to see the storeys round it, a little above it, looking slightly down
-    const p1 = t1.clone().add(dir.clone().multiplyScalar((dir.x !== 0 ? hx : hz) + d1 * 0.75)).add(new Vector3(0, 7, 0));
-    // while the tower opens, the camera keeps drifting back and up, so the cut is seen coming down to it
-    const p1b = p1.clone().add(dir.clone().multiplyScalar(6)).add(new Vector3(0, 10, 0));
 
     // the tower's own materials, copied, cut at a plane that sweeps down to the floor; the other
     // tower and everything else keep theirs
@@ -861,11 +917,7 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
     // the copies and their own opacity: the stump left under the rising floor fades out (useFrame)
     const tower: [Material, number][] = [];
     const copy = (m: Material) => {
-      const c = m.clone();
-      c.onBeforeCompile = m.onBeforeCompile; // the glass's lit homes (interiorGlass) aren't copied by clone()
-      c.customProgramCacheKey = m.customProgramCacheKey;
-      c.clippingPlanes = [cut];
-      c.clipShadows = true;
+      const c = cutCopy(m, cut);
       tower.push([c, m.opacity]);
       return c;
     };
@@ -880,7 +932,7 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
     const bg0 = scene.background;
     scene.fog = new Fog(BOARD, 3000, 4000);
 
-    run.current = { p0: camera.position.clone(), t0, p1, p1b, t1, origin, dir, f0: camera.fov, cut, cutTop, tower, fading: false, k: 0, done: false };
+    run.current = { p0: camera.position.clone(), t0, origin, dir, f0: camera.fov, cut, cutTop, tower, fading: false, k: 0, done: false };
     if (controls) controls.enabled = false;
     return () => {
       if (controls) controls.enabled = true;
@@ -899,64 +951,54 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
   useFrame((_, dt) => {
     const z = run.current;
     if (!z || z.done) return;
-    // a stalled tab (hidden, busy) pauses the lift instead of skipping it: one frame moves it 1/20 s at most
-    z.k = Math.min(1, z.k + Math.min(dt, 0.05) / LIFT_TIME);
-    // The moves overlap, so the camera never stops: 0 – 0.28 round to the floor; 0.22 – 0.46 the tower
-    // opens down to it while the camera drifts back and up; 0.46 – 1 the floor rises and the camera
-    // swings over it to the floor page's view.
-    const a = smooth(Math.min(1, z.k / 0.28));
-    const b = smooth(MathUtils.clamp((z.k - 0.22) / 0.24, 0, 1));
-    const drift = smooth(MathUtils.clamp((z.k - 0.2) / 0.3, 0, 1));
-    const c = smooth(MathUtils.clamp((z.k - 0.46) / 0.54, 0, 1));
+    // a frame moves it 0.15 s at most: a shader compiling for a moment costs little, and a hidden tab, whose
+    // frames stop, picks up about where it was instead of jumping to the end
+    z.k = Math.min(1, z.k + Math.min(dt, 0.15) / LIFT_TIME);
+    // All at once, so nothing waits: 0 – 0.3 the tower is sliced away down to the floor; 0.12 – 1 the floor
+    // pops up (spring) and the camera swings over it; 0.25 – 0.6 the city fades out.
+    const b = smooth(Math.min(1, z.k / 0.3));
+    const c = smoother(MathUtils.clamp((z.k - 0.04) / 0.96, 0, 1));
+    const rise = springOut(MathUtils.clamp((z.k - 0.12) / 0.88, 0, 1));
 
     z.cut.constant = MathUtils.lerp(z.cutTop, z.origin.y - 0.03, b);
-    const lift = LIFT * c;
-    const centre = z.origin.clone().add(new Vector3(0, lift, 0));
+    const centre = z.origin.clone().add(new Vector3(0, LIFT * rise, 0));
     if (group.current) {
-      group.current.visible = b > 0.5;
+      // in the scene from the first frame (inside the tower, hidden by its walls), so it compiles along with
+      // the cut tower and doesn't stall the flight when it comes into view
+      group.current.visible = true;
       group.current.position.copy(centre);
     }
-    if (glow.current) (glow.current.material as Material).opacity = 0.4 * a * (1 - b);
-
-    // round to the floor (ZoomIn's first move), keeping height until near the end, then drifting
-    const pos = new Vector3().lerpVectors(z.p0, z.p1, a);
-    pos.y = MathUtils.lerp(z.p0.y, z.p1.y, a * a);
-    pos.lerp(z.p1b, drift);
-    let target = z.t0.clone().lerp(z.t1, Math.min(1, a * 1.15));
-    let fov = MathUtils.lerp(z.f0, 30, a);
-    if (c > 0) {
-      // then about the rising floor, on a sphere: from beside it to the floor page's view above it
-      const end = new Vector3(...FLOOR_VIEW).multiplyScalar(fitScale(size.width / size.height));
-      sph0.setFromVector3(z.p1b.clone().sub(z.origin));
-      sph1.setFromVector3(end);
-      let dTheta = sph1.theta - sph0.theta;
-      dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta)); // the short way round
-      const s = new Spherical(MathUtils.lerp(sph0.radius, sph1.radius, c), MathUtils.lerp(sph0.phi, sph1.phi, c), sph0.theta + dTheta * c);
-      pos.setFromSpherical(s).add(centre);
-      target = z.t1.clone().lerp(centre, c);
-      fov = MathUtils.lerp(30, FLOOR_FOV, c);
-      // the city fades into the page background as soon as the floor starts rising, gone by two thirds
-      // of the way; the fog closes in geometrically (km to tens of metres) to just past the floor as
-      // the camera is now, so the floor stays clear while the towers round it go early, no ghost left
-      const f = smooth(MathUtils.clamp((z.k - 0.46) / 0.2, 0, 1));
-      const r = pos.distanceTo(centre);
-      const fog = scene.fog as Fog;
-      fog.near = 3000 * ((r + 14) / 3000) ** f;
-      fog.far = 4000 * ((r + 28) / 4000) ** f;
-      if (f > 0.5 && !scene.background) scene.background = new Color(BOARD);
-      // the tower's own stump, just under the floor, is too near for the fog: it fades out by itself,
-      // quicker still, so no ghost of it is left under the floor
-      const g = smooth(MathUtils.clamp((z.k - 0.46) / 0.14, 0, 1));
-      if (g > 0 && !z.fading) {
-        z.fading = true;
-        for (const [m] of z.tower) {
-          m.transparent = true;
-          m.depthWrite = false;
-          m.needsUpdate = true;
-        }
-      }
-      for (const [m, o] of z.tower) m.opacity = o * (1 - g);
+    if (glow.current) {
+      // lights up at once, rises with the floor, fades as it settles
+      glow.current.position.set(centre.x, centre.y + FLOOR_HEIGHT / 2, centre.z);
+      (glow.current.material as Material).opacity = 0.45 * Math.min(1, z.k / 0.08) * (1 - smooth(MathUtils.clamp((z.k - 0.35) / 0.45, 0, 1)));
     }
+
+    // the camera: on a sphere about the rising floor, from where it was to the floor page's view
+    const end = new Vector3(...FLOOR_VIEW).multiplyScalar(fitScale(size.width / size.height));
+    sph0.setFromVector3(z.p0.clone().sub(z.origin));
+    sph1.setFromVector3(end);
+    let dTheta = sph1.theta - sph0.theta;
+    dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta)); // the short way round
+    const s = new Spherical(MathUtils.lerp(sph0.radius, sph1.radius, c), MathUtils.lerp(sph0.phi, sph1.phi, c), sph0.theta + dTheta * c);
+    const pos = new Vector3().setFromSpherical(s).add(z.origin.clone().lerp(centre, c));
+    const target = z.t0.clone().lerp(centre, Math.min(1, c * 1.4));
+    const fov = MathUtils.lerp(z.f0, FLOOR_FOV, c);
+    // the city fades into the page background; the fog closes in geometrically (km to tens of metres) to just
+    // past the floor as the camera is now, so the floor stays clear while the towers round it go, no ghost left
+    const f = smooth(MathUtils.clamp((z.k - 0.25) / 0.35, 0, 1));
+    const r = pos.distanceTo(centre);
+    const fog = scene.fog as Fog;
+    fog.near = 3000 * ((r + 14) / 3000) ** f;
+    fog.far = 4000 * ((r + 28) / 4000) ** f;
+    if (f > 0.5 && !scene.background) scene.background = new Color(BOARD);
+    // the tower's own stump, just under the floor, is too near for the fog: it fades out by itself, quicker
+    const g = smooth(MathUtils.clamp((z.k - 0.25) / 0.25, 0, 1));
+    if (g > 0 && !z.fading) {
+      z.fading = true;
+      for (const [m] of z.tower) m.depthWrite = false; // no recompile: only the pipeline state changes
+    }
+    for (const [m, o] of z.tower) m.opacity = o * (1 - g);
     camera.position.copy(pos);
     camera.lookAt(target);
     if (controls) controls.target.copy(target);
@@ -984,7 +1026,7 @@ function LiftOut({ to, onDone }: { to: FloorKey; onDone?: () => void }) {
 
   return (
     <>
-      <group ref={group} visible={false}>
+      <group ref={group}>
         <Suspense fallback={null}>{summary && <FloorModel units={summary.units} core={core} />}</Suspense>
       </group>
       <mesh ref={glow} position={[(plate.u0 + plate.u1) / 2, floorLevel(to.floor) + FLOOR_HEIGHT / 2, -(plate.v0 + plate.v1) / 2]}>
@@ -1060,6 +1102,7 @@ export default function BuildingScene({ floors, hovered, onHover, onOpen, autoRo
       {tour.kind === 'overview' && !zoomTo && towers.map((tower) => (
         <FloorZones key={tower} tower={tower} floors={floors.filter((f) => f.tower === tower)} hovered={hovered} onHover={onHover} onOpen={onOpen} />
       ))}
+      {tour.kind === 'overview' && !zoomTo && <PrewarmLift />}
       {tour.kind === 'overview' && !zoomTo && (
         <>
           <PodiumZones hovered={hovered} onHover={onHover} onOpen={onOpen} />
