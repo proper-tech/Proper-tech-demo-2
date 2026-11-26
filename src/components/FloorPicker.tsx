@@ -31,6 +31,8 @@ const panelOrder = (a: number, b: number) => Math.floor((b - 1) / 2) - Math.floo
 /** The basement car park, floor 0 of the podium: every tab has a button for it, as the tower lifts
  *  go down to it too. */
 const BASEMENT: FloorKey = { tower: 'A', floor: 0 };
+/** The 3D view's slide to the floor page's place during a lift-out: done well within it (LIFT_TIME, 1.6 s). */
+const SLIDE = ['top', 'left', 'width', 'height'].map((p) => `${p} 0.9s cubic-bezier(0.22, 1, 0.36, 1)`).join(', ');
 
 export function FloorPicker({ children }: { children: ReactNode }) {
   const { locale, t } = useI18n();
@@ -71,7 +73,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
         zIndex: 26,
       });
       setSlide(at(r));
-      requestAnimationFrame(() => requestAnimationFrame(() => setSlide({ ...at(floorStageRect()), transition: 'top 1s ease, left 1s ease, width 1s ease, height 1s ease' })));
+      requestAnimationFrame(() => requestAnimationFrame(() => setSlide({ ...at(floorStageRect()), transition: SLIDE })));
     }
   };
   /** Lift buttons are links; a plain click zooms first instead of jumping straight there. */

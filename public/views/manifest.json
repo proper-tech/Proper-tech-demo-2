@@ -1,12 +1,19 @@
 {
  "B": {
-  "15": {
-   "kind": "render",
-   "src": "/views/B-15-render.jpg",
+  "14": {
+   "src": "/views/B-14.jpg",
+   "yaw": 0.0
+  },
+  "16": {
+   "src": "/views/B-16.jpg",
    "yaw": 0.0
   },
   "5": {
    "src": "/views/B-05-v2.jpg",
+   "yaw": 0.0
+  },
+  "7": {
+   "src": "/views/B-07.jpg",
    "yaw": 0.0
   }
  },

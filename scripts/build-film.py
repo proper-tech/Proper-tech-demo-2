@@ -61,6 +61,69 @@ SHOTS = [
 # ---- photo facades for the real city (--facades): ambientCG texture, height of one tile in m (6 or 8 storeys of 3 m) ----
 FACADES_LOW = [("Facade018A", 18), ("Facade019A", 18), ("Facade020A", 18)]   # brick and concrete, most buildings
 FACADE_TALL = ("Facade006", 24)                                               # glass grid, buildings 30 m and up
+# ---- the buildings within about 150 m of the site, measured on the drone's 360° photo of 2026-11-23 from tower B
+# (the map's heights there are mostly wrong, often by 20 m): real height (m), look and colour. A look named in NEAR_LOOKS
+# is a facade folder in --facades made from that building's own facade in the photo (cut out, made tileable and
+# sharpened with Magnific, or for NearGrey and NearMall drawn anew by Magnific after it, ground to roof; only its
+# _1K-JPG_Color.jpg), laid as one tile of (width, height) m. "low" and "glass" are
+# the usual photo facades recoloured to the building's colour (RGB 0-1 as in a picture). ----
+NEAR_LOOKS = {"NearGrey": (26, 46), "NearCream": (17.3, 17.4), "NearWhite": (5.3, 13.7), "NearRed": (3.3, 3.1),
+              "NearMall": (28, 56)}
+NEAR = {
+    356138299: (48, "NearCream", None),   # north-west tower, brown balcony bands
+    355633841: (36, "NearCream", None),   # the "62" tower to the north
+    219750738: (37, "NearWhite", None),   # south: white towers with red balcony stripes
+    219750740: (40, "NearWhite", None),
+    241090752: (25, "NearRed", None),     # north-east: the salmon-red hotel
+    219982200: (11, "low", (0.30, 0.17, 0.12)),   # Гэрэл төв, east: brown, low
+    386448655: (12, "low", (0.75, 0.74, 0.72)),   # north-west street front, white (the tall tower behind is 356138299)
+    444534115: (13, "low", (0.72, 0.62, 0.42)),   # north: cream house under a red roof
+    386178936: (13, "glass", (0.25, 0.27, 0.3)),  # north: black and white glass gable
+    221022617: (13, "glass", (0.08, 0.15, 0.4)),  # north-east: blue glass shopfront
+    245931152: (11, "low", (0.72, 0.64, 0.45)),   # south: cream three-storey houses
+    245931156: (11, "low", (0.72, 0.64, 0.45)),
+    245931160: (11, "low", (0.72, 0.64, 0.45)),
+    245931170: (10, "low", (0.78, 0.66, 0.62)),   # east: pinkish white, curved
+    245931153: (6, "low", (0.55, 0.55, 0.53)),    # south-east: sheds and one-storey shops
+    245931157: (6, "low", (0.55, 0.55, 0.53)),
+    245931168: (6, "low", (0.55, 0.55, 0.53)),
+    # 100-150 m: the ones the photo shows clearly (the rest are hidden behind nearer ones and keep the map's)
+    1302687409: (56, "NearMall", None),   # north-west: the Computer Mall tower, dark grey
+    245930772: (53, "NearCream", None),   # north-west: cream tower with a tan crown
+    386448296: (48, "NearGrey", None),    # south: grey tower with glazed balconies
+    220205597: (38, "glass", (0.15, 0.17, 0.2)),   # south-east: dark glass offices
+}
+# ---- 3D detail on the buildings within DETAIL_R m of the site, so the ones a buyer sees round the complex are more
+# than boxes: a parapet round every roof, a plant room on roofs 15 m and up, a canopy over the ground floor on walls
+# that face a street, and balconies standing out where the facade photo has its column of balconies (per look: the
+# column's place in the tile, 0-1 across, and the storeys: first floor's height, storey height, last floor's height;
+# None = to the top) ----
+DETAIL_R = 150.0
+BALCONIES = {
+    "NearGrey": ((0.48, 0.72), 6.4, 2.83, 43.0),
+    "NearCream": ((0.17, 0.53), 2.9, 2.9, None),
+    "NearWhite": ((0.0, 0.29), 2.74, 2.74, None),
+}
+# ---- the street front north of the main street, opposite the site, is one continuous row in the drone's photo: the
+# map's service lane through it (first point listed here) is left out, and the white building's east wall is carried
+# 3.6 m on to meet the glass gable (outline points moved, by building: old point -> new point) ----
+DROP_ROADS = {(-26.3, 56.2)}
+MOVE_POINTS = {386448655: {(-27.4, 87.2): (-23.8, 87.2), (-26.6, 74.5): (-23.8, 74.5)}}
+# ---- map outlines that are really a tower on lower wings, cut into parts: each part keeps the side of every line
+# (p, q) to its left (as CLIP) and gets its own (height, look, colour), None for the map's height and the usual
+# facades, and is moved dx m east. The grey slab (219750749) is the outline's east end, its wings run 90 m west. The
+# map has it (all of it) 6.5 m too far east, over the street model's hedge and parking in front of it (where the
+# drone's photo has them too), so it was left out whole: moved back, it is 46 m tall by its roof's angle in the photo (15 storeys
+# on a 2-storey podium; its facade is one tile of the whole height). ----
+WEST = lambda x: ((x, -999), (x, 999))    # keep x < X
+EAST = lambda x: ((x, 999), (x, -999))    # keep x > X
+NORTH = lambda y: ((-999, y), (999, y))   # keep y > Y
+SOUTH = lambda y: ((999, y), (-999, y))   # keep y < Y
+SPLIT = {
+    219750749: [([WEST(-44.4)], None, -6.5),
+                ([EAST(-44.4), SOUTH(-1.0)], (11, "low", (0.72, 0.64, 0.45)), -6.5),   # cream houses
+                ([EAST(-44.4), NORTH(-1.0)], (46, "NearGrey", None), -6.5)],   # the grey tower, maroon stripes
+}
 
 # ---- real buildings that overlap the street model by a few metres (the drawing's east street is 17 m wide, the map's
 # 5 m), so they would be left out: cut back along a line instead, keeping the part left of p -> q (site plan u, v) ----
@@ -150,27 +213,49 @@ def city():
                 ob.data.materials.append(rng.choice(mats))
 
 
-def photo_facade(folder, asset):
+def photo_facade(folder, asset, tint=None):
     """A wall material from an unpacked ambientCG facade: colour, roughness, metalness and normal maps on UVs
-    measured in tiles (osm_city sets them). Only the JPEG maps are read, never the zip's .blend."""
-    m = bpy.data.materials.new("Film Facade " + asset)
+    measured in tiles (osm_city sets them). Only the JPEG maps are read, never the zip's .blend; maps a folder lacks
+    (the near buildings' own facades have only the colour) are left out. With `tint` (linear RGB) the colour map is
+    recoloured into the image itself, its light and dark kept, so the website's glTF keeps the colour too."""
+    import numpy as np
+    m = bpy.data.materials.new("Film Facade " + asset + (" %.2f %.2f %.2f" % tint if tint else ""))
     m.use_nodes = True
     nt = m.node_tree
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
 
     def tex(kind, colour=False):
+        path = os.path.join(folder, asset, f"{asset}_1K-JPG_{kind}.jpg")
+        if not os.path.exists(path):
+            return None
         t = nt.nodes.new("ShaderNodeTexImage")
-        t.image = bpy.data.images.load(os.path.join(folder, asset, f"{asset}_1K-JPG_{kind}.jpg"))
+        t.image = bpy.data.images.load(path)
         if not colour:
             t.image.colorspace_settings.name = "Non-Color"
         return t
 
-    nt.links.new(tex("Color", True).outputs["Color"], b.inputs["Base Color"])
-    nt.links.new(tex("Roughness").outputs["Color"], b.inputs["Roughness"])
-    nt.links.new(tex("Metalness").outputs["Color"], b.inputs["Metallic"])
-    nm = nt.nodes.new("ShaderNodeNormalMap")
-    nt.links.new(tex("NormalGL").outputs["Color"], nm.inputs["Color"])
-    nt.links.new(nm.outputs["Normal"], b.inputs["Normal"])
+    col = tex("Color", True)
+    if tint:
+        src = col.image
+        px = np.empty(src.size[0] * src.size[1] * 4, np.float32)
+        src.pixels.foreach_get(px)
+        px = px.reshape(-1, 4)
+        lum = px[:, :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+        px[:, :3] = np.clip(lum[:, None] / max(lum.mean(), 1e-3) * np.array(tint, np.float32), 0, 1)
+        img = bpy.data.images.new(src.name + " tinted", *src.size)
+        img.pixels.foreach_set(px.ravel())
+        img.pack()
+        col.image = img
+    nt.links.new(col.outputs["Color"], b.inputs["Base Color"])
+    for kind, socket in (("Roughness", "Roughness"), ("Metalness", "Metallic")):
+        t = tex(kind)
+        if t:
+            nt.links.new(t.outputs["Color"], b.inputs[socket])
+    t = tex("NormalGL")
+    if t:
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nt.links.new(t.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], b.inputs["Normal"])
     return m
 
 
@@ -215,6 +300,85 @@ def camera_path():
                 (x0, y0, z0), (x1, y1, z1) = s["cam"]
                 pts.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z0 + (z1 - z0) * t))
     return pts
+
+
+def build_detail(detailed, on_road):
+    """The 3D detail on the buildings round the site (DETAIL_R, BALCONIES): one more mesh, "Film OSM Detail", in
+    four plain materials. Every piece is a box standing on or off a wall of the building's (counter-clockwise)
+    outline. ponytail: boxes only, no rounded corners or recessed windows; the facade photos carry those."""
+    import bmesh
+    bm = bmesh.new()
+    mats = [matte("Film Detail Coping", (0.72, 0.72, 0.7), 0.8), matte("Film Detail Plant", (0.6, 0.61, 0.6), 0.85),
+            matte("Film Detail Canopy", (0.2, 0.21, 0.23), 0.6), matte("Film Detail Balcony", (0.86, 0.87, 0.86), 0.5)]
+    COPING, PLANT, CANOPY, BALCONY = range(4)
+    count = {"parapet": 0, "plant room": 0, "canopy": 0, "balcony": 0}
+
+    def box(p, e, n, s0, s1, d0, d1, z0, z1, mat):
+        """A box along the wall from p (unit direction e, outward normal n): s0..s1 along, d0..d1 out, z0..z1 up."""
+        corners = [(p[0] + e[0] * s + n[0] * d, p[1] + e[1] * s + n[1] * d) for s, d in ((s0, d0), (s1, d0), (s1, d1), (s0, d1))]
+        if (s1 - s0) * (d1 - d0) > 0:   # n is e turned clockwise, so these run clockwise: turn them round
+            corners.reverse()
+        lo = [bm.verts.new((x, y, z0)) for x, y in corners]
+        hi = [bm.verts.new((x, y, z1)) for x, y in corners]
+        for f in [bm.faces.new(lo[::-1]), bm.faces.new(hi)] + [bm.faces.new((lo[i], lo[i - 3], hi[i - 3], hi[i])) for i in range(4)]:
+            f.material_index = mat
+
+    for ring, h, look, tw in detailed:
+        run = 0.0
+        for p, q in zip(ring, ring[1:] + ring[:1]):
+            L = math.dist(p, q)
+            if L < 0.5:
+                run += L
+                continue
+            e = ((q[0] - p[0]) / L, (q[1] - p[1]) / L)
+            n = (e[1], -e[0])   # outward, the outline running counter-clockwise
+            # parapet: 0.3 m thick, 1 m high, just inside the wall's top
+            box(p, e, n, 0, L, -0.3, 0, h, h + 1.0, COPING)
+            count["parapet"] += 1
+            mid = (p[0] + e[0] * L / 2, p[1] + e[1] * L / 2)
+            # canopy over the ground floor where the wall faces a street within 12 m
+            if h >= 9 and L >= 8 and any(on_road(mid[0] + n[0] * o, mid[1] + n[1] * o) for o in (4, 8, 12)):
+                box(p, e, n, 0.5, L - 0.5, 0, 1.4, 4.0, 4.25, CANOPY)
+                count["canopy"] += 1
+            # balconies over the facade photo's own column of balconies, every storey
+            if look in BALCONIES and L >= 3:
+                (u0, u1), z, storey, top = BALCONIES[look]
+                top = min(top or h, h - 2.5)
+                for k in range(math.floor(run / tw), math.ceil((run + L) / tw) + 1):
+                    s0, s1 = max((k + u0) * tw - run, 0.3), min((k + u1) * tw - run, L - 0.3)
+                    if s1 - s0 < 1.5:
+                        continue
+                    zz = z
+                    while zz <= top:
+                        box(p, e, n, s0, s1, 0, 1.2, zz, zz + 1.1, BALCONY)   # slab and glazed front in one
+                        count["balcony"] += 1
+                        zz += storey
+            run += L
+        # plant room: 3.5 m on the roof, a third of the outline's extent along its longest wall, if that lands inside
+        if h >= 15:
+            i = max(range(len(ring)), key=lambda i: math.dist(ring[i], ring[i - 1]))
+            a, c = ring[i - 1], ring[i]
+            L = math.dist(a, c)
+            e = ((c[0] - a[0]) / L, (c[1] - a[1]) / L)
+            n = (e[1], -e[0])
+            ss = [(x - a[0]) * e[0] + (y - a[1]) * e[1] for x, y in ring]
+            dd = [(x - a[0]) * n[0] + (y - a[1]) * n[1] for x, y in ring]
+            sm, dm = (min(ss) + max(ss)) / 2, (min(dd) + max(dd)) / 2
+            hs, hd = (max(ss) - min(ss)) / 6, (max(dd) - min(dd)) / 6
+            cx, cy = a[0] + e[0] * sm + n[0] * dm, a[1] + e[1] * sm + n[1] * dm
+            inside = sum(1 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1])
+                         if (y0 > cy) != (y1 > cy) and cx < (x1 - x0) * (cy - y0) / (y1 - y0) + x0) % 2
+            if inside and hs > 2.5 and hd > 2.5:
+                box(a, e, n, sm - hs, sm + hs, dm - hd, dm + hd, h, h + 3.5, PLANT)
+                count["plant room"] += 1
+    me = bpy.data.meshes.new("Film OSM Detail")
+    bm.to_mesh(me)
+    bm.free()
+    for m in mats:
+        me.materials.append(m)
+    ob = bpy.data.objects.new("Film OSM Detail", me)
+    bpy.context.scene.collection.objects.link(ob)
+    print(f"FILM detail on {len(detailed)} buildings: {count}")
 
 
 def osm_city(path):
@@ -264,11 +428,25 @@ def osm_city(path):
         return False
 
     cams = camera_path()
+    film = "--render" in args or "--stills" in args
     folder = arg("--facades")
     if folder:
         # photo facades (low ones brick or concrete, towers glass), then a plain roof as the last material
         looks = FACADES_LOW + [FACADE_TALL]
         mats = [photo_facade(folder, a) for a, _ in looks] + [matte("Film Roof", (0.42, 0.42, 0.4), 0.9)]
+        tiles = [(t, t) for _, t in looks] + [None]
+        near_mats = {}
+
+        def near_material(look, tint):
+            """The material index for a NEAR building's look, made the first time it's needed."""
+            if (look, tint) not in near_mats:
+                if look in NEAR_LOOKS:
+                    mats.append(photo_facade(folder, look)); tiles.append(NEAR_LOOKS[look])
+                else:
+                    a, t = FACADE_TALL if look == "glass" else FACADES_LOW[len(near_mats) % len(FACADES_LOW)]
+                    mats.append(photo_facade(folder, a, tint)); tiles.append((t, t))
+                near_mats[(look, tint)] = len(mats) - 1
+            return near_mats[(look, tint)]
     else:
         mats = [facade(f"Film City {i}", c) for i, c in enumerate([(0.62, 0.6, 0.56), (0.7, 0.66, 0.58), (0.55, 0.55, 0.55), (0.68, 0.62, 0.52)])]
     cell = 25.0
@@ -311,7 +489,7 @@ def osm_city(path):
         return False
 
     service_near = lambda r: r["w"] <= SERVICE_W and any(math.dist(p, SITE) < SERVICE_CLEAR for p in r["line"])
-    roads = [r for r in data["roads"] if not service_near(r)]
+    roads = [r for r in data["roads"] if not service_near(r) and tuple(round(v, 1) for v in r["line"][0]) not in DROP_ROADS]
     grid = road_grid(roads + EXTRA_ROADS)
     roads = [r for k, r in enumerate(roads) if not dead_end_at_site(k, r)] + EXTRA_ROADS
     grid = road_grid(roads)
@@ -346,10 +524,24 @@ def osm_city(path):
 
     bm, kept, dropped = bmesh.new(), 0, {"on the model": 0, "on a street": 0, "against the site": 0, "in a camera's way": 0}
     uv = bm.loops.layers.uv.new("UVMap")
+    near_kept = set()
+    detailed = []   # (outline, height, look, tile width) of the buildings that get 3D detail
+    buildings = []
     for b in data["buildings"]:
-        ring = [tuple(p) for i, p in enumerate(b["ring"]) if p != b["ring"][i - 1]]   # no repeated points
-        if b["id"] in CLIP:
-            ring = clip(ring, *CLIP[b["id"]])
+        for lines, look, dx in SPLIT.get(b["id"], [((), None, 0)]):
+            ring = [tuple(p) for i, p in enumerate(b["ring"]) if p != b["ring"][i - 1]]   # no repeated points
+            moves = MOVE_POINTS.get(b["id"], {})
+            ring = [moves.get(tuple(round(v, 1) for v in p), p) for p in ring]
+            for p, q in list(lines) + ([CLIP[b["id"]]] if b["id"] in CLIP else []):
+                ring = clip(ring, p, q)
+            # a cut through a corner repeats that point, and a face can't use a point twice
+            ring = [(p[0] + dx, p[1]) for i, p in enumerate(ring) if math.dist(p, ring[i - 1]) > 0.05]
+            buildings.append((b, ring, look if b["id"] in SPLIT else NEAR.get(b["id"])))
+    for b, ring, measured in buildings:
+        if not folder:
+            measured = None
+        if measured:
+            b = dict(b, h=measured[0])   # the measured height
         if len(ring) < 3:
             continue
         edge_pts = [pt for p, q in zip(ring, ring[1:] + ring[:1]) for pt in along(p, q)]
@@ -360,10 +552,11 @@ def osm_city(path):
         if on_street(ring):
             dropped["on a street"] += 1
             continue
-        if b["id"] not in CLIP and math.dist((cx, cy), SITE) < 300 and crowds_site(ring):
+        if b["id"] not in CLIP and b["id"] not in SPLIT and math.dist((cx, cy), SITE) < 300 and crowds_site(ring):
             dropped["against the site"] += 1
             continue
-        if any(z < b["h"] + 3 and near(x, y, ring, 4) for x, y, z in cams):
+        # (only for the film: the website's city and the 360° views keep them, the grey tower among them)
+        if film and any(z < b["h"] + 3 and near(x, y, ring, 4) for x, y, z in cams):
             dropped["in a camera's way"] += 1
             continue
         if sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1])) < 0:
@@ -376,20 +569,23 @@ def osm_city(path):
         except ValueError:   # a self-touching outline; skip it
             continue
         if folder:
-            k = len(FACADES_LOW) if b["h"] >= 30 else b["id"] % len(FACADES_LOW)
-            tile = looks[k][1]
-            run = 0.0   # walls: UVs in tiles, along the outline and up from the ground, so storeys stay 3 m
+            k = near_material(*measured[1:]) if measured else len(FACADES_LOW) if b["h"] >= 30 else b["id"] % len(FACADES_LOW)
+            tw, th = tiles[k]
+            run = 0.0   # walls: UVs in tiles, along the outline and up from the ground, so storeys keep their height
             for f, (p, q) in zip(faces, zip(ring, ring[1:] + ring[:1])):
-                u0, u1, v1 = run / tile, (run + math.dist(p, q)) / tile, b["h"] / tile
+                u0, u1, v1 = run / tw, (run + math.dist(p, q)) / tw, b["h"] / th
                 for loop, (u, v) in zip(f.loops, ((u0, 0), (u1, 0), (u1, v1), (u0, v1))):
                     loop[uv].uv = (u, v)
                 f.material_index = k
                 run += math.dist(p, q)
-            faces[-1].material_index = len(mats) - 1   # the roof
+            faces[-1].material_index = len(looks)   # the roof
         else:
             for f in faces:
                 f.material_index = b["id"] % len(mats)
         kept += 1
+        near_kept.add(b["id"])
+        if folder and math.dist((cx, cy), SITE) < DETAIL_R:
+            detailed.append((ring, b["h"], measured[1] if measured else None, tw))
     me = bpy.data.meshes.new("Film OSM Buildings")
     bm.to_mesh(me); bm.free()
     ob = bpy.data.objects.new("Film OSM Buildings", me)
@@ -397,6 +593,9 @@ def osm_city(path):
     for m in mats:
         me.materials.append(m)
     print(f"FILM OSM buildings: {kept} kept, left out {dropped}")
+    if folder:
+        build_detail(detailed, on_road)
+        print("FILM near buildings left out:", sorted((set(NEAR) | set(SPLIT)) - near_kept))
 
     # streets, made like the street model's roads so they carry on past its edges: its asphalt in 4 m pieces of
     # flat ribbon (round discs at the bends), a sidewalk each side and dashed lane lines; each piece left out
@@ -912,7 +1111,7 @@ def export_city(path):
     and streets, with only the colour maps, scaled to 1024 px (enough for the window reflections and brick of the
     Magnific-enhanced facades to survive; the view never comes closer), Draco-compressed. Same frame as the
     site's other models."""
-    obs = [bpy.data.objects["Film OSM Buildings"], bpy.data.objects["Film OSM Streets"]]
+    obs = [bpy.data.objects[n] for n in ("Film OSM Buildings", "Film OSM Streets", "Film OSM Detail")]
     for m in obs[0].data.materials:
         nt = m.node_tree
         b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
@@ -1018,8 +1217,13 @@ def sphere(scene, specs, out):
             for c in [o, *o.children_recursive]:
                 c.hide_render = True
         # looking along +y (site north) is rotation (90°, 0, 0); turn east by 8.89° so true north is the middle
+        # --at X,Y,Z,T0: somewhere else, turned T0° more (the drone of 2026-11-23 for public/views/B-05-v2.jpg:
+        # -14,22,18,-1.5, found from where landmarks stand in its photo), to check the city against that photo
+        turn = 0.0
+        if arg("--at"):
+            u, v, z, turn = (float(c) for c in arg("--at").split(","))
         cam.location = (u, v, z)
-        cam.rotation_euler = (math.radians(90), 0, math.radians(-8.89))
+        cam.rotation_euler = (math.radians(90), 0, math.radians(-8.89 - turn))
         path = os.path.join(out, f"sphere-{tower}-{int(floor):02d}{'-bare' if 'bare' in opts else ''}.jpg")
         scene.render.filepath = path
         t0 = time.time()
