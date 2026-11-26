@@ -7,6 +7,7 @@ import { availableUnits } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
 import { layouts } from '@/data/layouts';
 import type { Unit } from '@/data/types';
+import { SMALL_MANIFEST } from '@/data/views';
 import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
@@ -111,8 +112,9 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
         {photoTour && (
           <iframe
             className="apt-tour-frame"
-            // tower and floor pick the drone's real view through the windows (public/views/manifest.json)
-            src={`/tour/${layout.plan}/index.html?tower=${unit.tower}&floor=${unit.floor}`}
+            // tower and floor pick the drone's real view through the windows, from the half-size spheres: the
+            // tour's rooms are no sharper, and they are a quarter of the download (src/data/views.ts)
+            src={`/tour/${layout.plan}/index.html?tower=${unit.tower}&floor=${unit.floor}&views=${SMALL_MANIFEST}`}
             title={t.apt.modeTour}
             allow="fullscreen"
             onLoad={(e) => {

@@ -34,3 +34,8 @@ interior/*_evening.blend
 
 # copied from node_modules by scripts/copy-maplibre-worker.mjs
 public/maplibre-gl-worker.mjs
+
+# screenshots of the drone video marking the moments for public/views/photos (about 800 MB; photos.py)
+interior/views/screenshots/
+# the drone's window-view masters and season edits (about 1.6 GB of PNGs; window_views.py builds public/views from them)
+interior/views/window/

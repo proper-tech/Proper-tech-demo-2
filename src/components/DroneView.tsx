@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { EquirectangularReflectionMapping, MathUtils, PerspectiveCamera, Scene, SRGBColorSpace, Texture, TextureLoader, WebGLRenderer } from 'three';
+import { EquirectangularReflectionMapping, LinearFilter, MathUtils, PerspectiveCamera, Scene, SRGBColorSpace, Texture, TextureLoader, WebGLRenderer } from 'three';
+import { smallSrc, wantsFullSphere } from '@/data/views';
 
 // The drone's 360° photos (public/views/manifest.json) full screen: drag to look round, wheel to zoom, a button per
 // tower and floor. The picture's middle is true north (plus the manifest's yaw), so bearing 0 is north; the compass
@@ -54,15 +55,35 @@ export function DroneView() {
     size();
     addEventListener('resize', size);
 
-    apply.current = (entry) => {
+    // the half-size copy first, then on a larger screen the original (src/data/views.ts); `shown` drops an
+    // answer for a photo that is no longer the one asked for
+    let shown = '';
+    const loader = new TextureLoader();
+    const put = (url: string, src: string) =>
+      new Promise<boolean>((done) =>
+        loader.load(
+          url,
+          (t) => {
+            if (shown !== src) return (t.dispose(), done(false));
+            t.mapping = EquirectangularReflectionMapping;
+            t.colorSpace = SRGBColorSpace;
+            // drawn about one texel per pixel: mipmaps would add a third to the memory for nothing
+            t.generateMipmaps = false;
+            t.minFilter = LinearFilter;
+            if (scene.background instanceof Texture) scene.background.dispose();
+            scene.background = t;
+            dirty = true;
+            done(true);
+          },
+          undefined,
+          () => done(false),
+        ),
+      );
+    apply.current = async (entry) => {
       yaw = entry.yaw;
-      new TextureLoader().load(entry.src, (t) => {
-        t.mapping = EquirectangularReflectionMapping;
-        t.colorSpace = SRGBColorSpace;
-        if (scene.background instanceof Texture) scene.background.dispose();
-        scene.background = t;
-        dirty = true;
-      });
+      shown = entry.src;
+      const small = await put(smallSrc(entry.src), entry.src);
+      if (shown === entry.src && (!small || wantsFullSphere(renderer.capabilities.maxTextureSize))) void put(entry.src, entry.src);
     };
 
     let drag: { x: number; y: number } | null = null;
@@ -105,6 +126,7 @@ export function DroneView() {
     };
     loop();
     return () => {
+      shown = ''; // a photo still on its way is dropped when it arrives
       cancelAnimationFrame(raf);
       removeEventListener('resize', size);
       c.removeEventListener('pointerdown', down);

@@ -44,6 +44,7 @@ export function Header() {
           <nav className="header-sheet" aria-label={t.site.name} onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
             <Link href={`/${locale}#floors`}>{t.nav.floors}</Link>
             <Link href={`/${locale}#explore`}>{t.nav.explore}</Link>
+            <Link href={`/${locale}/views`}>{t.nav.views}</Link>
             <Link href={`/${locale}#layouts`}>{t.nav.layouts}</Link>
             <Link href={`/${locale}#site`}>{t.home.siteHeading}</Link>
             <Link href={`/${locale}#video`}>{t.nav.video}</Link>

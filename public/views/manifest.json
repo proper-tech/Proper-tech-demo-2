@@ -1,26 +1,354 @@
 {
  "B": {
-  "14": {
-   "src": "/views/B-14.jpg",
-   "yaw": 0.0
-  },
-  "16": {
-   "src": "/views/B-16.jpg",
-   "yaw": 0.0
+  "4": {
+   "src": "/views/B-04.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -19.1,
+   "height": 13.2,
+   "kind": "derived",
+   "from": 5,
+   "seasons": {
+    "spring": "/views/B-04-spring.webp",
+    "summer": "/views/B-04-summer.webp",
+    "autumn": "/views/B-04-autumn.webp"
+   }
   },
   "5": {
-   "src": "/views/B-05-v2.jpg",
-   "yaw": 0.0
+   "src": "/views/B-05.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -23.4,
+   "height": 16.2,
+   "seasons": {
+    "spring": "/views/B-05-spring.webp",
+    "summer": "/views/B-05-summer.webp",
+    "autumn": "/views/B-05-autumn.webp"
+   }
+  },
+  "6": {
+   "src": "/views/B-06.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -20.5,
+   "height": 19.2,
+   "kind": "derived",
+   "from": 7,
+   "seasons": {
+    "spring": "/views/B-06-spring.webp",
+    "summer": "/views/B-06-summer.webp",
+    "autumn": "/views/B-06-autumn.webp"
+   }
   },
   "7": {
    "src": "/views/B-07.jpg",
-   "yaw": 0.0
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -23.6,
+   "height": 22.2,
+   "seasons": {
+    "spring": "/views/B-07-spring.webp",
+    "summer": "/views/B-07-summer.webp",
+    "autumn": "/views/B-07-autumn.webp"
+   }
+  },
+  "8": {
+   "src": "/views/B-08.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -26.5,
+   "height": 25.2,
+   "kind": "derived",
+   "from": 7,
+   "seasons": {
+    "spring": "/views/B-08-spring.webp",
+    "summer": "/views/B-08-summer.webp",
+    "autumn": "/views/B-08-autumn.webp"
+   }
+  },
+  "9": {
+   "src": "/views/B-09.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -18.6,
+   "height": 28.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-09-spring.webp",
+    "summer": "/views/B-09-summer.webp",
+    "autumn": "/views/B-09-autumn.webp"
+   }
+  },
+  "10": {
+   "src": "/views/B-10.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -20.5,
+   "height": 31.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-10-spring.webp",
+    "summer": "/views/B-10-summer.webp",
+    "autumn": "/views/B-10-autumn.webp"
+   }
+  },
+  "11": {
+   "src": "/views/B-11.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -22.5,
+   "height": 34.2,
+   "seasons": {
+    "spring": "/views/B-11-spring.webp",
+    "summer": "/views/B-11-summer.webp",
+    "autumn": "/views/B-11-autumn.webp"
+   }
+  },
+  "12": {
+   "src": "/views/B-12.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -24.4,
+   "height": 37.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-12-spring.webp",
+    "summer": "/views/B-12-summer.webp",
+    "autumn": "/views/B-12-autumn.webp"
+   }
+  },
+  "13": {
+   "src": "/views/B-13.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -26.2,
+   "height": 40.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-13-spring.webp",
+    "summer": "/views/B-13-summer.webp",
+    "autumn": "/views/B-13-autumn.webp"
+   }
+  },
+  "14": {
+   "src": "/views/B-14.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -17.0,
+   "height": 43.2,
+   "kind": "derived",
+   "from": 16,
+   "seasons": {
+    "spring": "/views/B-14-spring.webp",
+    "summer": "/views/B-14-summer.webp",
+    "autumn": "/views/B-14-autumn.webp"
+   }
+  },
+  "15": {
+   "src": "/views/B-15.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -18.2,
+   "height": 46.2,
+   "kind": "derived",
+   "from": 16,
+   "seasons": {
+    "spring": "/views/B-15-spring.webp",
+    "summer": "/views/B-15-summer.webp",
+    "autumn": "/views/B-15-autumn.webp"
+   }
+  },
+  "16": {
+   "src": "/views/B-16.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -19.4,
+   "height": 49.2,
+   "seasons": {
+    "spring": "/views/B-16-spring.webp",
+    "summer": "/views/B-16-summer.webp",
+    "autumn": "/views/B-16-autumn.webp"
+   }
   }
  },
  "C": {
+  "4": {
+   "src": "/views/B-04.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -19.1,
+   "height": 13.2,
+   "kind": "derived",
+   "from": 5,
+   "seasons": {
+    "spring": "/views/B-04-spring.webp",
+    "summer": "/views/B-04-summer.webp",
+    "autumn": "/views/B-04-autumn.webp"
+   }
+  },
   "5": {
-   "src": "/views/B-05-v2.jpg",
-   "yaw": 0.0
+   "src": "/views/B-05.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -23.4,
+   "height": 16.2,
+   "seasons": {
+    "spring": "/views/B-05-spring.webp",
+    "summer": "/views/B-05-summer.webp",
+    "autumn": "/views/B-05-autumn.webp"
+   }
+  },
+  "6": {
+   "src": "/views/B-06.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -20.5,
+   "height": 19.2,
+   "kind": "derived",
+   "from": 7,
+   "seasons": {
+    "spring": "/views/B-06-spring.webp",
+    "summer": "/views/B-06-summer.webp",
+    "autumn": "/views/B-06-autumn.webp"
+   }
+  },
+  "7": {
+   "src": "/views/B-07.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -23.6,
+   "height": 22.2,
+   "seasons": {
+    "spring": "/views/B-07-spring.webp",
+    "summer": "/views/B-07-summer.webp",
+    "autumn": "/views/B-07-autumn.webp"
+   }
+  },
+  "8": {
+   "src": "/views/B-08.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -26.5,
+   "height": 25.2,
+   "kind": "derived",
+   "from": 7,
+   "seasons": {
+    "spring": "/views/B-08-spring.webp",
+    "summer": "/views/B-08-summer.webp",
+    "autumn": "/views/B-08-autumn.webp"
+   }
+  },
+  "9": {
+   "src": "/views/B-09.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -18.6,
+   "height": 28.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-09-spring.webp",
+    "summer": "/views/B-09-summer.webp",
+    "autumn": "/views/B-09-autumn.webp"
+   }
+  },
+  "10": {
+   "src": "/views/B-10.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -20.5,
+   "height": 31.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-10-spring.webp",
+    "summer": "/views/B-10-summer.webp",
+    "autumn": "/views/B-10-autumn.webp"
+   }
+  },
+  "11": {
+   "src": "/views/B-11.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -22.5,
+   "height": 34.2,
+   "seasons": {
+    "spring": "/views/B-11-spring.webp",
+    "summer": "/views/B-11-summer.webp",
+    "autumn": "/views/B-11-autumn.webp"
+   }
+  },
+  "12": {
+   "src": "/views/B-12.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -24.4,
+   "height": 37.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-12-spring.webp",
+    "summer": "/views/B-12-summer.webp",
+    "autumn": "/views/B-12-autumn.webp"
+   }
+  },
+  "13": {
+   "src": "/views/B-13.jpg",
+   "yaw": 0.0,
+   "top": 10.9,
+   "bottom": -26.2,
+   "height": 40.2,
+   "kind": "derived",
+   "from": 11,
+   "seasons": {
+    "spring": "/views/B-13-spring.webp",
+    "summer": "/views/B-13-summer.webp",
+    "autumn": "/views/B-13-autumn.webp"
+   }
+  },
+  "14": {
+   "src": "/views/B-14.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -17.0,
+   "height": 43.2,
+   "kind": "derived",
+   "from": 16,
+   "seasons": {
+    "spring": "/views/B-14-spring.webp",
+    "summer": "/views/B-14-summer.webp",
+    "autumn": "/views/B-14-autumn.webp"
+   }
+  },
+  "15": {
+   "src": "/views/B-15.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -18.2,
+   "height": 46.2,
+   "kind": "derived",
+   "from": 16,
+   "seasons": {
+    "spring": "/views/B-15-spring.webp",
+    "summer": "/views/B-15-summer.webp",
+    "autumn": "/views/B-15-autumn.webp"
+   }
+  },
+  "16": {
+   "src": "/views/B-16.jpg",
+   "yaw": 0.0,
+   "top": 14.0,
+   "bottom": -19.4,
+   "height": 49.2,
+   "seasons": {
+    "spring": "/views/B-16-spring.webp",
+    "summer": "/views/B-16-summer.webp",
+    "autumn": "/views/B-16-autumn.webp"
+   }
   }
  }
 }

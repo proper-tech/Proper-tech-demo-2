@@ -1,0 +1,812 @@
+[
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-019.webp",
+  "thumb": "/views/photos/B-05-019-s.webp",
+  "heading": 19.0,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-039.webp",
+  "thumb": "/views/photos/B-05-039-s.webp",
+  "heading": 39.2,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-068.webp",
+  "thumb": "/views/photos/B-05-068-s.webp",
+  "heading": 67.6,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-092.webp",
+  "thumb": "/views/photos/B-05-092-s.webp",
+  "heading": 91.8,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-116.webp",
+  "thumb": "/views/photos/B-05-116-s.webp",
+  "heading": 116.1,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-132.webp",
+  "thumb": "/views/photos/B-05-132-s.webp",
+  "heading": 132.4,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-148.webp",
+  "thumb": "/views/photos/B-05-148-s.webp",
+  "heading": 148.2,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-169.webp",
+  "thumb": "/views/photos/B-05-169-s.webp",
+  "heading": 169.3,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-186.webp",
+  "thumb": "/views/photos/B-05-186-s.webp",
+  "heading": 186.3,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-216.webp",
+  "thumb": "/views/photos/B-05-216-s.webp",
+  "heading": 216.4,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-237.webp",
+  "thumb": "/views/photos/B-05-237-s.webp",
+  "heading": 237.3,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-260.webp",
+  "thumb": "/views/photos/B-05-260-s.webp",
+  "heading": 260.1,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-279.webp",
+  "thumb": "/views/photos/B-05-279-s.webp",
+  "heading": 279.4,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-301.webp",
+  "thumb": "/views/photos/B-05-301-s.webp",
+  "heading": 301.4,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 5,
+  "src": "/views/photos/B-05-324.webp",
+  "thumb": "/views/photos/B-05-324-s.webp",
+  "heading": 324.5,
+  "pitch": -4.5,
+  "height": 16.2,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-008.webp",
+  "thumb": "/views/photos/B-07-008-s.webp",
+  "heading": 7.6,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-031.webp",
+  "thumb": "/views/photos/B-07-031-s.webp",
+  "heading": 30.8,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-051.webp",
+  "thumb": "/views/photos/B-07-051-s.webp",
+  "heading": 50.5,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-077.webp",
+  "thumb": "/views/photos/B-07-077-s.webp",
+  "heading": 77.1,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-094.webp",
+  "thumb": "/views/photos/B-07-094-s.webp",
+  "heading": 93.8,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-117.webp",
+  "thumb": "/views/photos/B-07-117-s.webp",
+  "heading": 117.4,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-138.webp",
+  "thumb": "/views/photos/B-07-138-s.webp",
+  "heading": 137.6,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-161.webp",
+  "thumb": "/views/photos/B-07-161-s.webp",
+  "heading": 161.4,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-181.webp",
+  "thumb": "/views/photos/B-07-181-s.webp",
+  "heading": 181.5,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-205.webp",
+  "thumb": "/views/photos/B-07-205-s.webp",
+  "heading": 205.4,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-229.webp",
+  "thumb": "/views/photos/B-07-229-s.webp",
+  "heading": 229.2,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-253.webp",
+  "thumb": "/views/photos/B-07-253-s.webp",
+  "heading": 253.2,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-274.webp",
+  "thumb": "/views/photos/B-07-274-s.webp",
+  "heading": 273.7,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-294.webp",
+  "thumb": "/views/photos/B-07-294-s.webp",
+  "heading": 293.8,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-316.webp",
+  "thumb": "/views/photos/B-07-316-s.webp",
+  "heading": 316.5,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-332.webp",
+  "thumb": "/views/photos/B-07-332-s.webp",
+  "heading": 332.3,
+  "pitch": -9.2,
+  "height": 22.3,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 7,
+  "src": "/views/photos/B-07-348.webp",
+  "thumb": "/views/photos/B-07-348-s.webp",
+  "heading": 347.8,
+  "pitch": -4.5,
+  "height": 22.0,
+  "taken": "2026-11-25T12:05+08:00"
+ },
+ {
+  "floor": 9,
+  "src": "/views/photos/B-09-332-down.webp",
+  "thumb": "/views/photos/B-09-332-down-s.webp",
+  "heading": 332.3,
+  "pitch": -50.8,
+  "height": 29.4,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 9,
+  "src": "/views/photos/B-09-332.webp",
+  "thumb": "/views/photos/B-09-332-s.webp",
+  "heading": 332.4,
+  "pitch": -8.0,
+  "height": 29.4,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 9,
+  "src": "/views/photos/B-09-360.webp",
+  "thumb": "/views/photos/B-09-360-s.webp",
+  "heading": 359.5,
+  "pitch": -8.0,
+  "height": 29.5,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 10,
+  "src": "/views/photos/B-10-028.webp",
+  "thumb": "/views/photos/B-10-028-s.webp",
+  "heading": 27.8,
+  "pitch": -8.0,
+  "height": 30.3,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 10,
+  "src": "/views/photos/B-10-049.webp",
+  "thumb": "/views/photos/B-10-049-s.webp",
+  "heading": 49.4,
+  "pitch": -8.0,
+  "height": 30.9,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 10,
+  "src": "/views/photos/B-10-075.webp",
+  "thumb": "/views/photos/B-10-075-s.webp",
+  "heading": 75.0,
+  "pitch": -8.0,
+  "height": 31.6,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 10,
+  "src": "/views/photos/B-10-100.webp",
+  "thumb": "/views/photos/B-10-100-s.webp",
+  "heading": 99.9,
+  "pitch": -8.0,
+  "height": 32.3,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-128.webp",
+  "thumb": "/views/photos/B-11-128-s.webp",
+  "heading": 127.7,
+  "pitch": -8.0,
+  "height": 33.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-152.webp",
+  "thumb": "/views/photos/B-11-152-s.webp",
+  "heading": 151.7,
+  "pitch": -8.0,
+  "height": 33.6,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-175.webp",
+  "thumb": "/views/photos/B-11-175-s.webp",
+  "heading": 175.0,
+  "pitch": -8.0,
+  "height": 34.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-213.webp",
+  "thumb": "/views/photos/B-11-213-s.webp",
+  "heading": 212.6,
+  "pitch": -8.0,
+  "height": 34.6,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-239.webp",
+  "thumb": "/views/photos/B-11-239-s.webp",
+  "heading": 238.6,
+  "pitch": -8.0,
+  "height": 35.0,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 11,
+  "src": "/views/photos/B-11-268.webp",
+  "thumb": "/views/photos/B-11-268-s.webp",
+  "heading": 267.5,
+  "pitch": -8.0,
+  "height": 35.4,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 12,
+  "src": "/views/photos/B-12-318.webp",
+  "thumb": "/views/photos/B-12-318-s.webp",
+  "heading": 318.4,
+  "pitch": -8.0,
+  "height": 35.9,
+  "taken": "2026-11-25T12:04+08:00"
+ },
+ {
+  "floor": 13,
+  "src": "/views/photos/B-13-322.webp",
+  "thumb": "/views/photos/B-13-322-s.webp",
+  "heading": 322.3,
+  "pitch": -8.0,
+  "height": 41.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-010.webp",
+  "thumb": "/views/photos/B-14-010-s.webp",
+  "heading": 10.1,
+  "pitch": -8.0,
+  "height": 42.3,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-030.webp",
+  "thumb": "/views/photos/B-14-030-s.webp",
+  "heading": 30.2,
+  "pitch": -8.0,
+  "height": 42.3,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-044.webp",
+  "thumb": "/views/photos/B-14-044-s.webp",
+  "heading": 44.3,
+  "pitch": -8.0,
+  "height": 42.3,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-065.webp",
+  "thumb": "/views/photos/B-14-065-s.webp",
+  "heading": 64.9,
+  "pitch": -8.0,
+  "height": 42.3,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-080.webp",
+  "thumb": "/views/photos/B-14-080-s.webp",
+  "heading": 79.6,
+  "pitch": -8.0,
+  "height": 42.4,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-094.webp",
+  "thumb": "/views/photos/B-14-094-s.webp",
+  "heading": 94.2,
+  "pitch": -8.0,
+  "height": 42.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-109.webp",
+  "thumb": "/views/photos/B-14-109-s.webp",
+  "heading": 108.8,
+  "pitch": -8.0,
+  "height": 42.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-126.webp",
+  "thumb": "/views/photos/B-14-126-s.webp",
+  "heading": 126.4,
+  "pitch": -8.0,
+  "height": 42.6,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-141.webp",
+  "thumb": "/views/photos/B-14-141-s.webp",
+  "heading": 141.1,
+  "pitch": -8.0,
+  "height": 42.7,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-156.webp",
+  "thumb": "/views/photos/B-14-156-s.webp",
+  "heading": 155.6,
+  "pitch": -8.0,
+  "height": 42.8,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-170.webp",
+  "thumb": "/views/photos/B-14-170-s.webp",
+  "heading": 170.2,
+  "pitch": -8.0,
+  "height": 42.9,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-182.webp",
+  "thumb": "/views/photos/B-14-182-s.webp",
+  "heading": 181.7,
+  "pitch": -8.0,
+  "height": 43.0,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-196.webp",
+  "thumb": "/views/photos/B-14-196-s.webp",
+  "heading": 196.2,
+  "pitch": -8.0,
+  "height": 43.1,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-216.webp",
+  "thumb": "/views/photos/B-14-216-s.webp",
+  "heading": 216.2,
+  "pitch": -8.0,
+  "height": 43.2,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-233.webp",
+  "thumb": "/views/photos/B-14-233-s.webp",
+  "heading": 233.2,
+  "pitch": -8.0,
+  "height": 43.4,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-249.webp",
+  "thumb": "/views/photos/B-14-249-s.webp",
+  "heading": 249.2,
+  "pitch": -8.0,
+  "height": 43.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-267.webp",
+  "thumb": "/views/photos/B-14-267-s.webp",
+  "heading": 266.7,
+  "pitch": -8.0,
+  "height": 43.7,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-279.webp",
+  "thumb": "/views/photos/B-14-279-s.webp",
+  "heading": 279.1,
+  "pitch": -8.0,
+  "height": 43.9,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-296.webp",
+  "thumb": "/views/photos/B-14-296-s.webp",
+  "heading": 295.5,
+  "pitch": -8.0,
+  "height": 44.0,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-309.webp",
+  "thumb": "/views/photos/B-14-309-s.webp",
+  "heading": 308.9,
+  "pitch": -8.0,
+  "height": 44.2,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-321.webp",
+  "thumb": "/views/photos/B-14-321-s.webp",
+  "heading": 321.4,
+  "pitch": -8.0,
+  "height": 44.4,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 14,
+  "src": "/views/photos/B-14-350.webp",
+  "thumb": "/views/photos/B-14-350-s.webp",
+  "heading": 350.0,
+  "pitch": -8.0,
+  "height": 42.3,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-014.webp",
+  "thumb": "/views/photos/B-16-014-s.webp",
+  "heading": 13.6,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-030.webp",
+  "thumb": "/views/photos/B-16-030-s.webp",
+  "heading": 30.3,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-045.webp",
+  "thumb": "/views/photos/B-16-045-s.webp",
+  "heading": 44.6,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-059.webp",
+  "thumb": "/views/photos/B-16-059-s.webp",
+  "heading": 59.0,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-073.webp",
+  "thumb": "/views/photos/B-16-073-s.webp",
+  "heading": 72.9,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-090.webp",
+  "thumb": "/views/photos/B-16-090-s.webp",
+  "heading": 90.1,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-112.webp",
+  "thumb": "/views/photos/B-16-112-s.webp",
+  "heading": 112.5,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-132.webp",
+  "thumb": "/views/photos/B-16-132-s.webp",
+  "heading": 132.2,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-156.webp",
+  "thumb": "/views/photos/B-16-156-s.webp",
+  "heading": 156.1,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-171.webp",
+  "thumb": "/views/photos/B-16-171-s.webp",
+  "heading": 171.0,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-182.webp",
+  "thumb": "/views/photos/B-16-182-s.webp",
+  "heading": 182.2,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-193.webp",
+  "thumb": "/views/photos/B-16-193-s.webp",
+  "heading": 193.4,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-208.webp",
+  "thumb": "/views/photos/B-16-208-s.webp",
+  "heading": 208.2,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-223.webp",
+  "thumb": "/views/photos/B-16-223-s.webp",
+  "heading": 222.9,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-243.webp",
+  "thumb": "/views/photos/B-16-243-s.webp",
+  "heading": 242.9,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-259.webp",
+  "thumb": "/views/photos/B-16-259-s.webp",
+  "heading": 258.6,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-280.webp",
+  "thumb": "/views/photos/B-16-280-s.webp",
+  "heading": 280.2,
+  "pitch": -1.1,
+  "height": 51.6,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-310.webp",
+  "thumb": "/views/photos/B-16-310-s.webp",
+  "heading": 309.9,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:02+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-332-down.webp",
+  "thumb": "/views/photos/B-16-332-down-s.webp",
+  "heading": 331.9,
+  "pitch": -21.7,
+  "height": 51.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-336.webp",
+  "thumb": "/views/photos/B-16-336-s.webp",
+  "heading": 335.5,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:03+08:00"
+ },
+ {
+  "floor": 16,
+  "src": "/views/photos/B-16-357.webp",
+  "thumb": "/views/photos/B-16-357-s.webp",
+  "heading": 357.1,
+  "pitch": -1.1,
+  "height": 51.5,
+  "taken": "2026-11-25T12:03+08:00"
+ }
+]

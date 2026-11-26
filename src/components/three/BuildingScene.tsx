@@ -359,7 +359,7 @@ function City() {
 }
 // not preloaded: loads with the street, after the buildings are on screen (see BuildingScene)
 
-/** The drone's 360° photo from block B, floor 5 (public/views/B-05-v2.jpg, scaled to 1024 px: reflections
+/** The drone's 360° photo from block B, floor 5 (its 23 November stitch, scaled to 1024 px: reflections
  *  are blurred anyway). Its middle is true north; three puts an equirectangular map's middle at the plan's
  *  north (-z), so it is turned by the plan's own turn from true north (site.rotation). Checked against the
  *  photo's sun (winter noon, bearing about 192°). */

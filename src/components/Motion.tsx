@@ -52,6 +52,35 @@ export function Motion() {
     if (story && flight && intro && legs.length > 1) {
       let want = 0;
       let frame = 0;
+      // Neither video comes with the page (16 MB between them; page.tsx): once it has loaded, the sunset loop
+      // starts over its still, and the flight downloads when the browser is idle. On a slow or data-saving
+      // connection the still stays and the flight waits for the first scroll, as the intro hides it anyway.
+      const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+      const thrifty = !!conn && (conn.saveData === true || /2g|3g/.test(conn.effectiveType ?? ''));
+      let loaded = false;
+      const startFlight = () => {
+        if (flight.preload === 'auto') return;
+        if (flight.dataset.poster) flight.poster = flight.dataset.poster;
+        flight.preload = 'auto';
+        flight.load();
+      };
+      const stage = story.querySelector<HTMLElement>('.story-stage');
+      const playing = () => stage?.classList.add('is-playing');
+      hero?.addEventListener('playing', playing, { once: true });
+      let idle = 0;
+      const onLoad = () => {
+        loaded = true;
+        if (thrifty) return;
+        update();
+        idle = window.setTimeout(startFlight, 1500);
+      };
+      addEventListener('scroll', startFlight, { passive: true, once: true });
+      off.push(() => {
+        removeEventListener('load', onLoad);
+        removeEventListener('scroll', startFlight);
+        hero?.removeEventListener('playing', playing);
+        clearTimeout(idle);
+      });
       const seek = () => {
         // one seek at a time: setting currentTime again mid-seek makes it start over and lag
         if (flight.readyState >= 1 && !flight.seeking && Math.abs(flight.currentTime - want) > 1 / 60) flight.currentTime = want;
@@ -73,13 +102,15 @@ export function Motion() {
         seek();
         if (hero) {
           if (fade >= 1 && !hero.paused) hero.pause();
-          else if (fade < 1 && hero.paused && html.classList.contains('js-motion')) hero.play().catch(() => {});
+          else if (fade < 1 && hero.paused && loaded && !thrifty && html.classList.contains('js-motion')) hero.play().catch(() => {});
         }
       };
       const onFlightScroll = () => {
         if (!frame) frame = requestAnimationFrame(update);
       };
       update();
+      if (document.readyState === 'complete') onLoad();
+      else addEventListener('load', onLoad, { once: true });
       addEventListener('scroll', onFlightScroll, { passive: true });
       addEventListener('resize', onFlightScroll);
       flight.addEventListener('seeked', seek);

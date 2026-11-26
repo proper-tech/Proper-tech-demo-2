@@ -99,6 +99,14 @@ npm run build && npm start
   in the same folder, is not merged in). Heights at the top of `build-model.py` must match
   `src/data/building.ts`, and `plate()` there must match `towerPlate()` in that file. Add `--blend`
   to also save a `.blend` you can edit by hand.
+- **The drone's 360° spheres** (`public/views/B-NN.jpg` and the season `.webp`s, 8192 × 4096, listed in
+  `public/views/manifest.json` by `interior/tools/drone/window_views.py spheres`): `scripts/sphere-variants.mjs`
+  makes a 4096 × 2048 copy of each in `public/views/4k/` and `public/views/manifest-4k.json` for them. It runs
+  before `npm run dev` and `npm run build` and only redoes copies older than their original. The apartment
+  page's tour shows the copies in its windows (its rooms are 4096 wide too); the 360° views (`WindowSphere`,
+  `DroneView`) show the copy first and, on larger screens, swap in the original when it has arrived.
+- **Hero still** (`public/media/hero-sunset-*`): the 2400 px WebP is the master; the 1200 px WebP and the
+  AVIFs are made from it with sharp. Remake them when it changes.
 - **Furniture**: swap the box furniture in `three/Furniture.tsx` for glTF models (`useGLTF` from
   `@react-three/drei`).
 - **Texts**: the three files in `src/i18n`. The site name is `site.name` in each.

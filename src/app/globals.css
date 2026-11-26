@@ -2710,6 +2710,20 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   object-fit: cover;
 }
 
+/* the loop's still, over the loop until it plays (Motion.tsx adds .is-playing), then faded out */
+.story-still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.6s ease;
+}
+
+.story-stage.is-playing .story-still {
+  opacity: 0;
+}
+
 .story-stage::after {
   content: '';
   position: absolute;
@@ -4534,5 +4548,600 @@ html.js-motion .fx.rv.is-in {
   .share-menu {
     top: auto;
     bottom: calc(100% + 0.6rem);
+  }
+}
+
+/* ==== The window-view page (/views): the drone sphere for a floor, turned to an apartment's windows ====
+   The view is dark like the 360° tours and borrows their controls (.ptour-tool); the panel beside it is solid
+   paper, as every panel over a 3D view is. Amber is only on "Open apartment". */
+.views-page {
+  height: calc(100dvh - var(--header));
+  min-height: 520px;
+}
+
+.wv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  height: 100%;
+}
+
+.wv-stage-wrap {
+  --tour-cream: #f6f0e7;
+  --tour-gold: #e9c58f;
+  position: relative;
+  overflow: hidden;
+  background: #1c201e;
+  color: var(--tour-cream);
+  isolation: isolate;
+}
+
+.wv-stage-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, #0b151b8a 0, transparent 22%, transparent 70%, #0b151b94 100%);
+}
+
+.wv-stage {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.wv-stage:active {
+  cursor: grabbing;
+}
+
+.wv-none {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: #cfd6d2;
+}
+
+.wv-caption {
+  position: absolute;
+  z-index: 3;
+  top: 1rem;
+  left: clamp(1rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(460px, calc(100% - 240px));
+  text-shadow: 0 2px 12px #0009;
+  pointer-events: none;
+}
+
+.wv-caption b {
+  font-family: var(--display);
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 500;
+  color: #fff;
+}
+
+.wv-caption span {
+  font-size: 13px;
+}
+
+/* the "nearest floor" note: on a solid ground, because it changes what the picture means */
+.wv-caption .wv-note {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #152020e6;
+  color: var(--tour-gold);
+  text-shadow: none;
+}
+
+.wv-tools {
+  right: 1rem;
+}
+
+.wv-bottom {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1rem clamp(1rem, 3vw, 2rem) 1.5rem;
+  pointer-events: none;
+}
+
+.wv-bottom > * {
+  pointer-events: auto;
+}
+
+.wv-lift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.wv-lift span {
+  font-family: var(--display);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wv-lift .ptour-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.wv-dirs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.wv-compass {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  flex: none;
+}
+
+.wv-rose {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #ffffff38;
+  border-radius: 50%;
+  background: #152020d9;
+}
+
+.wv-rose b {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 500;
+  color: #c9d0cc;
+  transform: translate(-50%, -50%);
+}
+
+.wv-rose .wv-rose-N { left: 50%; top: 12px; color: var(--tour-gold); }
+.wv-rose .wv-rose-E { left: calc(100% - 12px); top: 50%; }
+.wv-rose .wv-rose-S { left: 50%; top: calc(100% - 12px); }
+.wv-rose .wv-rose-W { left: 12px; top: 50%; }
+
+/* the chosen apartment's windows: a short bar on the rim, at the heading they face */
+.wv-window {
+  position: absolute;
+  inset: 0;
+}
+
+.wv-window::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  width: 16px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--tour-gold);
+  transform: translateX(-50%);
+}
+
+.wv-needle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 30px;
+  border-radius: 2px;
+  background: #fff;
+  transform: translate(-50%, -100%);
+}
+
+.wv-compass small {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #dfe4e1;
+}
+
+.wv-help {
+  bottom: 9.5rem;
+}
+
+.wv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: var(--paper);
+  border-left: 1px solid var(--line);
+}
+
+.wv-panel h1 {
+  font-size: 26px;
+}
+
+.wv-lead {
+  margin-top: -0.5rem;
+  color: var(--stone);
+  font-size: 14px;
+}
+
+.wv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wv-field > span {
+  color: var(--stone);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wv-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--board);
+}
+
+.wv-seg button {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--stone);
+}
+
+.wv-seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* the floors like the lift panel: top floor first */
+.wv-floors {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wv-floors button {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+
+.wv-floors button:hover {
+  border-color: var(--ink);
+}
+
+.wv-floors button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.wv-floors i,
+.wv-key i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sky);
+}
+
+.wv-floors i {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* an estimated floor: a ring where a photographed one has a dot */
+.wv-floors i.wv-est,
+.wv-key i.wv-est {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--sky);
+}
+
+/* the panorama strip: three copies side by side at the image's own size, placed and scaled by the frame loop */
+.wv-pano {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.wv-pano img {
+  position: absolute;
+  top: 0;
+  max-width: none;
+  user-select: none;
+}
+
+/* the plain photograph over the sphere, whole and uncropped on the dark stage; the stage underneath still takes
+   the drags */
+/* The Window view: the apartment's picture fills the stage and does not turn, so no grab cursor. */
+.wv-window-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #1c201e;
+  pointer-events: none;
+  animation: wv-photo-in 0.25s ease-out;
+}
+
+.wv-stage:has(.wv-window-view) {
+  cursor: default;
+}
+
+.wv-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #1c201e;
+  pointer-events: none;
+  animation: wv-photo-in 0.25s ease-out;
+}
+
+@keyframes wv-photo-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wv-photo,
+  .wv-window-view {
+    animation: none;
+  }
+}
+
+.wv-step {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.wv-step-prev {
+  left: clamp(1rem, 3vw, 2rem);
+}
+
+.wv-step-next {
+  right: clamp(1rem, 3vw, 2rem);
+}
+
+.wv-mode {
+  display: flex;
+  gap: 4px;
+  margin-right: 6px;
+}
+
+.wv-mode .ptour-tool {
+  padding: 0 12px;
+}
+
+.ptour-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* the photographs, three to a row, in compass order */
+.wv-photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wv-photos button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  text-align: left;
+}
+
+.wv-photos button:hover {
+  border-color: var(--ink);
+}
+
+.wv-photos button[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.wv-photos img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.wv-photos span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  padding: 4px 7px 5px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wv-photos em {
+  color: var(--stone);
+  font-style: normal;
+}
+
+/* looks the way the chosen apartment's windows face */
+.wv-photos button.wv-faces {
+  border-color: var(--sky);
+  box-shadow: inset 0 3px 0 var(--sky);
+}
+
+.wv-photos button.wv-faces[aria-pressed="true"] {
+  box-shadow: inset 0 3px 0 var(--sky), inset 0 0 0 1px var(--ink);
+}
+
+.wv-key i.wv-faces-key {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sky);
+}
+
+.wv-seasons button {
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 13px;
+}
+
+.wv-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--stone);
+  font-size: 12px;
+}
+
+.wv-units {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wv-units button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  text-align: left;
+}
+
+.wv-units button:hover {
+  border-color: var(--ink);
+}
+
+.wv-units button[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.wv-units b {
+  font-variant-numeric: tabular-nums;
+}
+
+.wv-units span {
+  color: var(--stone);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.wv-open {
+  align-self: stretch;
+  margin-top: 4px;
+}
+
+.wv-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  color: var(--stone);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .views-page {
+    height: auto;
+  }
+
+  .wv {
+    grid-template-columns: 1fr;
+  }
+
+  .wv-stage-wrap {
+    height: 68dvh;
+    min-height: 420px;
+  }
+
+  .wv-panel {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    overflow: visible;
+  }
+
+  .wv-floors {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .wv-caption {
+    max-width: calc(100% - 2rem);
+    top: 4.25rem;
+  }
+
+  /* the tours move their tools to the bottom on phones; here the bottom holds the lift and the compass */
+  .ptour-tools.wv-tools {
+    top: 1rem;
+    bottom: auto;
+    right: 1rem;
+  }
+
+  .wv-compass {
+    width: 72px;
+    height: 72px;
+  }
+
+  .wv-needle {
+    height: 22px;
+  }
+
+  .wv-help {
+    display: none;
   }
 }

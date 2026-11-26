@@ -123,6 +123,9 @@ added nothing changes. To add one (stitched 2:1 JPG from DJI Fly's Sphere mode, 
 
 If a view turns out rotated, give the yaw in degrees as a fifth argument (clockwise).
 
+From DJI video with the drone's flight data in it (one run makes a sphere for every height the drone spun at):
+`interior/tools/drone/video_spheres.py`, see `interior/tools/drone/README.md`.
+
 ### Finish packages (Дулаан / Цайвар / Бараан)
 
 `FINISH=light` or `FINISH=dark` (environment) makes `upgrade_dress.py` swap the floor, joinery, doors and worktops

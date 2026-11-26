@@ -19,9 +19,11 @@ import { layoutArea, m, maxCeiling } from '@/lib/geometry';
 // cards, the apartment types in a sideways row, the site plan on an amber band, the film with controls and
 // a contact close. Motion.tsx (mounted last) fades things in, counts the figures and tracks the chapter.
 
-/** The complex at sunset, behind the intro: a still (the loop's poster) and the loop made from it (Magnific,
- *  Kling 2.5: clouds, traffic and window lights moving, the building still). */
-const HERO = '/media/hero-sunset-2400.webp';
+/** The complex at sunset, behind the intro: a still and the loop made from it (Magnific, Kling 2.5: clouds,
+ *  traffic and window lights moving, the building still). The still is the page's first picture, so it comes in
+ *  the size the screen needs (AVIF where the browser takes it); the loop starts only once the page has loaded
+ *  (Motion.tsx), so its 6 MB never hold up the first paint. */
+const HERO = '/media/hero-sunset';
 const HERO_LOOP = '/media/hero-loop.mp4';
 /** The drone flight behind the chapters, made from four frames of the film (scripts/build-film.py --stills
  *  1000,240,550,700), each sharpened with Magnific, and Kling 2.5 legs between them; a keyframe every few
@@ -58,8 +60,23 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             the complex whose frames follow the scroll (Motion.tsx), one leg per chapter; the rail and the dots
             show which chapter you are in */}
         <div className="story-stage">
-          <video className="story-film" src={HERO_LOOP} poster={HERO} autoPlay muted loop playsInline preload="auto" aria-hidden="true" />
-          <video className="story-flight" src={FLIGHT} poster={FLIGHT_POSTER} muted playsInline preload="auto" aria-hidden="true" />
+          {/* neither video downloads with the page: Motion.tsx starts the loop once the page has loaded and the
+              flight soon after (on a slow or data-saving connection, not until the visitor scrolls). The still
+              covers the loop until it plays, and stays for reduced motion or without script. */}
+          <video className="story-film" src={HERO_LOOP} muted loop playsInline preload="none" aria-hidden="true" />
+          <picture>
+            <source type="image/avif" srcSet={`${HERO}-1200.avif 1200w, ${HERO}-2400.avif 2400w`} sizes="100vw" />
+            <img
+              className="story-still"
+              src={`${HERO}-2400.webp`}
+              srcSet={`${HERO}-1200.webp 1200w, ${HERO}-2400.webp 2400w`}
+              sizes="100vw"
+              alt=""
+              fetchPriority="high"
+              decoding="async"
+            />
+          </picture>
+          <video className="story-flight" src={FLIGHT} data-poster={FLIGHT_POSTER} muted playsInline preload="none" aria-hidden="true" />
           <div className="story-hud" aria-hidden="true">
             <p className="hud-count">
               {chapters.map((key, i) => (
