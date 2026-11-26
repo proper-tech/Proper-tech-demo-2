@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/copy-maplibre-worker.mjs && node scripts/sphere-variants.mjs",
+    "predev": "node scripts/copy-maplibre-worker.mjs && node scripts/view-variants.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/sphere-variants.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/view-variants.mjs",
     "build": "next build",
     "start": "next start",
     "postinstall": "node scripts/copy-maplibre-worker.mjs"

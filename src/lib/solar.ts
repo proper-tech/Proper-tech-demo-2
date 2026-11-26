@@ -57,16 +57,6 @@ export function sunTimes(date: string) {
   return { rise, set };
 }
 
-/** The sun's path across the sky on `date`, every `step` minutes while it is up. */
-export function sunPath(date: string, step = 10): Array<[number, number]> {
-  const out: Array<[number, number]> = [];
-  for (let t = 0; t <= 1440; t += step) {
-    const { azimuth, elevation } = sunPosition(date, t);
-    if (elevation > -0.5) out.push([azimuth, elevation]);
-  }
-  return out;
-}
-
 /** 'HH:MM' for minutes after midnight. */
 export const clock = (minutes: number) => {
   const m = Math.round(minutes) % 1440;

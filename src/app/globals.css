@@ -448,46 +448,19 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   cursor: grab;
 }
 
-/* Home: renders and site plan */
+/* Home: site plan */
 
-.gallery,
 .site {
   padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem);
   border-top: 1px solid var(--line);
 }
 
-.gallery h2,
 .site h2,
 .layouts h2,
 .video h2 {
   font-size: clamp(1.7rem, 2.6vw, 2.4rem);
   letter-spacing: -0.03em;
   margin-bottom: 0.8rem;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.gallery-grid figure {
-  grid-column: span 2;
-  margin: 0;
-}
-
-.gallery-grid img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 10px;
-}
-
-.gallery-grid figcaption {
-  margin-top: 0.4rem;
-  color: var(--stone);
-  font-size: 0.875rem;
 }
 
 .site {
@@ -812,10 +785,77 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 /* the 360° tour: amber with its ring icon, and a soft pulse while it isn't open, so it isn't missed */
-.icon-360 {
+.icon-360,
+.icon-window {
   width: 1.25em;
   height: 1.25em;
   flex: none;
+}
+
+/* the apartment's link to the real view from its windows (views page): a picture of that view, its badge in the
+   corner, the label on a gradient; it drifts closer on hover like the home page's cards */
+.apt-view {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 16 / 9;
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 16px 32px -20px rgb(20 35 59 / 0.6);
+}
+
+.apt-view img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease-out);
+}
+
+.apt-view::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(10 20 38 / 0.9) 0%, rgb(10 20 38 / 0.35) 55%, transparent 80%);
+}
+
+.apt-view:hover img {
+  transform: scale(1.06);
+}
+
+.apt-view .real-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  background: rgb(10 20 38 / 0.6);
+  font-size: 0.625rem;
+}
+
+.apt-view-body {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+}
+
+.apt-view-body b {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.apt-view-body span {
+  font-size: 0.8125rem;
+  color: #c9d3e1;
 }
 
 .segmented .seg-360,
@@ -1274,30 +1314,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   margin-top: 1rem;
 }
 
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin: 0 0 1rem;
-  padding: 0;
-  border: 0;
-}
-
-.swatches legend {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0;
-  margin-bottom: 0.45rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.swatches legend span {
-  color: var(--stone);
-  font-weight: 400;
-}
-
 .swatch {
   width: 2.5rem;
   height: 2.5rem;
@@ -1716,10 +1732,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
   .site {
     grid-template-columns: 1fr;
-  }
-
-  .gallery-grid figure {
-    grid-column: span 6;
   }
 
   .layouts table {
@@ -2176,13 +2188,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .sun-controls input[type="range"] {
   width: 100%;
   accent-color: #e8a33d;
-}
-
-.sun-controls .sun-reset {
-  justify-self: start;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.75rem;
-  box-shadow: none;
 }
 
 /* one panel at its full size, everything in view: no scrolling inside it */
@@ -2673,17 +2678,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   background: #f5c24f;
 }
 
-.pill-ghost {
-  border-color: rgb(255 255 255 / 0.55);
-  background: rgb(255 255 255 / 0.08);
-  color: #fff;
-  backdrop-filter: blur(6px);
-}
-
-.pill-ghost:hover {
-  background: rgb(255 255 255 / 0.18);
-}
-
 /* the story: the film is pinned (sticky) while the intro and the four chapters, one screen each, scroll
    over it. The intro is pulled up over the film by a negative margin (on the film itself, the margin would
    let it stay pinned a screen past the end of the story, over the next section); the film lets go as the
@@ -2767,29 +2761,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   max-width: 36rem;
   font-size: clamp(1.05rem, 0.4vw + 1rem, 1.3rem);
   color: #e3e9f1;
-}
-
-.story-scroll {
-  margin-top: 1.25rem;
-  font-size: 0.8125rem;
-  color: #c3cedc;
-}
-
-.story-scroll::after {
-  content: '';
-  display: block;
-  width: 1px;
-  height: 40px;
-  margin: 0.5rem auto 0;
-  background: linear-gradient(currentColor, transparent);
-  transform-origin: top;
-  animation: drip 2s ease-in-out infinite;
-}
-
-@keyframes drip {
-  0% { transform: scaleY(0); opacity: 1; }
-  60% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
 }
 
 /* each chapter: a frosted card in the middle of the film, for what the film is showing at that
@@ -3063,6 +3034,196 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   padding: clamp(4rem, 9vw, 8rem) clamp(1rem, 3vw, 2.5rem);
 }
 
+/* The window views, set apart from the cards under them: a wide band where the drone's photograph out of a top-floor
+   apartment and its three image-model seasons take turns (4 s each, a 1 s crossfade, drifting slowly closer), the
+   season named in the corner. The text sits on the band's dark side; the amber pill is the action. */
+.views-band {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(24rem, 40vw, 32rem);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 30px 60px -30px rgb(20 35 59 / 0.65);
+}
+
+.views-band-pics img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: views-season 16s linear infinite;
+  /* a second into its turn, so the photograph is already showing when the band appears */
+  animation-delay: calc(var(--i) * 4s - 1s);
+}
+
+.views-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgb(10 20 38 / 0.88) 0%, rgb(10 20 38 / 0.55) 38%, transparent 70%);
+}
+
+.views-band-body {
+  display: grid;
+  justify-items: start;
+  gap: 0.7rem;
+  max-width: 30rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.views-band-body b {
+  font: 600 clamp(1.8rem, 3vw, 2.6rem) / 1.05 var(--display);
+  letter-spacing: -0.03em;
+}
+
+.views-band-line {
+  font-size: 1rem;
+  color: #dbe3ee;
+}
+
+/* what the pictures are, before anything else: real photographs, with a live dot */
+.real-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 0.4);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.real-badge::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #5fd38a;
+  box-shadow: 0 0 0 0 rgb(95 211 138 / 0.6);
+  animation: views-live 2s ease-out infinite;
+}
+
+.views-band-where {
+  font-size: 0.875rem;
+  color: #aebbd0;
+}
+
+.views-band .pill {
+  margin-top: 0.4rem;
+}
+
+.views-band:hover .pill-primary {
+  background: #f5c24f;
+}
+
+/* the season on screen, in the corner, in step with the pictures */
+.views-band-seasons {
+  position: absolute;
+  right: clamp(1rem, 2.5vw, 1.75rem);
+  bottom: clamp(1rem, 2.5vw, 1.75rem);
+  display: grid;
+}
+
+.views-band-seasons span {
+  grid-area: 1 / 1;
+  justify-self: end;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: rgb(10 20 38 / 0.82);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  opacity: 0;
+  animation: views-season-label 16s linear infinite;
+  animation-delay: calc(var(--i) * 4s - 1s);
+}
+
+@keyframes views-season {
+  0% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  6.25% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 1;
+  }
+  31.25% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes views-season-label {
+  0%,
+  5% {
+    opacity: 0;
+  }
+  8%,
+  24% {
+    opacity: 1;
+  }
+  27%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes views-live {
+  70% {
+    box-shadow: 0 0 0 0.45rem rgb(95 211 138 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(95 211 138 / 0);
+  }
+}
+
+/* still: the photograph alone, and its label */
+@media (prefers-reduced-motion: reduce) {
+  .views-band-pics img,
+  .views-band-seasons span,
+  .real-badge::before {
+    animation: none;
+  }
+
+  .views-band-pics img:first-child,
+  .views-band-seasons span:first-child {
+    opacity: 1;
+  }
+}
+
+/* narrow screens: the text at the bottom on a gradient rising from it, the season at the top */
+@media (max-width: 60rem) {
+  .views-band {
+    min-height: 34rem;
+  }
+
+  .views-band::after {
+    background: linear-gradient(to top, rgb(10 20 38 / 0.92) 0%, rgb(10 20 38 / 0.6) 45%, transparent 75%);
+  }
+
+  .views-band-seasons {
+    top: 1rem;
+    bottom: auto;
+  }
+}
+
 .explore-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3104,17 +3265,6 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
 
 .explore-card:hover img {
   transform: scale(1.06);
-}
-
-.explore-n {
-  position: absolute;
-  top: 1rem;
-  left: 1.1rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.18);
-  backdrop-filter: blur(6px);
-  font: 600 0.8125rem / 1 var(--display);
 }
 
 .explore-body {
@@ -3339,12 +3489,6 @@ html.js-motion .fx.rv.is-in {
   opacity: 1;
   filter: none;
   transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .story-scroll::after {
-    animation: none;
-  }
 }
 
 /* ==== Block D: the rendered 360° tour (PanoTour), styled like the apartment tours (public/tour) ==== */
@@ -4864,23 +5008,6 @@ html.js-motion .fx.rv.is-in {
 .wv-key i.wv-est {
   background: none;
   box-shadow: inset 0 0 0 1.5px var(--sky);
-}
-
-/* the panorama strip: three copies side by side at the image's own size, placed and scaled by the frame loop */
-.wv-pano {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 0 0;
-  will-change: transform;
-  pointer-events: none;
-}
-
-.wv-pano img {
-  position: absolute;
-  top: 0;
-  max-width: none;
-  user-select: none;
 }
 
 /* the plain photograph over the sphere, whole and uncropped on the dark stage; the stage underneath still takes

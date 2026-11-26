@@ -1,7 +1,6 @@
 import manifest from '../../public/views/window/manifest.json';
-import panoramas from '../../public/views/panoramas.json';
 import type { Facing } from './types';
-import type { Season } from './views';
+import { circleTaken, type Season } from './views';
 
 /**
  * The plain window views: one 16:9 picture per floor, per apartment facing and per season, looking straight out
@@ -36,8 +35,5 @@ export function windowKinds(facing: Facing): Map<number, WindowView['kind']> {
   return new Map(Object.entries(views[facing] ?? {}).map(([f, e]) => [Number(f), e.kind === 'photo' ? 'photo' : 'derived']));
 }
 
-/** When the photograph a view comes from was taken: the circle at that floor (public/views/panoramas.json). */
-export function windowTaken(v: WindowView): string | null {
-  const p = (panoramas as Record<string, { taken: string }>)[String(v.from ?? v.floor)];
-  return p?.taken ?? null;
-}
+/** When the photograph a view comes from was taken: the drone's circle at that floor. */
+export const windowTaken = (v: WindowView): string | null => circleTaken(v.from ?? v.floor);

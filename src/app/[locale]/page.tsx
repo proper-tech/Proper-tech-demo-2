@@ -30,6 +30,10 @@ const HERO_LOOP = '/media/hero-loop.mp4';
  *  frames, so it seeks smoothly as you scroll. */
 const FLIGHT = '/media/flight.mp4';
 const FLIGHT_POSTER = '/media/flight-poster.jpg';
+/** The window views' band in "Step inside": the drone's photograph out of the top floor's north-east apartment
+ *  (B1606) and the image model's three other seasons of it (public/views/window/NE/floor-16), crossfading. */
+const BAND_SEASONS = ['winter', 'spring', 'summer', 'autumn'] as const;
+const bandPic = (season: string, w: number) => `/media/renders/window-${season}-${w}.webp`;
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -142,6 +146,40 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <h2>{t.explore.heading}</h2>
           <p className="lead">{t.explore.lead}</p>
         </div>
+        {/* the real view from the windows, set apart from the cards below: the photograph and its seasons in turn
+            (globals.css .views-band; the photograph alone for reduced motion), opening the same view */}
+        <Link className="views-band fx" href={`/${locale}/views?tower=B&floor=16&apt=6`}>
+          <span className="views-band-pics" aria-hidden="true">
+            {BAND_SEASONS.map((se, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={se}
+                src={bandPic(se, 1600)}
+                srcSet={`${bandPic(se, 960)} 960w, ${bandPic(se, 1600)} 1600w`}
+                sizes="(max-width: 80rem) 100vw, 80rem"
+                alt=""
+                width={1600}
+                height={900}
+                loading="lazy"
+                style={{ '--i': i } as React.CSSProperties}
+              />
+            ))}
+          </span>
+          <span className="views-band-body">
+            <span className="real-badge">{t.explore.views.badge}</span>
+            <b>{t.explore.views.title}</b>
+            <span className="views-band-line">{t.explore.views.line}</span>
+            <span className="views-band-where">{t.explore.views.where}</span>
+            <span className="pill pill-primary">{t.explore.views.cta} →</span>
+          </span>
+          <span className="views-band-seasons" aria-hidden="true">
+            {BAND_SEASONS.map((se, i) => (
+              <span key={se} style={{ '--i': i } as React.CSSProperties}>
+                {t.views.seasons[se]} · {se === 'winter' ? t.explore.views.photo : t.explore.views.ai}
+              </span>
+            ))}
+          </span>
+        </Link>
         <ul className="explore-cards">
           {explore.map(({ key, img, href }) => {
             const item = t.explore[key];

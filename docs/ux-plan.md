@@ -134,7 +134,7 @@ text over the canvas always sits on a solid chip.
 1. Fill in `SALES_PHONE`; add Messenger / Viber links next to it in `UnitActions`.
 2. Default the apartment page to the 2D plan (`useState<Mode>('plan')`), tour one tap away.
 3. A loader on the apartment page: reuse `.stage-loader` with drei's `useProgress`, as the home page does.
-4. Convert the three AO maps (`*_AO.png`, 4.2 MB) to WebP or KTX2; they are greyscale and compress ~5×.
+4. ~~Convert the three AO maps (`*_AO.png`, 4.2 MB) to WebP or KTX2.~~ Done differently: nothing loaded them, so they were removed.
 5. Turn off traffic, people and night lights on phones and when `navigator.hardwareConcurrency <= 4`.
 
 **Medium (about a week)**

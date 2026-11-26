@@ -7,7 +7,6 @@ import { MathUtils } from 'three';
 import { FLOOR_MAX, FLOOR_MIN, getFloor, towers } from '@/data/building';
 import type { TowerId, Unit } from '@/data/types';
 import { facingHeading, heightGap, liftOf, lookBand, PHOTO_SEASON, SEASONS, shotOf, sphereFor, spheresFor, srcFor, type Season } from '@/data/views';
-import { panoramaFor, panoramaGap, type Panorama } from '@/data/panoramas';
 import { facesWindow, isDown, nearestPhoto, photoGap, photosFor, type ViewPhoto } from '@/data/photos';
 import { windowKinds, windowTaken, windowView } from '@/data/windowViews';
 import { fmt } from '@/i18n/config';
@@ -28,9 +27,8 @@ const turn = (a: number, b: number) => ((b - a + 540) % 360) - 180;
 // its windows, for the chosen floor and season (public/views/window, made from the drone's frames). The 360° view
 // is the drone's sphere for a tower and floor, turned to face the chosen apartment's windows. The floors run top to bottom like the lift panel; a floor the drone did not photograph shows the
 // nearest photograph moved to its height, and says so. The season switch swaps in the photograph's AI-made
-// spring, summer and autumn versions. Beside the sphere, the Panorama view pans the band the drone actually
-// photographed as one flat strip, and the panel lists the single photographs, which open large over it. The state
-// travels in the address (?tower=&floor=&apt=&season=&view=sphere|pano) so a view can be shared.
+// spring, summer and autumn versions. The panel lists the drone's single photographs, which open large over the
+// 360° view. The state travels in the address (?tower=&floor=&apt=&season=&view=sphere) so a view can be shared.
 export function WindowViews() {
   const { locale, t } = useI18n();
   const v = t.views;
@@ -41,10 +39,8 @@ export function WindowViews() {
   const [ready, setReady] = useState(false);
   const [heading, setHeading] = useState(0);
   const [rotate, setRotate] = useState(false);
-  const [mode, setMode] = useState<'window' | 'sphere' | 'pano'>('window');
+  const [mode, setMode] = useState<'window' | 'sphere'>('window');
   const [windowReady, setWindowReady] = useState(false);
-  const [panoReady, setPanoReady] = useState(false);
-  const strip = useRef<HTMLDivElement>(null);
   // a photograph chosen from the list or with the arrows; turning the view by hand goes back to the nearest one
   const [pick, setPick] = useState<string | null>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -63,10 +59,7 @@ export function WindowViews() {
   // the 360° view stays inside the band the drone photographed (no drawn street or building tops); read by the
   // frame loop below
   const band = useRef<{ top: number; bottom: number } | null>(null);
-  band.current = mode === 'pano' ? null : lookBand(sphere);
-  const pano = panoramaFor(floor);
-  useEffect(() => setPanoReady(false), [pano?.src]);
-  const inPano = mode === 'pano' && !!pano;
+  band.current = lookBand(sphere);
   const inWindow = mode === 'window';
   // read by the pointer handlers, which are set up once: the window picture does not turn
   const windowRef = useRef(inWindow);
@@ -74,14 +67,8 @@ export function WindowViews() {
   const win = unit ? windowView(unit.facing, floor) : null;
   const winSrc = win ? (win.seasons[season] ?? win.seasons[PHOTO_SEASON] ?? null) : null;
   useEffect(() => setWindowReady(false), [winSrc]);
-  // read by the frame loop and the pointer handlers, which are set up once
-  const panoRef = useRef<Panorama | null>(null);
-  panoRef.current = inPano ? pano : null;
-  /** The narrowest view: the panorama is sharp enough to zoom further than the sphere. */
-  const fovMin = () => (panoRef.current ? 10 : FOV_MIN);
   const photos = useMemo(() => photosFor(floor), [floor]);
-  const shown: ViewPhoto | null =
-    mode === 'pano' ? (photos.find((p) => p.src === pick) ?? null) : null;
+  const shown: ViewPhoto | null = mode === 'sphere' ? (photos.find((p) => p.src === pick) ?? null) : null;
   const floorsDown = useMemo(() => Array.from({ length: FLOOR_MAX - FLOOR_MIN + 1 }, (_, i) => FLOOR_MAX - i), []);
 
   // the address in, once, then out on every change (replaceState: no history entry per click)
@@ -91,8 +78,8 @@ export function WindowViews() {
     const fl = Number(q.get('floor'));
     const ap = Number(q.get('apt'));
     const se = q.get('season');
-    if (q.get('view') === 'pano' || q.get('view') === 'photo') setMode('pano');
-    else if (q.get('view') === 'sphere') setMode('sphere');
+    // links from when the page had a flat panorama (view=pano or photo) open the 360° view
+    if (['sphere', 'pano', 'photo'].includes(q.get('view') ?? '')) setMode('sphere');
     if (tw && (towers as string[]).includes(tw)) setTower(tw as TowerId);
     if (fl >= FLOOR_MIN && fl <= FLOOR_MAX) setFloor(fl);
     if (ap >= 1 && ap <= 6) setPos(ap as Unit['pos']);
@@ -102,7 +89,7 @@ export function WindowViews() {
   useEffect(() => {
     // the photograph's season is the default and stays out of the address
     const se = season === PHOTO_SEASON ? '' : `&season=${season}`;
-    const vw = mode === 'pano' ? '&view=pano' : mode === 'sphere' ? '&view=sphere' : '';
+    const vw = mode === 'sphere' ? '&view=sphere' : '';
     if (fromUrl) history.replaceState(history.state, '', `?tower=${tower}&floor=${floor}&apt=${pos}${se}${vw}`);
   }, [fromUrl, tower, floor, pos, season, mode]);
 
@@ -141,15 +128,14 @@ export function WindowViews() {
       ptrs.set(e.pointerId, [e.clientX, e.clientY]);
       const L = look.current;
       if (ptrs.size === 1) {
-        // degrees per pixel, so the picture stays under the finger; the panorama shows at most its own height
-        const P = panoRef.current;
-        const k = (P ? Math.min(L.fov, P.top - P.bottom) : L.fov) / el.clientHeight;
+        // degrees per pixel, so the picture stays under the finger
+        const k = L.fov / el.clientHeight;
         L.heading = wrap(L.heading - (e.clientX - last[0]) * k);
         L.pitch = MathUtils.clamp(L.pitch + (e.clientY - last[1]) * k, -PITCH_MAX, PITCH_MAX);
       } else if (ptrs.size === 2) {
         const [a, b] = [...ptrs.values()];
         const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-        if (pinch) L.fov = MathUtils.clamp((L.fov * pinch) / d, fovMin(), FOV_MAX);
+        if (pinch) L.fov = MathUtils.clamp((L.fov * pinch) / d, FOV_MIN, FOV_MAX);
         pinch = d;
       }
     };
@@ -160,7 +146,7 @@ export function WindowViews() {
     const wheel = (e: WheelEvent) => {
       if (windowRef.current) return;
       e.preventDefault();
-      look.current.fov = MathUtils.clamp(look.current.fov + e.deltaY * 0.04, fovMin(), FOV_MAX);
+      look.current.fov = MathUtils.clamp(look.current.fov + e.deltaY * 0.04, FOV_MIN, FOV_MAX);
     };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
@@ -176,7 +162,7 @@ export function WindowViews() {
     };
   }, []);
 
-  const zoom = (d: number) => (look.current.fov = MathUtils.clamp(look.current.fov + d, fovMin(), FOV_MAX));
+  const zoom = (d: number) => (look.current.fov = MathUtils.clamp(look.current.fov + d, FOV_MIN, FOV_MAX));
   // the next or previous photograph round the circle (level ones only), turning the view with it
   const level = useMemo(() => photos.filter((p) => !isDown(p)), [photos]);
   const stepPhoto = (d: number) => {
@@ -197,7 +183,7 @@ export function WindowViews() {
   };
   photoKeys.current = shown ? stepPhoto : inWindow ? stepUnit : null;
   const choosePhoto = (p: ViewPhoto) => {
-    setMode('pano');
+    setMode('sphere');
     setPick(p.src);
     aim.current = p.heading;
     setRotate(false);
@@ -237,7 +223,7 @@ export function WindowViews() {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const L = look.current;
-      if (!panoRef.current && L.fov < FOV_MIN) L.fov = FOV_MIN;
+      if (L.fov < FOV_MIN) L.fov = FOV_MIN;
       const B = band.current;
       if (B) {
         // the view's height (the camera's field of view is vertical) fits the band, and its middle stays where
@@ -252,20 +238,6 @@ export function WindowViews() {
           aim.current = null;
         } else L.heading = wrap(L.heading + d * Math.min(1, dt * 6));
       } else if (rotate) L.heading = wrap(L.heading + dt * 8);
-      // the panorama: three copies side by side, so turning past either end runs on without a gap; heading 0
-      // (true north) is the strip's middle column, and the strip fills the view's height until zoomed in
-      const P = panoRef.current;
-      const el = stage.current;
-      if (P && el && strip.current) {
-        const vis = Math.min(L.fov, P.top - P.bottom);
-        const ppd = P.width / 360;
-        const sc = el.clientHeight / (vis * ppd);
-        L.pitch = MathUtils.clamp(L.pitch, P.bottom + vis / 2, P.top - vis / 2);
-        const w = P.width * sc;
-        const x = el.clientWidth / 2 - ((wrap(L.heading) + 180) % 360) * ppd * sc;
-        const y = el.clientHeight / 2 - (P.top - L.pitch) * ppd * sc;
-        strip.current.style.transform = `translate(${(((x % w) + w) % w) - w}px, ${y}px) scale(${sc})`;
-      }
       setHeading((old) => (Math.abs(turn(old, L.heading)) > 0.5 ? L.heading : old));
       raf = requestAnimationFrame(tick);
     };
@@ -321,21 +293,6 @@ export function WindowViews() {
           ) : (
             <p className="wv-none">{v.none}</p>
           )}
-          {inPano && (
-            <div className="wv-pano" ref={strip} role="img" aria-label={fmt(v.panoAlt, { n: pano!.floor })}>
-              {[0, 1, 2].map((i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`${pano!.src}-${i}`}
-                  src={pano!.src}
-                  alt=""
-                  draggable={false}
-                  style={{ left: i * pano!.width, width: pano!.width, height: pano!.height }}
-                  onLoad={i === 0 ? () => setPanoReady(true) : undefined}
-                />
-              ))}
-            </div>
-          )}
           {shown && (
             // the plain photograph over the sphere: dragging still turns the view, and the nearest photograph follows
             // eslint-disable-next-line @next/next/no-img-element
@@ -369,24 +326,6 @@ export function WindowViews() {
               {season !== PHOTO_SEASON && <span className="wv-note">{v.photoSeason}</span>}
             </>
           )}
-          {inPano && !shown && (
-            <>
-              <span>
-                {fmt(v.panoTaken, { when: pano!.taken.slice(0, 16).replace('T', ' ').replaceAll('-', '.') })} ·{' '}
-                {fmt(v.height, { m: pano!.metres.toFixed(0) })}
-              </span>
-              {pano!.floor !== floor && (
-                <span className="wv-note">
-                  {fmt(panoramaGap(pano!, floor) > 0 ? v.panoHigher : v.panoLower, {
-                    n: floor,
-                    m: pano!.floor,
-                    d: Math.abs(panoramaGap(pano!, floor)).toFixed(0),
-                  })}
-                </span>
-              )}
-              {season !== PHOTO_SEASON && <span className="wv-note">{v.photoSeason}</span>}
-            </>
-          )}
           {inWindow && win && unit && (
             <>
               <span>
@@ -403,18 +342,18 @@ export function WindowViews() {
               )}
             </>
           )}
-          {sphere && !shown && !inPano && !inWindow && (
+          {sphere && !shown && !inWindow && (
             <span>
               {generated ? fmt(v.seasonAi, { season: v.seasons[season], when: when ?? '' }) : fmt(v.taken, { when: when ?? '' })}
               {shot?.height != null && ` · ${fmt(v.height, { m: shot.height.toFixed(0) })}`}
             </span>
           )}
-          {derived && !shown && !inPano && !inWindow && (
+          {derived && !shown && !inWindow && (
             <span className="wv-note">
               {fmt(lift >= 0 ? v.derivedRaised : v.derivedLowered, { n: floor, m: sphere.from!, d: Math.abs(lift).toFixed(0) })}
             </span>
           )}
-          {sphere && !shown && !inPano && !inWindow && sphere.floor !== floor && (
+          {sphere && !shown && !inWindow && sphere.floor !== floor && (
             <span className="wv-note">
               {fmt(gap > 0 ? v.nearestAbove : v.nearestBelow, { n: floor, m: sphere.floor, d: Math.abs(gap).toFixed(0) })}
             </span>
@@ -445,18 +384,6 @@ export function WindowViews() {
               }}
             >
               {v.modeSphere}
-            </button>
-            <button
-              type="button"
-              className="ptour-tool"
-              aria-pressed={mode === 'pano'}
-              onClick={() => {
-                setMode('pano');
-                setPick(null);
-              }}
-              disabled={!pano}
-            >
-              {v.modePano}
             </button>
           </div>
           <button type="button" className="ptour-tool" onClick={() => zoom(10)} disabled={!!shown || inWindow} aria-label={v.zoomOut} title={v.zoomOut}>
@@ -519,7 +446,7 @@ export function WindowViews() {
           </div>
         </div>
         <p className="ptour-help wv-help">{inWindow ? v.windowHelp : v.help}</p>
-        {(inWindow ? !!winSrc && !windowReady : inPano ? !panoReady : sphere && !ready) && <p className="ptour-loading">{v.loading}</p>}
+        {(inWindow ? !!winSrc && !windowReady : sphere && !ready) && <p className="ptour-loading">{v.loading}</p>}
       </section>
 
       <aside className="wv-panel">

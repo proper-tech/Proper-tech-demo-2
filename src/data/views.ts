@@ -78,8 +78,12 @@ export function spheresFor(tower: TowerId): ViewSphere[] {
     .sort((a, b) => a.floor - b.floor);
 }
 
-/** A sphere's half-size copy, 4096 × 2048 (scripts/sphere-variants.mjs makes them before `dev` and `build`). */
+/** A sphere's half-size copy, 4096 × 2048 (scripts/view-variants.mjs makes them before `dev` and `build`). */
 export const smallSrc = (src: string) => src.replace(/^\/views\//, '/views/4k/');
+
+/** A small picture (640 × 360) of the winter window view for an apartment facing and floor, made by
+ *  scripts/view-variants.mjs from public/views/window: the apartment page's link to its view. */
+export const windowThumb = (facing: Facing, floor: number) => `/views/thumbs/${facing}-${String(floor).padStart(2, '0')}.webp`;
 
 /** The manifest of the half-size copies, for the tours' ?views=: their rooms are 4096 wide, so the view through
  *  their windows needs no more. */
@@ -111,6 +115,10 @@ export function shotOf(s: ViewSphere) {
   if (!shot) return null;
   return s.kind === 'derived' ? { ...shot, height: s.height } : shot;
 }
+
+/** When the drone turned its circle at a photographed floor, from the same flight records (null for a floor it
+ *  did not photograph): the time of that floor's sphere and of its window views. */
+export const circleTaken = (floor: number) => SHOTS[`/views/B-${String(floor).padStart(2, '0')}.jpg`]?.taken ?? null;
 
 /** Metres a derived sphere was moved up from its photograph's height to its floor's eye level (negative: down). */
 export function liftOf(s: ViewSphere) {

@@ -7,7 +7,7 @@ import { availableUnits } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
 import { layouts } from '@/data/layouts';
 import type { Unit } from '@/data/types';
-import { SMALL_MANIFEST } from '@/data/views';
+import { SMALL_MANIFEST, windowThumb } from '@/data/views';
 import { fmt, roomName } from '@/i18n/config';
 import { useI18n } from '@/i18n/I18nProvider';
 import { hasParts, layoutArea, listedRooms, m, roomArea } from '@/lib/geometry';
@@ -32,6 +32,16 @@ function Icon360() {
       <ellipse cx="12" cy="12" rx="10" ry="4.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
       <path d="M15.5 14.6 18.4 16.2 16.4 18.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A window with its cross bar: the mark of the view from the windows. */
+function IconWindow() {
+  return (
+    <svg className="icon-window" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="3.5" width="16" height="17" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 3.5v17M4 12h16" fill="none" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -195,6 +205,22 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
               {fmt(t.apt.openTour, { room: labels[room.id].name })}
             </button>
           )}
+          {/* the real view from this apartment, as a picture of it: the drone's photograph out of these windows
+              (a small copy, src/data/views.ts windowThumb); the views page opens on its tower, floor and windows */}
+          <Link className="apt-view" href={`/${locale}/views?tower=${unit.tower}&floor=${unit.floor}&apt=${unit.pos}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={windowThumb(unit.facing, unit.floor)} alt="" width={640} height={360} loading="lazy" />
+            <span className="real-badge">{t.explore.views.badge}</span>
+            <span className="apt-view-body">
+              <b>
+                <IconWindow />
+                {t.apt.viewWindows}
+              </b>
+              <span>
+                {fmt(t.apt.viewReal, { n: unit.floor })} · {t.facing[unit.facing]}
+              </span>
+            </span>
+          </Link>
         </section>
 
         {availableUnits.length > 1 && (

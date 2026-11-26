@@ -38,8 +38,6 @@ export const finishOptions: Record<FinishKey, { id: string; color: string }[]> =
   ],
 };
 
-export const finishKeys: FinishKey[] = ['floor', 'wall', 'fabric', 'wood', 'cabinet'];
-
 export const defaultFinish: Finish = {
   floor: finishOptions.floor[0].color,
   wall: finishOptions.wall[0].color,

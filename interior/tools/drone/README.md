@@ -82,17 +82,6 @@ missing directions from the nearest floors and the page says which floor a borro
     python3 interior/tools/drone/photos.py interior/views/screenshots ~/Desktop/videos/dji_fly_20261125_115900_0179_….MP4 \
         --export ~/Movies/CapCut/"1126 (1).mov" --offset 211.3
 
-## Flat panoramas (`panoramas.py`)
-
-The page's Panorama view pans one continuous strip per circle, under the finger, instead of jumping between single
-photographs. `panoramas.py` draws the band each circle photographed (the same placed and corrected frames as the
-spheres) at 8192 px for 360°, cut to the rows nearly every heading saw (about 42° tall), with true north in the
-middle column, into `public/views/pano/B-<floor>.webp` and `public/views/panoramas.json`. Only real pixels, except
-floor 14's 24° north-west gap, taken from its repaired sphere. Floors without a circle show the nearest one's and
-say so. About 4 MB for all six.
-
-    python3 interior/tools/drone/panoramas.py ~/Desktop/videos/dji_fly_20261125_115900_0179_….MP4
-
 ## Flat window views per apartment (`window_views.py`)
 
 One plain 16:9 picture per floor (4-16), per facing (the six apartment directions, `src/data/building.ts`) and per
