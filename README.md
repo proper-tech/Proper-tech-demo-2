@@ -35,10 +35,12 @@ npm run build && npm start
 | --- | --- |
 | Select a floor that is in stock | Home page: lift panel + clickable 3D building (`FloorPicker`, `three/BuildingScene`) |
 | Floor plan, 3D and 2D | `/[locale]/floors/[tower]/[floor]` (`FloorExperience`, `three/FloorScene`, `Plan2D`); each apartment's floor is painted its own colour (`flatColors` in `layouts.ts`) |
+| The view from each window on the floor plan | Amber points in front of the windows (3D and 2D), one per apartment and direction (`data/windowPoints.ts`); a click opens that window view for the floor (`WindowPointView`, pictures from `public/views/window`) |
 | Podium floors 1-4, the basement car park (B1), and each tower's roof (technical floor, as floor 17) | Same route, `A/B1`, `A/1`-`A/4`, `B/17`, `C/17` (`PodiumFloorExperience`, `three/PodiumScene`; data in `podium.ts`, `roof.ts`) |
 | Stairs, lifts, escalators | `three/Cores.tsx`, used by the tower, podium and roof floors |
 | 3D apartment | `/[locale]/apartments/[id]`, "3D model" (`three/ApartmentModel`) |
-| 360° view in every room, walking between rooms | Same page, "360° tour" (the rendered tour of its plan, `public/tour/<plan>`); add `?view=tour` to link straight to it |
+| 360° view in every room, walking between rooms | Same page, "360° tour" (the photographic tour of its plan, `public/tour-hd/<plan>`, made from the rendered one); add `?view=tour` to link straight to it |
+| Photographic 360° tours (every apartment, floors 4-16) | `public/tour-hd/<plan>`: the rooms repainted as photographs, a photo per colour scheme, the real view sharp in the windows; built by `interior/tools/hd_tours.mjs` (how: `interior/README.md`, last section) |
 | Change floor, wall, furniture colours | "Finishes" panel (`data/finishes.ts`) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
 | Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
@@ -50,8 +52,8 @@ npm run build && npm start
 - **Layouts**: `src/data/layouts.ts`. Rooms are rectangles in metres; doors and windows are
   entries in `openings`. The 3D model, 2D plan and size table all come from this file.
 - **Rendered 360° tours**: one self-contained file per plan (panoramas, plan and scripts inside) in
-  `public/tour/<plan>/index.html`, served at `/tour/<plan>` (`/tour` is plan D). They are the 360° tour
-  on every apartment page (`ApartmentExperience.tsx`); A4 uses A's.
+  `public/tour/<plan>/index.html`, served at `/tour/<plan>` (`/tour` is plan D). The apartment pages show
+  their photographic copies, `public/tour-hd/<plan>` (`ApartmentExperience.tsx`); A4 uses A's.
   D, F and E are rendered from the Blender scenes; C, A and B are D, F and E mirrored. How they are made:
   `interior/README.md`. They do not use the site's code or data.
 - **Film**: `public/media/film.mp4` and `film-poster.webp` are rendered in Blender (EEVEE) from the site's

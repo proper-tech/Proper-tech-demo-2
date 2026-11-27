@@ -26,6 +26,10 @@ interior/renders/**/*.log
 # rebuild it with interior/tools/build_a1.py (see interior/README.md)
 interior/A1.blend
 
+# The repainted panoramas the photographic tours are built from (about 110 MB; interior/tools/hd_prepare.mjs,
+# hd_tours.mjs). The published tours, public/tour-hd/, are committed.
+interior/hd/
+
 # Poly Haven assets for the upgraded interiors (interior\fetch_assets.bat downloads them)
 interior/assets
 interior/assets.zip

@@ -5,11 +5,22 @@ const config: NextConfig = {
     // Models, video, tours, the drone's views and textures are big and change rarely: browsers keep them for a
     // day and use the cached copy while checking for a newer one for a further week.
     const cache = [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }];
-    const daily = ['/models/:path*', '/media/:path*', '/tour/:path*', '/tour-a/:path*', '/tour-d/:path*', '/views/:path*', '/plans/:path*', '/hdri/:path*', '/draco/:path*', '/logo/:path*', '/og/:path*'];
-    // The tours' pictures are named after a hash of their content (interior/tools/split_tours.py): a changed
-    // picture gets a new name, so a cached one never goes stale. Listed last, so it wins over /tour above.
+    const daily = ['/models/:path*', '/media/:path*', '/tour/:path*', '/tour-hd/:path*', '/tour-a/:path*', '/tour-d/:path*', '/views/:path*', '/plans/:path*', '/hdri/:path*', '/draco/:path*', '/logo/:path*', '/og/:path*'];
+    // The tours' pictures are named after a hash of their content (interior/tools/split_tours.py, hd_tours.mjs):
+    // a changed picture gets a new name, so a cached one never goes stale. Listed last, so they win over the above.
     const forever = [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }];
-    return [...daily.map((source) => ({ source, headers: cache })), { source: '/tour/:plan/img/:file', headers: forever }];
+    // A tour's page names those pictures and holds its scripts, so it is the one file that changes when a tour is
+    // rebuilt: browsers check it every time (a small "not modified" answer when it hasn't changed), or a buyer would
+    // see the old tour for up to a day after a fix.
+    const check = [{ key: 'Cache-Control', value: 'public, no-cache' }];
+    return [
+      ...daily.map((source) => ({ source, headers: cache })),
+      { source: '/tour/:plan/img/:file', headers: forever },
+      { source: '/tour-hd/:plan/img/:file', headers: forever },
+      { source: '/tour-hd/outside/:file', headers: forever },
+      { source: '/tour/:plan/index.html', headers: check },
+      { source: '/tour-hd/:plan/index.html', headers: check },
+    ];
   },
   async redirects() {
     // The site has no language-neutral pages; send "/" to the default language.

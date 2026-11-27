@@ -259,6 +259,13 @@ const zh: Dict = {
     corridor: '走廊',
     core: { corridor: '电梯厅', stair: '楼梯', lifts: '电梯', shafts: '', hoa: '业主委员会', trash: '垃圾间', hall: '', room: '', steps: '', exit: '通往屋顶游乐场' },
     hoaNote: '在此位置设住户用房，代替一套住宅，不出售。',
+    looking: { NE: '东北', E: '东', SE: '东南', SW: '西南', W: '西', NW: '西北' },
+    windowsHint: '窗户上的琥珀色圆点可查看窗外景观',
+    windowPoint: '{id} 号公寓朝{dir}的窗外景观',
+    windowTitle: '{id} 号公寓，朝{dir}',
+    windowRooms: '朝此方向开窗的房间：{rooms}',
+    windowMore: '本层全部窗外景观',
+    close: '关闭',
   },
   podium: {
     name: '裙房（A座）',

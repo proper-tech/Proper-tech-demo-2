@@ -1147,6 +1147,161 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   pointer-events: auto;
 }
 
+/* the window points (FloorExperience): amber, as they open something, with a window mark; in the 3D view a round
+   button in front of the windows, in the 2D plan the same just outside the facade */
+.win-point {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgb(20 35 59 / 0.35);
+  cursor: pointer;
+  transition: scale 0.15s var(--ease-out);
+}
+
+.win-point svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.win-point:hover,
+.win-point:focus-visible {
+  scale: 1.18;
+}
+
+.plan-win-point {
+  cursor: pointer;
+}
+
+.plan-win-point circle {
+  fill: var(--amber);
+  stroke: #fff;
+  stroke-width: 0.09;
+  transition: scale 0.15s var(--ease-out);
+}
+
+.plan-win-point path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.05;
+}
+
+.plan-win-point:hover circle,
+.plan-win-point:focus-visible circle {
+  scale: 1.18;
+}
+
+.plan-win-point:focus-visible {
+  outline: none;
+}
+
+/* a window point's view: a solid panel over the dimmed floor page */
+.wp-dialog {
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100svh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 64px rgb(20 35 59 / 0.4);
+}
+
+.wp-dialog::backdrop {
+  background: rgb(20 35 59 / 0.6);
+}
+
+.wp-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: clamp(12px, 2vw, 20px);
+}
+
+.wp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wp-head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+}
+
+.wp-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.wp-close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.wp-close:hover {
+  border-color: var(--ink);
+}
+
+.wp-picture {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--ink);
+}
+
+.wp-picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.wp-picture.is-loaded img {
+  opacity: 1;
+}
+
+.wp-rooms,
+.wp-note {
+  margin: 0;
+  color: var(--stone);
+  font-size: 0.8125rem;
+}
+
+.wp-rooms {
+  color: var(--ink);
+  font-size: 0.9375rem;
+}
+
+.wp-more {
+  justify-self: start;
+  color: var(--sky);
+  font-size: 0.9375rem;
+}
+
 .room-tag,
 .unit-tag {
   display: grid;
@@ -2817,6 +2972,21 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 .story-leg[data-side='right'] {
   justify-items: end;
+}
+
+/* the story pages: on touch screens a swipe inside the story settles on a whole chapter, one at a time (mouse,
+   trackpad and keys are paged by Motion.tsx). Only the chapters are snap points, so the rest of the page scrolls
+   freely; the negative margin cancels the header's scroll padding so a chapter lands on the flight's waypoint. */
+@media (hover: none) and (pointer: coarse) {
+  html.js-motion:has(.story) {
+    scroll-snap-type: y proximity;
+  }
+
+  html.js-motion .story-chapter {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    scroll-margin-top: calc(var(--header) * -1);
+  }
 }
 
 .story-leg .chapter-caption {

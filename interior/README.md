@@ -133,3 +133,33 @@ From DJI video with the drone's flight data in it (one run makes a sphere for ev
 gives the tours three chips in the "Interior colors" panel, shown once a tour has the pictures
 (`add_evening.py <tour> <plan> <dir> light|dark`). `interior\render_next.bat` renders the evening and both packages
 (66 views, ~3.5-4 h) and pushes them to the `interior-renders` branch.
+
+## Photographic tours (`public/tour-hd/`)
+
+Every apartment page opens its plan's tour from `public/tour-hd/<plan>/` (`tourPath` in
+`src/components/ApartmentExperience.tsx`): the same rooms as `public/tour/<plan>/`, repainted as photographs by an
+image model, with one photo per interior colour scheme instead of the colour masks, and the drone's view drawn
+sharp through the windows.
+
+1. **Repaint** each room of D, F and E (22 panoramas, the 4096 × 2048 `hi` pictures of the published tours) with
+   GPT Image 2.6 at 4K in Higgsfield, asked to keep every edge where it is, to paint the window glass flat white and
+   to add no curtains. Then, from each repainted room, the three colour schemes (navy, sage, charcoal), with the
+   exact colours of `TOUR_PALETTES` in the tour for walls, kitchen units, sofa, chairs and headboards, armchairs and
+   throws, and duvets, each recoloured over the whole object. Check every result against its render (edges in the
+   same place, glass where the render's glass is) before using it.
+2. **Prepare** each picture into `interior/hd/<plan>/` (not in git, about 110 MB):
+   `node interior/tools/hd_prepare.mjs <repainted> <render's window mask> interior/hd/D/living.jpg interior/hd/D/living-glass.png`
+   (and `living-navy.jpg`, `living-navy-glass.png`, ...). It blends the 360° join and finds the glass.
+3. **Build** the tours: `node interior/tools/hd_tours.mjs`. C, A and B are made from D, F and E turned over and half
+   a turn round, as `mirror_tour.py` makes the rendered ones. It rewrites `public/tour-hd/` from scratch.
+
+The drone's photos stop some 20° below the horizon and are flat colour below that, which balcony glass (46° down)
+showed as a brown block. For every floor (4-16), each photo was repainted by GPT Image 2.6 with that band filled in (streets,
+roofs and cars seen from above: made up, not photographed), and `node interior/tools/hd_outside.mjs
+public/views/4k/B-16.jpg <repainted.png> interior/hd/outside/B-16.jpg` keeps every real pixel and takes only the band
+from it. The photos also stop some 11-14° above the horizon, which cut the nearby towers off flat on floors 4-13; each
+of those was repainted again with the towers finished upwards (rooftops continued from the floors below, no signs or
+lettering) and blended in with `... interior/hd/outside/B-NN.jpg <repainted.png> interior/hd/outside/B-NN.jpg --top <top>`.
+`hd_tours.mjs` publishes it to `public/tour-hd/outside/` and the tours use it in their windows instead of the
+photo; the views pages keep the real one. The colour masks, top views and plans still come from `public/tour/<plan>/img/`, so rebuild the HD tours after the
+rendered ones are republished. Evening pictures, where a tour has them, are the renders.

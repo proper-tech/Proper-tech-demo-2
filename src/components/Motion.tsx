@@ -50,8 +50,12 @@ export function Motion() {
     const intro = document.querySelector<HTMLElement>('.story-intro');
     const legs = [...document.querySelectorAll<HTMLElement>('.story-leg')];
     if (story && flight && intro && legs.length > 1) {
-      let want = 0;
+      let want = 0; // the time the scroll position asks for
+      let shown = 0; // the time the video is gliding through on its way there
+      let primed = false; // false until the video's length is known: then it starts where the scroll is
       let frame = 0;
+      let glide = 0;
+      let last = 0;
       // Neither video comes with the page (16 MB between them; page.tsx): once it has loaded, the sunset loop
       // starts over its still, and the flight downloads when the browser is idle. On a slow or data-saving
       // connection the still stays and the flight waits for the first scroll, as the intro hides it anyway.
@@ -83,7 +87,19 @@ export function Motion() {
       });
       const seek = () => {
         // one seek at a time: setting currentTime again mid-seek makes it start over and lag
-        if (flight.readyState >= 1 && !flight.seeking && Math.abs(flight.currentTime - want) > 1 / 60) flight.currentTime = want;
+        if (flight.readyState >= 1 && !flight.seeking && Math.abs(flight.currentTime - shown) > 1 / 60) flight.currentTime = shown;
+      };
+      // A flick of the wheel moves the scroll a long way at once; jumping straight there skips a run of frames and
+      // the flight stutters. Instead the video glides after the scroll, closing most of the gap within a few
+      // tenths of a second whatever the frame rate, so every scroll plays as continuous flight.
+      const step = (t: number) => {
+        const dt = last ? Math.min(t - last, 100) : 16;
+        last = t;
+        shown += (want - shown) * (1 - Math.exp(-dt / 140));
+        if (Math.abs(want - shown) < 1 / 48) shown = want;
+        seek();
+        if (shown !== want) glide = requestAnimationFrame(step);
+        else glide = last = 0;
       };
       const update = () => {
         frame = 0;
@@ -98,7 +114,12 @@ export function Motion() {
         }
         story.style.setProperty('--flight', fade.toFixed(3));
         story.style.setProperty('--p', (k / (stops.length - 1)).toFixed(4));
-        if (flight.duration) want = (k / (stops.length - 1)) * flight.duration;
+        if (flight.duration) {
+          want = (k / (stops.length - 1)) * flight.duration;
+          if (!primed) shown = want;
+          primed = true;
+        }
+        if (shown !== want && !glide) glide = requestAnimationFrame(step);
         seek();
         if (hero) {
           if (fade >= 1 && !hero.paused) hero.pause();
@@ -121,6 +142,59 @@ export function Motion() {
         flight.removeEventListener('seeked', seek);
         flight.removeEventListener('loadedmetadata', update);
         cancelAnimationFrame(frame);
+        cancelAnimationFrame(glide);
+      });
+    }
+
+    // The story pages: inside it, one turn of the wheel, one trackpad swipe or one key press moves a whole
+    // chapter, gliding to the next one's top (the flight's waypoint). The rest of the home page scrolls freely
+    // (CLAUDE.md): past the last chapter the page scrolls on as usual, and coming back up it stops at the last
+    // chapter first. Touch is paged by CSS snapping on the chapters alone (globals.css, "the story pages").
+    if (story && intro && legs.length > 1) {
+      const stops = () => [intro, ...legs].map((el) => el.getBoundingClientRect().top + scrollY);
+      const target = (down: boolean) => {
+        const all = stops();
+        const y = scrollY;
+        const first = all[0];
+        const last = all[all.length - 1];
+        if (down) return y >= first - 4 && y < last - 4 ? all.find((s) => s > y + 4) : undefined;
+        if (y > last + 4) return y < last + innerHeight * 0.9 ? last : undefined; // the last chapter, seen from below
+        return y > first + 4 ? [...all].reverse().find((s) => s < y - 4) : undefined;
+      };
+      const go = (to: number) => scrollTo({ top: to, behavior: 'smooth' });
+      // A trackpad swipe sends a stream of wheel events that coasts on for a second or more. Only the start of
+      // a gesture moves a chapter: the stream must have paused, and the last slide must be over.
+      let lastWheel = 0;
+      let busyUntil = 0;
+      const onWheel = (e: WheelEvent) => {
+        if (e.ctrlKey || e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // pinch zoom, sideways
+        const now = performance.now();
+        const paused = now - lastWheel > 160;
+        lastWheel = now;
+        const to = target(e.deltaY > 0);
+        if (to === undefined) return;
+        e.preventDefault();
+        if (!paused || now < busyUntil) return;
+        busyUntil = now + 700;
+        go(to);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+        const el = e.target as HTMLElement | null;
+        if (el?.closest('input, textarea, select, button, [contenteditable], [role="slider"]')) return;
+        const down = e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey);
+        const up = e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey);
+        if (!down && !up) return;
+        const to = target(down);
+        if (to === undefined) return;
+        e.preventDefault();
+        go(to);
+      };
+      addEventListener('wheel', onWheel, { passive: false });
+      addEventListener('keydown', onKey);
+      off.push(() => {
+        removeEventListener('wheel', onWheel);
+        removeEventListener('keydown', onKey);
       });
     }
 

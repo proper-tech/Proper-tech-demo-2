@@ -18,6 +18,8 @@ import { unitCentre } from '@/lib/unitCentre';
 import { preloadFloor3D } from './three/preload';
 import { filterQuery, isFiltered, matches, NO_FILTER, readFilter, type UnitFilter } from '@/lib/unitFilter';
 import { UnitActions } from './UnitActions';
+import { windowPoints, type WindowPoint } from '@/data/windowPoints';
+import { WindowPointView } from './WindowPointView';
 
 // the 3D view's code and pictures start downloading as soon as this page's code runs
 preloadFloor3D('B');
@@ -153,7 +155,17 @@ function PlanDoor({ door }: { door: NonNullable<CoreSpace['door']> }) {
   );
 }
 
-const planTx = (layout: Layout): PlanTx => ({ ox: PX(layout.origin[0]), sx: 1, oz: PY(layout.origin[1]), sz: 1 });
+/** A window with its cross bar, on the window points of the 3D view. */
+function WindowMark() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="6" y="5" width="12" height="14" rx="1" />
+      <path d="M12 5v14M6 12h12" />
+    </svg>
+  );
+}
+
+const planTx = (layout: Layout): PlanTx =>({ ox: PX(layout.origin[0]), sx: 1, oz: PY(layout.origin[1]), sz: 1 });
 
 /** The apartment's colour as a CSS variable, for its tag, list entry and 2D plan. */
 const flat = (plan: PlanId) => ({ '--flat': flatColors[plan] }) as CSSProperties;
@@ -221,6 +233,11 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
     return () => clearTimeout(id);
   }, [cover, drawn]);
 
+  // the window points: one per apartment and direction its windows look (windowPoints.ts); a click opens that view
+  const points = useMemo(() => summary.units.flatMap((u) => windowPoints(layouts[u.layout]).map((p) => ({ unit: u, point: p }))), [summary]);
+  const [looking, setLooking] = useState<{ unit: (typeof summary.units)[number]; point: WindowPoint } | null>(null);
+  const pointLabel = (id: string, p: WindowPoint) => fmt(t.floor.windowPoint, { id, dir: t.floor.looking[p.facing] });
+
   const tags = useMemo(() => {
     const out: Record<string, { title: string; detail: string }> = {};
     for (const u of summary.units) {
@@ -267,6 +284,19 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                 <b>{t.floor.core.exit}</b>
               </div>
             )}
+            {points.map(({ unit: u, point: p }) => (
+              <button
+                key={`${u.id}:${p.facing}`}
+                type="button"
+                className="win-point"
+                data-anchor={`win:${u.id}:${p.facing}`}
+                aria-label={pointLabel(u.id, p)}
+                title={pointLabel(u.id, p)}
+                onClick={() => setLooking({ unit: u, point: p })}
+              >
+                <WindowMark />
+              </button>
+            ))}
           </div>
         </div>
         {(view === '2d' || !drawn) && (
@@ -344,6 +374,26 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   </g>
                 );
               })}
+              {/* the window points, just outside the facade in front of their windows */}
+              {points.map(({ unit: u, point: p }) => {
+                const out = { N: [0, 0.55], S: [0, -0.55], E: [0.55, 0], W: [-0.55, 0] }[p.side];
+                return (
+                  <g
+                    key={`${u.id}:${p.facing}`}
+                    className="plan-win-point"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={pointLabel(u.id, p)}
+                    transform={`translate(${PX(p.X + out[0])} ${PY(p.Y + out[1])})`}
+                    onClick={() => setLooking({ unit: u, point: p })}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setLooking({ unit: u, point: p }))}
+                  >
+                    <title>{pointLabel(u.id, p)}</title>
+                    <circle r={0.42} />
+                    <path d="M-0.17 -0.19 H0.17 V0.19 H-0.17 Z M0 -0.19 V0.19 M-0.17 0 H0.17" />
+                  </g>
+                );
+              })}
             </svg>
           </div>
         )}
@@ -373,7 +423,8 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             </button>
           </div>
         </div>
-        {view === '3d' && <p className="stage-hint">{t.floor.hint}</p>}
+        <p className="stage-hint">{view === '3d' ? `${t.floor.hint} · ${t.floor.windowsHint}` : t.floor.windowsHint}</p>
+        {looking && <WindowPointView unit={looking.unit} point={looking.point} onClose={() => setLooking(null)} />}
         {/* the compass: the 3D view turns it with the camera (FloorScene); the 2D plan is drawn north up */}
         <div className={view === '2d' ? 'compass is-plan' : 'compass'} ref={compass} aria-hidden="true">
           <svg viewBox="-20 -20 40 40">

@@ -21,8 +21,12 @@ const ApartmentScene = dynamic(() => import('./three/ApartmentScene'), {
   loading: () => <div className="stage-loading" />,
 });
 
-/** The 360° tour is the rendered one in public/tour/<plan>/index.html (a self-contained file per plan, A to F),
- *  keyed by plan letter, so A4 (plan A on floor 4) opens plan A's tour. */
+/** The 360° tour is the photographic one in public/tour-hd/<plan>/index.html (interior/tools/hd_tours.mjs: the
+ *  rendered tour of public/tour/<plan>/ with its rooms repainted as photographs and a photo per interior colour
+ *  scheme), keyed by plan letter, so A4 (plan A on floor 4) opens plan A's tour; the floor picks the view in its
+ *  windows. "r" only changes the address once: the tour pages used to be cached for a day, and browsers holding
+ *  such a copy would not ask again. They are checked every time now (next.config.ts), so it needn't change again. */
+const tourPath = (plan: string) => `/tour-hd/${plan}/index.html?r=2&`;
 type Mode = 'model' | 'plan' | 'tour';
 
 /** A ring with an arrow round it: the 360° tour's mark on its buttons. */
@@ -124,7 +128,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
             className="apt-tour-frame"
             // tower and floor pick the drone's real view through the windows, from the half-size spheres: the
             // tour's rooms are no sharper, and they are a quarter of the download (src/data/views.ts)
-            src={`/tour/${layout.plan}/index.html?tower=${unit.tower}&floor=${unit.floor}&views=${SMALL_MANIFEST}`}
+            src={`${tourPath(layout.plan)}tower=${unit.tower}&floor=${unit.floor}&views=${SMALL_MANIFEST}`}
             title={t.apt.modeTour}
             allow="fullscreen"
             onLoad={(e) => {

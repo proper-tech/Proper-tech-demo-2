@@ -264,6 +264,13 @@ const en = {
     corridor: 'Corridor',
     core: { corridor: 'Lift lobby', stair: 'Stairs', lifts: 'Lifts', shafts: '', hoa: 'Homeowners\' association', trash: 'Refuse', hall: '', room: '', steps: '', exit: 'To the roof playground' },
     hoaNote: 'A room for the residents, in place of an apartment. Not for sale.',
+    looking: { NE: 'north-east', E: 'east', SE: 'south-east', SW: 'south-west', W: 'west', NW: 'north-west' },
+    windowsHint: 'Amber points on the windows show the view from them',
+    windowPoint: 'The view from {id}, looking {dir}',
+    windowTitle: 'From {id}, looking {dir}',
+    windowRooms: 'Windows this way: {rooms}',
+    windowMore: 'All window views from this floor',
+    close: 'Close',
   },
   podium: {
     name: 'Podium (block A)',

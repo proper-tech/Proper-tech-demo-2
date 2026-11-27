@@ -25,11 +25,16 @@ import { layoutArea, m, maxCeiling } from '@/lib/geometry';
  *  (Motion.tsx), so its 6 MB never hold up the first paint. */
 const HERO = '/media/hero-sunset';
 const HERO_LOOP = '/media/hero-loop.mp4';
-/** The drone flight behind the chapters, made from four frames of the film (scripts/build-film.py --stills
- *  1000,240,550,700), each sharpened with Magnific, and Kling 2.5 legs between them; a keyframe every few
- *  frames, so it seeks smoothly as you scroll. */
-const FLIGHT = '/media/flight.mp4';
-const FLIGHT_POSTER = '/media/flight-poster.jpg';
+/** The drone flight behind the chapters: the first flight's camera path (four frames of the film, scripts/
+ *  build-film.py --stills 1000,240,550,700, with Kling 2.5 legs between them, one per chapter), repainted frame
+ *  for frame as a sunset over Ulaanbaatar by Seedance 2.5's video edit in Higgsfield, with stills in the hero's
+ *  light and materials as its references, so every move is the old one and only the city, light and building
+ *  surfaces changed. The edit's brightness flickered from frame to frame, which shimmers when scrolled, so it
+ *  was evened out (ffmpeg deflicker and a temporal denoise) before encoding with a keyframe every few frames,
+ *  so it seeks smoothly. Browsers keep /media for a week (next.config.ts), so a new flight goes in under a new
+ *  name, never over the old one. */
+const FLIGHT = '/media/flight-sunset-3.mp4';
+const FLIGHT_POSTER = '/media/flight-sunset-3-poster.jpg';
 /** The window views' band in "Step inside": the drone's photograph out of the top floor's north-east apartment
  *  (B1606) and the image model's three other seasons of it (public/views/window/NE/floor-16), crossfading. */
 const BAND_SEASONS = ['winter', 'spring', 'summer', 'autumn'] as const;

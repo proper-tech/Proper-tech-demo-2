@@ -47,14 +47,18 @@ writing Next.js code; APIs have moved since older versions (params are Promises,
   the build scripts export each `.glb` next to its open `.blend`. They are gitignored; never move or
   delete them.
 - `interior/` (about 1 GB) is the 360° tour render pipeline with its own README; `public/tour/<plan>/` are
-  its published, self-contained tours. Don't edit the tour HTML by hand.
+  its published, self-contained tours. Don't edit the tour HTML by hand. `public/tour-hd/<plan>/` (the apartment pages'
+  photographic tours) is built from them by `interior/tools/hd_tours.mjs`; rebuild it, don't edit it.
 - Large binaries: anything over a few MB in `public/` costs every visitor. Prefer WebP for pictures.
 
 ## Decisions to keep
 
 - The home page scrolls freely. Section-by-section paging and CSS scroll snapping were tried and removed
-  at the owner's request; don't bring them back.
-- Every plan A-F has a rendered 360° tour, so the apartment page's tour is always the rendered one.
+  at the owner's request; don't bring them back. The one exception, also the owner's request: inside the
+  hero story (intro and its four chapters over the flight) a wheel turn, swipe or key moves one chapter
+  (`Motion.tsx`, and touch snapping on `.story-chapter` only). Below the story the page scrolls freely.
+- Every plan A-F has a rendered 360° tour and a photographic copy of it; the apartment page's tour is always
+  the photographic one (`public/tour-hd/`).
 - The share card draws only numbers and Latin letters (the bundled font has no Cyrillic or Chinese);
   the words go in the metadata.
 - The finder (bedrooms, morning or evening sun) travels in the URL as `?beds=&sun=`.

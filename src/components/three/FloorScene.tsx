@@ -7,6 +7,7 @@ import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, 
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
 import { defaultFinish, mutedFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
+import { windowPoints } from '@/data/windowPoints';
 import { getPodiumFloor } from '@/data/podium';
 import type { Layout, Unit } from '@/data/types';
 import { maxCeiling } from '@/lib/geometry';
@@ -400,6 +401,14 @@ export default function FloorScene({ units, core, layer, hovered, onHover, onOpe
         const [X, Y] = unitCentre(layout);
         return { id: `unit:${u.id}`, position: [sx(X), maxCeiling(layout) + 0.6, sz(Y)] };
       }),
+      // the window points (FloorExperience): half a metre out from the facade, at window height, so a point stands
+      // in front of its windows from whichever side the camera looks
+      ...units.flatMap((u) =>
+        windowPoints(layouts[u.layout]).map((p): Anchor => {
+          const out = { N: [0, 0.5], S: [0, -0.5], E: [0.5, 0], W: [-0.5, 0] }[p.side];
+          return { id: `win:${u.id}:${p.facing}`, position: [sx(p.X + out[0]), 1.4, sz(p.Y + out[1])] };
+        }),
+      ),
       // the homeowners' association room (block B, floor 4), where apartment 02 would be
       ...core
         .filter((c) => c.id === 'hoa')
