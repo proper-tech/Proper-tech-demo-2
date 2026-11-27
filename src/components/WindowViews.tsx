@@ -268,7 +268,28 @@ export function WindowViews() {
   // metres the Window view was moved from its photograph to this floor's eye level (positive: raised)
   const winLift = win?.kind === 'derived' && win.from != null ? win.height - (windowView(win.facing, win.from)?.height ?? win.height) : 0;
   const cardinal = points[Math.round(heading / 45) % 8];
+  // a direction: the 360° view turns to it; the Window view (one apartment's windows, a picture that does not
+  // turn) opens the apartment on this floor whose windows face that way, or, with none, the 360° view turned to it
   const dirs = [0, 90, 180, 270] as const;
+  // the button lit: the direction nearest the view's (the Window view's apartments face NE, SE... too)
+  const nearestDir = dirs.reduce((a, d) => (Math.abs(turn(heading, d)) < Math.abs(turn(heading, a)) ? d : a), dirs[0]);
+  const lookTo = (d: number) => {
+    setRotate(false);
+    setPick(null);
+    if (inWindow) {
+      const best = summary?.units.reduce<Unit | null>(
+        (a, u) => (!a || Math.abs(turn(facingHeading(u.facing), d)) < Math.abs(turn(facingHeading(a.facing), d)) ? u : a),
+        null,
+      );
+      if (best && Math.abs(turn(facingHeading(best.facing), d)) <= 45) {
+        setPos(best.pos);
+        aim.current = facingHeading(best.facing);
+        return;
+      }
+      setMode('sphere');
+    }
+    aim.current = d;
+  };
 
   return (
     <div className="wv">
@@ -413,24 +434,20 @@ export function WindowViews() {
               ▼
             </button>
           </div>
-          <div className="wv-dirs" role="group" aria-label={v.look} hidden={inWindow}>
+          <div className="wv-dirs" role="group" aria-label={v.look}>
             {dirs.map((d, i) => (
               <button
                 key={d}
                 type="button"
                 className="ptour-tool"
-                aria-pressed={Math.abs(turn(heading, d)) < 22.5}
-                onClick={() => {
-                  aim.current = d;
-                  setRotate(false);
-                  setPick(null);
-                }}
+                aria-pressed={d === nearestDir}
+                onClick={() => lookTo(d)}
               >
                 {v.dirs[i]}
               </button>
             ))}
           </div>
-          <div className="wv-compass" aria-label={`${Math.round(heading)}° ${cardinal}`}>
+          <div className="wv-compass" aria-label={`${Math.round(heading) % 360}° ${cardinal}`}>
             <div className="wv-rose" style={{ transform: `rotate(${-heading}deg)` }}>
               {(['N', 'E', 'S', 'W'] as const).map((k, i) => (
                 <b key={k} className={`wv-rose-${k}`}>
@@ -441,7 +458,7 @@ export function WindowViews() {
             </div>
             <span className="wv-needle" />
             <small>
-              {Math.round(heading)}° {cardinal}
+              {Math.round(heading) % 360}° {cardinal}
             </small>
           </div>
         </div>
