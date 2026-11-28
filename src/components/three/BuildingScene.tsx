@@ -302,6 +302,31 @@ function Environment() {
 }
 // not preloaded: the street loads after the buildings are on screen (see BuildingScene)
 
+/** The map's buildings with no photo of their own (beyond the near ones measured on the drone's photo) wear stock
+ *  facades: red brick and near-black glass, which read as a toy town beside the real ones. Ulaanbaatar's blocks are
+ *  mostly pale panel and render, so these are greyed most of the way and their contrast softened, the glass lifted
+ *  to a dull grey-blue: they recede behind the site and its real neighbours instead of competing with them. The
+ *  stock facades recoloured to a measured building's colour (their names carry the colour) are left as they are. */
+const STOCK_FACADE = /^Film Facade Facade0(18A|19A|20A|06)$/;
+function toneStockFacade(m: MeshStandardMaterial) {
+  m.userData.toned = true;
+  const glass = m.name.endsWith('006');
+  // linear values: the wall's own colour kept at 30% (glass 40%), then pulled 30% towards a light warm grey
+  const keep = glass ? '0.4' : '0.3';
+  const mid = glass ? 'vec3(0.16, 0.18, 0.21)' : 'vec3(0.40, 0.38, 0.35)';
+  m.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>
+      float stockLum = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+      diffuseColor.rgb = mix(vec3(stockLum) * vec3(1.0, 0.98, 0.95), diffuseColor.rgb, ${keep});
+      diffuseColor.rgb = mix(${mid}, diffuseColor.rgb, 0.7);`,
+    );
+  };
+  m.customProgramCacheKey = () => `stock-facade-${glass ? 'glass' : 'wall'}`;
+  m.needsUpdate = true;
+}
+
 /** The real city round the site, the same as in the film: OpenStreetMap buildings with photo facades and
  *  the streets (public/models/blocks/city.glb, made by scripts/build-film.py --city-glb; map data ©
  *  OpenStreetMap contributors), on plain ground out to the horizon. Not raycast, so the eye-level tour only
@@ -335,7 +360,10 @@ function City() {
       else if (m.name === 'Film Roof' && !m.userData.dressed) {
         m.userData.dressed = true;
         dressRoofs(m);
-      } else if (m.map) m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
+      } else if (m.map) {
+        m.map.anisotropy = gl.capabilities.getMaxAnisotropy(); // walls seen edge-on stay sharp
+        if (STOCK_FACADE.test(m.name) && !m.userData.toned) toneStockFacade(m);
+      }
     });
   }, [scene, env, gl]);
   // trees go only where neither the city nor the site's own street model has anything (cityDressing)

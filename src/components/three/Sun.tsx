@@ -19,10 +19,10 @@ const DISTANCE = 260;
  *  like the real sky. Radius of the dome, distance of the disc (inside the camera's far plane
  *  of 1200 m) and the disc's size including its glow (about 12° across). */
 const SKY_RADIUS = 1000;
-/** Haze over the city (metres from the camera): clear over the site, the far edge of the city (cut by the
- *  camera's far plane at 1200 m) almost all horizon colour. */
-const FOG_NEAR = 420;
-const FOG_FAR = 1250;
+/** Haze over the city (metres from the camera): clear over the site and its near neighbours, the far edge of the
+ *  city (cut by the camera's far plane at 1200 m) all but horizon colour, so the map's distant blocks recede. */
+const FOG_NEAR = 300;
+const FOG_FAR = 1150;
 const DISC_DISTANCE = 900;
 const DISC_SIZE = 2 * DISC_DISTANCE * Math.tan((6 * Math.PI) / 180);
 /** In the building overview the camera looks down on the complex and the real sky is out of
