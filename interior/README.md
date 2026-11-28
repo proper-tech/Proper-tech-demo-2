@@ -170,13 +170,12 @@ lettering) and blended in with `... interior/hd/outside/B-NN.jpg <repainted.png>
 photo; the views pages keep the real one. The colour masks, top views and plans still come from `public/tour/<plan>/img/`, so rebuild the HD tours after the
 rendered ones are republished. Evening pictures, where a tour has them, are the renders.
 
-<<<<<<< HEAD
 Plan F's kitchen (and A's) had a wicker basket half inside the tall fridge unit in every repainted photo
 (`upgrade_dress.py` placed props by a guessed radius; it now checks each prop's real footprint against the tall
 units, hobs and sinks beside the worktop). `python3 -I interior/tools/hd_drop_basket.py public` painted it out of
 the published HD photos; run `... hd_drop_basket.py files interior/hd/F/kitchen.jpg interior/hd/F/kitchen-navy.jpg
 ...` on the repainted sources (the warm-neutral one first) before rebuilding the HD tours, or the basket comes back.
-=======
+
 ## Languages (English, Chinese, Mongolian)
 
 The tours are built in Mongolian, with the colour panel and the top view in English. Every published tour also
@@ -195,4 +194,3 @@ room or floor in them), then:
 A new text in a tour that the table lacks stays in the tour's own language until it is added. The Chinese and the
 Mongolian of the English panels want checking by a native speaker. The whole-building viewer underneath the tours
 (not shown on the site) is not translated.
->>>>>>> b2932374d4921ab4c4c8f9094e7a0c50832670ec
