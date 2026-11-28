@@ -41,7 +41,7 @@ npm run build && npm start
 | 3D apartment | `/[locale]/apartments/[id]`, "3D model" (`three/ApartmentModel`) |
 | 360° view in every room, walking between rooms | Same page, "360° tour" (the photographic tour of its plan, `public/tour-hd/<plan>`, made from the rendered one); add `?view=tour` to link straight to it |
 | Photographic 360° tours (every apartment, floors 4-16) | `public/tour-hd/<plan>`: the rooms repainted as photographs, a photo per colour scheme, the real view sharp in the windows; built by `interior/tools/hd_tours.mjs` (how: `interior/README.md`, last section) |
-| Change floor, wall, furniture colours | "Finishes" panel (`data/finishes.ts`) |
+| Floor, wall, furniture colours of the 3D models | Fixed in `data/finishes.ts` (no picker on the page) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
 | Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
 | Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn` |

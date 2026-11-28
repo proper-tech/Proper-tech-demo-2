@@ -85,16 +85,44 @@ export function Motion() {
         hero?.removeEventListener('playing', playing);
         clearTimeout(idle);
       });
+      // Forward, the video plays its way to the scroll's frame (rolling) rather than seeking there: a chapter is
+      // 120 frames and the page glides to it in well under a second, and a browser manages only a few dozen seeks
+      // a second, so seeking skipped frames by the handful and the flight jolted. Playing decodes every frame in
+      // order, at up to six times speed, slowing as it nears the frame. Backward (no browser plays in reverse) and
+      // for the last frames, it seeks.
+      let rolling = false;
+      const stopRolling = () => {
+        if (!rolling) return;
+        rolling = false;
+        flight.pause();
+        flight.playbackRate = 1;
+        shown = flight.currentTime;
+      };
       const seek = () => {
         // one seek at a time: setting currentTime again mid-seek makes it start over and lag
+        if (rolling) return;
         if (flight.readyState >= 1 && !flight.seeking && Math.abs(flight.currentTime - shown) > 1 / 60) flight.currentTime = shown;
       };
       // A flick of the wheel moves the scroll a long way at once; jumping straight there skips a run of frames and
-      // the flight stutters. Instead the video glides after the scroll, closing most of the gap within a few
-      // tenths of a second whatever the frame rate, so every scroll plays as continuous flight.
+      // the flight stutters. Instead the video follows the scroll, closing most of the gap within a few tenths of a
+      // second, so every scroll plays as continuous flight.
       const step = (t: number) => {
         const dt = last ? Math.min(t - last, 100) : 16;
         last = t;
+        const gap = want - (rolling ? flight.currentTime : shown);
+        // it needs frames ahead to start; once going, a moment's wait for the decoder is no reason to stop
+        if (gap > 3 / 24 && (rolling || (flight.readyState >= 3 && !flight.seeking))) {
+          const rate = Math.min(6, Math.max(0.5, gap / 0.22));
+          if (!rolling) {
+            rolling = true;
+            flight.playbackRate = rate;
+            flight.play().catch(() => stopRolling());
+          } else if (Math.abs(flight.playbackRate - rate) > rate * 0.1) flight.playbackRate = rate;
+          shown = flight.currentTime;
+          glide = requestAnimationFrame(step);
+          return;
+        }
+        stopRolling();
         shown += (want - shown) * (1 - Math.exp(-dt / 140));
         if (Math.abs(want - shown) < 1 / 48) shown = want;
         seek();
@@ -143,6 +171,7 @@ export function Motion() {
         flight.removeEventListener('loadedmetadata', update);
         cancelAnimationFrame(frame);
         cancelAnimationFrame(glide);
+        stopRolling();
       });
     }
 
@@ -162,20 +191,31 @@ export function Motion() {
         return y > first + 4 ? [...all].reverse().find((s) => s < y - 4) : undefined;
       };
       const go = (to: number) => scrollTo({ top: to, behavior: 'smooth' });
-      // A trackpad swipe sends a stream of wheel events that coasts on for a second or more. Only the start of
-      // a gesture moves a chapter: the stream must have paused, and the last slide must be over.
+      // A trackpad swipe sends a stream of wheel events that coasts on, fading, for a second or more. Only the
+      // start of a gesture moves a chapter: after a pause in the stream, a turn the other way, or a push clearly
+      // harder than the fading coast it interrupts (a new swipe while the last one still coasts; waiting for a
+      // pause there swallowed it, and a swipe back up did nothing). A second gesture the same way waits for the
+      // slide to be over; one the other way turns it round at once.
       let lastWheel = 0;
+      let lastDir = 0;
+      let lastSize = 0;
       let busyUntil = 0;
+      let busyDir = 0;
       const onWheel = (e: WheelEvent) => {
         if (e.ctrlKey || e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // pinch zoom, sideways
         const now = performance.now();
-        const paused = now - lastWheel > 160;
+        const dir = Math.sign(e.deltaY);
+        const size = Math.abs(e.deltaY);
+        const fresh = now - lastWheel > 160 || dir !== lastDir || size > lastSize * 1.6 + 4;
         lastWheel = now;
-        const to = target(e.deltaY > 0);
+        lastDir = dir;
+        lastSize = size;
+        const to = target(dir > 0);
         if (to === undefined) return;
         e.preventDefault();
-        if (!paused || now < busyUntil) return;
+        if (!fresh || (now < busyUntil && dir === busyDir)) return;
         busyUntil = now + 700;
+        busyDir = dir;
         go(to);
       };
       const onKey = (e: KeyboardEvent) => {

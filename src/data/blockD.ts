@@ -38,8 +38,6 @@ const LIFT_S = 27.75;
 
 const box = (u0: number, u1: number, v0: number, v1: number): Pt[] => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
 
-/** Main block, outside of its walls. */
-export const blockDMain = box(-WALL, 18 + WALL, -WALL, 30 + WALL);
 /** Counter-clockwise outline of every floor: the main block with the core on its east side. */
 export const blockDOutline: Pt[] = [
   [-WALL, -WALL], [18 + WALL, -WALL], [18 + WALL, CORE_S], [CORE_E, CORE_S], [CORE_E, 30 + WALL], [-WALL, 30 + WALL],
@@ -65,8 +63,6 @@ export const blockDToSite = ([x, y]: Pt): Pt => [ORIGIN[0] + x * EAST[0] + y * N
 /** The block's frame on the site plan: where axes X1 and Y1 cross, and the direction of the X axes
  *  (radians from site east), to place the rest of the complex round the 360° view. */
 export const blockDFrame = { origin: ORIGIN, angle: Math.atan2(EAST[1], EAST[0]) };
-/** Size of the annex footprint in site.json, to check against the drawings (30.9 × 18.9 m). */
-export const annexSize = { ew: Math.hypot(SE[0] - SW[0], SE[1] - SW[1]), ns: Math.hypot(NW[0] - SW[0], NW[1] - SW[1]) };
 
 // ---- the core, the same on every floor
 const STAIR = box(18 + WALL, CORE_E, CORE_S, LIFT_S);

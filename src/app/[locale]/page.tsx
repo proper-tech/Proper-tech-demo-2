@@ -30,11 +30,17 @@ const HERO_LOOP = '/media/hero-loop.mp4';
  *  for frame as a sunset over Ulaanbaatar by Seedance 2.5's video edit in Higgsfield, with stills in the hero's
  *  light and materials as its references, so every move is the old one and only the city, light and building
  *  surfaces changed. The edit's brightness flickered from frame to frame, which shimmers when scrolled, so it
- *  was evened out (ffmpeg deflicker and a temporal denoise) before encoding with a keyframe every few frames,
- *  so it seeks smoothly. Browsers keep /media for a week (next.config.ts), so a new flight goes in under a new
- *  name, never over the old one. */
-const FLIGHT = '/media/flight-sunset-3.mp4';
-const FLIGHT_POSTER = '/media/flight-sunset-3-poster.jpg';
+ *  was evened out (ffmpeg deflicker and a temporal denoise). Its timing then had a fault about once a second
+ *  (from a frame-rate conversion along the way): a frame shown twice, or one left out, which jolts the flight. The
+ *  repeats were dropped and each gap filled with a motion-compensated frame halfway across it (ffmpeg
+ *  minterpolate), one uneven stretch near the end re-spaced; the chapters' waypoints moved by two frames at most.
+ *  The edit and the smoothing had left it soft at 1600 x 900, so Topaz Video (in Higgsfield) upscaled it to 4K,
+ *  brought down to 1920 x 1080. The scroll moves it by seeking, and a seek decodes every frame from the last
+ *  keyframe: so a keyframe every third frame and no B-frames, a couple of frames per seek, or it stutters. (A
+ *  2560 x 1440 copy for high-density screens decoded 2.6 times as much per seek and did.) Browsers keep /media
+ *  for a week (next.config.ts), so a new flight goes in under a new name, never over the old one. */
+const FLIGHT = '/media/flight-sunset-6.mp4';
+const FLIGHT_POSTER = '/media/flight-sunset-6-poster.jpg';
 /** The window views' band in "Step inside": the drone's photograph out of the top floor's north-east apartment
  *  (B1606) and the image model's three other seasons of it (public/views/window/NE/floor-16), crossfading. */
 const BAND_SEASONS = ['winter', 'spring', 'summer', 'autumn'] as const;
@@ -52,8 +58,15 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   // an apartment with the rendered 360° photo tour (plan D), for the "walk through" card
   const showUnit = availableUnits.find((u) => u.layout === 'D') ?? availableUnits[0];
 
-  // the chapters over the film: captions for what the film is showing at that moment
+  // the chapters over the film: captions for what the film is showing at that moment, each with the place on
+  // the site where that part of the complex can be looked at more closely
   const chapters = ['location', 'towers', 'podium', 'homes'] as const;
+  const chapterLinks: Record<(typeof chapters)[number], string> = {
+    location: '#location',
+    towers: '#floors',
+    podium: `/${locale}/floors/A/4`,
+    homes: '#layouts',
+  };
 
   // places to step into that the page itself doesn't show (the floor picker and site plan are on it)
   const explore = [
@@ -66,8 +79,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     <main className="home">
       <section className="story">
         {/* pinned while the chapters scroll over it: the sunset loop behind the intro, then a drone flight round
-            the complex whose frames follow the scroll (Motion.tsx), one leg per chapter; the rail and the dots
-            show which chapter you are in */}
+            the complex whose frames follow the scroll (Motion.tsx), one leg per chapter; the rail at the bottom
+            shows which chapter you are in, and its names take you to a chapter */}
         <div className="story-stage">
           {/* neither video downloads with the page: Motion.tsx starts the loop once the page has loaded and the
               flight soon after (on a slow or data-saving connection, not until the visitor scrolls). The still
@@ -86,8 +99,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             />
           </picture>
           <video className="story-flight" src={FLIGHT} data-poster={FLIGHT_POSTER} muted playsInline preload="none" aria-hidden="true" />
-          <div className="story-hud" aria-hidden="true">
-            <p className="hud-count">
+          <nav className="story-hud" aria-label={t.story.rail}>
+            <p className="hud-count" aria-hidden="true">
               {chapters.map((key, i) => (
                 <b key={key} data-dot={key}>
                   {String(i + 1).padStart(2, '0')}
@@ -98,16 +111,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <ol className="hud-rail">
               {chapters.map((key) => (
                 <li key={key} data-dot={key}>
-                  {t.story[key].title}
+                  <a href={`#story-${key}`}>{t.story[key].title}</a>
                 </li>
               ))}
             </ol>
-          </div>
-          <ol className="story-dots" aria-hidden="true">
-            {['intro', ...chapters].map((k) => (
-              <li key={k} data-dot={k} />
-            ))}
-          </ol>
+          </nav>
         </div>
 
         <div className="story-chapter story-intro" data-chapter="intro">
@@ -123,11 +131,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
         {/* a screen per chapter, the flight landing on what its caption is about; captions alternate sides */}
         {chapters.map((key, i) => (
-          <div key={key} className="story-chapter story-leg" data-chapter={key} data-side={i % 2 ? 'right' : 'left'}>
+          <div key={key} id={`story-${key}`} className="story-chapter story-leg" data-chapter={key} data-side={i % 2 ? 'right' : 'left'}>
             <div className="chapter-caption fx">
-              <span className="chapter-index">{String(i + 1).padStart(2, '0')}</span>
               <h2>{t.story[key].title}</h2>
               <p>{fmt(t.story[key].line, { count: units.length, min: FLOOR_MIN, max: FLOOR_MAX })}</p>
+              <a className="chapter-link" href={chapterLinks[key]}>
+                {t.story[key].link}
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
         ))}

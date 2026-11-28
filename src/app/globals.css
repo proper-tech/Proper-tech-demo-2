@@ -1469,20 +1469,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   margin-top: 1rem;
 }
 
-.swatch {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 1px solid rgb(20 35 59 / 0.18);
-  border-radius: 50%;
-  padding: 0;
-}
-
-.swatch[aria-pressed="true"] {
-  box-shadow:
-    0 0 0 2px var(--paper),
-    0 0 0 4px var(--ink);
-}
-
 .apt-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2891,6 +2877,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   place-items: center;
   padding: 6rem clamp(1rem, 3vw, 2.5rem);
   text-align: center;
+  /* a screen-high box over the pinned film: clicks go through it to the rail, all but on its own content */
+  pointer-events: none;
+}
+
+.story-chapter > * {
+  pointer-events: auto;
 }
 
 .story-intro {
@@ -2963,11 +2955,13 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   opacity: var(--flight, 0);
 }
 
-/* the chapters: one screen each, the caption to one side so the flight stays in view, sides alternating */
+/* the chapters: one screen each, the caption to one side so the flight stays in view, sides alternating. A link
+   to a chapter (the rail) lands on its top, the flight's waypoint, not a header's height below it. */
 .story-leg {
   justify-items: start;
   text-align: left;
   padding-inline: clamp(1rem, 6vw, 6rem);
+  scroll-margin-top: calc(var(--header) * -1);
 }
 
 .story-leg[data-side='right'] {
@@ -2995,8 +2989,30 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   max-width: 30rem;
   text-align: left;
   border-radius: 22px;
-  background: linear-gradient(135deg, rgb(14 26 46 / 0.62), rgb(14 26 46 / 0.38));
-  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  /* solid, as every panel over the moving picture: frosted, the film blurred through it in blotches */
+  background: #101d33;
+  backdrop-filter: none;
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* where to look more closely at what the chapter is about: amber, as everything that does something */
+.chapter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.4rem;
+  font-weight: 600;
+  color: var(--amber);
+  text-decoration: none;
+}
+
+.chapter-link span {
+  transition: transform 250ms var(--ease-out);
+}
+
+.chapter-link:hover span,
+.chapter-link:focus-visible span {
+  transform: translateX(4px);
 }
 
 /* the amber line draws itself in when the caption arrives (.fx reveal) */
@@ -3009,22 +3025,9 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   transform: scaleX(0);
 }
 
-/* the chapter's number, large and outlined behind the title */
-.chapter-index {
-  position: absolute;
-  top: -0.45em;
-  right: 0.35em;
-  font-size: clamp(4.5rem, 9vw, 8rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgb(255 255 255 / 0.28);
-  pointer-events: none;
-  font-variant-numeric: tabular-nums;
-}
-
-/* the flight's instruments: the chapter counter and a rail of the four chapters that fills as you fly (--p) */
+/* the flight's instruments: the chapter counter and a rail of the four chapters that fills as you fly (--p); a
+   chapter's name takes you there. Hidden over the intro, where the flight has not begun (--flight), unless a
+   keyboard is on one of its links. */
 .story-hud {
   position: absolute;
   left: clamp(1rem, 3vw, 2.5rem);
@@ -3068,16 +3071,18 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   list-style: none;
 }
 
-/* the track and its fill */
+/* the track and its fill. Each chapter's point sits at the centre of its quarter, so the track runs from the
+   first point to the last (an eighth in from either end) and the last chapter fills it: a track running on
+   past the last point read as a flight left four-fifths done. */
 .hud-rail::before,
 .hud-rail::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
+  left: calc(100% / 8);
   height: 1px;
   background: rgb(255 255 255 / 0.25);
-  width: 100%;
+  width: calc(100% - 100% / 4);
 }
 
 .hud-rail::after {
@@ -3090,51 +3095,41 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
 
 .hud-rail li {
   position: relative;
+  text-align: center;
   transition: color 300ms;
+}
+
+.hud-rail a {
+  display: inline-block;
+  padding-block: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.hud-rail a:hover {
+  color: #fff;
+}
+
+.story[data-at='intro'] .hud-rail a {
+  pointer-events: none;
+}
+
+.story-hud:focus-within {
+  opacity: 1;
 }
 
 .hud-rail li::before {
   content: '';
   position: absolute;
   top: calc(-0.75rem - 3px);
-  left: 0;
+  left: calc(50% - 3.5px);
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--ink);
   border: 1px solid rgb(255 255 255 / 0.5);
   transition: background-color 300ms, border-color 300ms, transform 300ms var(--ease-out);
-}
-
-/* which chapter you are in: a dot per chapter on the right of the film */
-.story-dots {
-  position: absolute;
-  right: clamp(1rem, 3vw, 2.5rem);
-  top: 50%;
-  z-index: 2;
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  transform: translateY(-50%);
-}
-
-.story-dots li {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.35);
-  transition: transform 300ms var(--ease-out), background-color 300ms;
-}
-
-.story[data-at='intro'] .story-dots [data-dot='intro'],
-.story[data-at='location'] .story-dots [data-dot='location'],
-.story[data-at='towers'] .story-dots [data-dot='towers'],
-.story[data-at='podium'] .story-dots [data-dot='podium'],
-.story[data-at='homes'] .story-dots [data-dot='homes'] {
-  background: var(--amber);
-  transform: scale(1.5);
 }
 
 /* the chapter you are in, on the rail and the counter */
@@ -3509,10 +3504,13 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   font-size: 1.125rem;
 }
 
-/* on phones the chapter cards fill the width, so the dots would sit on them; the rail keeps its points, not its words */
+/* on phones the rail keeps its points, not its words; each point is still a link to tap */
 @media (max-width: 40rem) {
-  .story-dots {
-    display: none;
+  .hud-rail a {
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: -1.6rem auto 0;
   }
 
   .hud-rail li {
