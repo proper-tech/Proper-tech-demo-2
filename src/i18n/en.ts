@@ -13,7 +13,7 @@ const en = {
     retry: 'Try again',
     home: 'Back to the home page',
   },
-  nav: { views: 'Window views', floors: 'Floors', explore: 'Explore', layouts: 'Layouts', video: 'Video', contact: 'Contact', language: 'Language', menu: 'Menu' },
+  nav: { views: 'Window views', floors: 'Floors', explore: 'Explore', layouts: 'Layouts', contact: 'Contact', language: 'Language', menu: 'Menu' },
   hero: {
     lead: 'Two 16-storey towers on a podium of shops and services, with a playground on the roof.',
     toFloors: 'Choose your floor',
@@ -217,9 +217,6 @@ const en = {
     fullscreen: 'Full screen',
     exitFullscreen: 'Exit full screen',
     podiumTab: 'Podium',
-    videoHeading: 'Sebotse in 38 seconds',
-    videoLead: 'A flight round the complex, rendered from the same 3D model as this site: the towers, the podium, the roof playground and the streets around them.',
-    videoNote: 'Rendered from the 3D model. The buildings around the site come from OpenStreetMap, with approximate heights. Map data © OpenStreetMap contributors.',
     siteHeading: 'Site plan',
     siteLead: 'Redrawn from the architect\'s site plan. Block A is the three-storey podium of shops and services, with a playground on its roof. Blocks B and C are the apartment towers. Block D has car services and heated parking, and a basement car park runs under the complex.',
     siteTowerNote: '16 storeys',

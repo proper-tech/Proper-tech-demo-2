@@ -15,7 +15,7 @@ const zh: Dict = {
     retry: '重试',
     home: '返回首页',
   },
-  nav: { views: '窗外景观', floors: '楼层', explore: '探索', layouts: '户型', video: '视频', contact: '联系', language: '语言', menu: '菜单' },
+  nav: { views: '窗外景观', floors: '楼层', explore: '探索', layouts: '户型', contact: '联系', language: '语言', menu: '菜单' },
   hero: {
     lead: '两座16层住宅塔楼坐落于商业服务裙楼之上，屋顶设有儿童游乐场。',
     toFloors: '选择楼层',
@@ -212,9 +212,6 @@ const zh: Dict = {
     fullscreen: '全屏',
     exitFullscreen: '退出全屏',
     podiumTab: '裙房',
-    videoHeading: '38秒了解项目',
-    videoLead: '以本网站同一3D模型渲染的环绕飞行影片：两座塔楼、裙楼、屋顶游乐场及周边街道。',
-    videoNote: '由3D模型渲染；周边建筑来自OpenStreetMap，高度为近似值。地图数据 © OpenStreetMap contributors。',
     siteHeading: '总平面图',
     siteLead: '依据建筑师的总平面图重新绘制。A 座为三层商业服务裙楼,屋顶设儿童游乐场;B 座和 C 座为住宅塔楼;D 座设汽车服务和室内停车。整个建筑群下方设有一层地下停车库。',
     siteTowerNote: '16 层',

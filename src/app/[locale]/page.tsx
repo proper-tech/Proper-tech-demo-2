@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
 import { LocationMap } from '@/components/LocationMap';
 import { Motion } from '@/components/Motion';
-import { VideoSection } from '@/components/VideoSection';
 import { SitePlan } from '@/components/SitePlan';
 import { PlanGroup } from '@/components/Plan2D';
 import { FLOOR_MAX, FLOOR_MIN, capacity, units } from '@/data/building';
@@ -333,7 +332,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </figure>
       </section>
 
-      <VideoSection />
 
       <section className="contact" id="contact">
         <div className="fx">
@@ -361,7 +359,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <a href="#explore">{t.nav.explore}</a>
           <a href="#layouts">{t.nav.layouts}</a>
           <a href="#site">{t.home.siteHeading}</a>
-          <a href="#video">{t.nav.video}</a>
           <Link href={`/${locale}/floors/A/1`}>{t.home.podiumTab}</Link>
           <Link href={`/${locale}/floors/A/B1`}>{t.basement.name}</Link>
         </nav>

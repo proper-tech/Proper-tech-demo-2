@@ -446,8 +446,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .site h2,
-.layouts h2,
-.video h2 {
+.layouts h2 {
   font-size: clamp(1.7rem, 2.6vw, 2.4rem);
   letter-spacing: -0.03em;
   margin-bottom: 0.8rem;
@@ -624,10 +623,9 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   background: var(--ink);
 }
 
-/* Home: layouts table, video, footer */
+/* Home: layouts table, footer */
 
-.layouts,
-.video {
+.layouts {
   padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem);
   border-top: 1px solid var(--line);
 }
@@ -670,60 +668,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .layouts td:last-child {
   text-align: right;
   padding-right: 0;
-}
-
-/* the film, full screen under the header, its words over the bottom left on a dark fade */
-.video {
-  position: relative;
-  display: grid;
-  align-content: end;
-  height: calc(100svh - var(--header));
-  min-height: 26rem;
-  overflow: hidden;
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.video-film {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.video::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(to top, rgb(10 20 38 / 0.8), transparent 45%);
-}
-
-.video-text {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 0.6rem;
-  max-width: 38rem;
-  text-shadow: 0 2px 18px rgb(0 0 0 / 0.35);
-}
-
-.video-text p:not(.note) {
-  color: #dbe3ee;
-}
-
-.video-text .note {
-  color: #aab6c6;
-}
-
-/* with the player's controls showing (reduced motion), the words must not sit on them */
-.video:has(video[controls]) .video-text {
-  padding-bottom: 3.5rem;
-}
-
-.video:has(video[controls])::after {
-  display: none;
 }
 
 /* Shared controls */
