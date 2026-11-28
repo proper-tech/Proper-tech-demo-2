@@ -72,7 +72,16 @@ export function Motion() {
       const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
       const thrifty = !!conn && (conn.saveData === true || /2g|3g/.test(conn.effectiveType ?? ''));
       let loaded = false;
+      // The dive from orbit onto the site (page.tsx): its pictures come with the flight, not with the page.
+      const dive = story.querySelector<HTMLElement>('.story-dive');
+      const earthBox = dive?.querySelector<HTMLElement>('.dive-earth');
+      const earth = dive ? [...dive.querySelectorAll<HTMLImageElement>('.dive-earth img')] : [];
+      const loadDive = () =>
+        earth.forEach((img) => {
+          if (!img.srcset && img.dataset.srcset) img.srcset = img.dataset.srcset;
+        });
       const startFlight = () => {
+        loadDive();
         if (flight.preload === 'auto') return;
         if (flight.dataset.poster) flight.poster = flight.dataset.poster;
         flight.preload = 'auto';
@@ -81,10 +90,139 @@ export function Motion() {
       const stage = story.querySelector<HTMLElement>('.story-stage');
       const playing = () => stage?.classList.add('is-playing');
       hero?.addEventListener('playing', playing, { once: true });
+      // The dive itself: on the way down from the intro to the first chapter, the stage leaves the sunset and
+      // drops from orbit onto the site, through the satellite pictures one after another (each a quarter of the
+      // ground of the one before, so picture z shows at scale 2^(Z - z) for a camera at zoom Z), turning slowly
+      // to the flight's heading, warming towards the sunset and closing into a haze; the flight's first frame comes
+      // up out of it, settling from a slight zoom, and the first chapter's caption arrives. It plays on its own
+      // clock (a chapter's glide lasts well under a second, far too quick for this), once each time the visitor
+      // comes down from the intro, and gives way at once if they scroll back up or on past the first chapter.
+      // Without its pictures loaded yet, the flight simply fades in as before.
+      const places = dive ? [...dive.querySelectorAll<HTMLElement>('.dive-place span')] : [];
+      const altitude = dive?.querySelector<HTMLElement>('.dive-alt');
+      const warm = dive?.querySelector<HTMLElement>('.dive-warm');
+      const haze = dive?.querySelector<HTMLElement>('.dive-haze');
+      const levels = earth.map((img) => Number(img.dataset.z));
+      const DIVE_MS = 5600;
+      /** The flight's heading in its first frame: the picture is turned so that this bearing is up. */
+      const HEADING = 26.3;
+      /** Where each place's name shows, in camera zoom. */
+      const PLACE_ZOOM: [number, number][] = [
+        [4.6, 7.4],
+        [8.2, 11.3],
+        [12, 14.8],
+      ];
+      const metresPerPixel = (z: number) => (156543.03 * Math.cos((47.928 * Math.PI) / 180)) / 2 ** z;
+      const smooth = (x: number) => {
+        const c = Math.min(1, Math.max(0, x));
+        return c * c * (3 - 2 * c);
+      };
+      let diveSize = 0;
+      let diveClock = 0;
+      let diveStart = 0;
+      let diveEnding = 0;
+      let lastFade = -1;
+      const sizeDive = () => {
+        diveSize = Math.ceil(1.3 * Math.hypot(innerWidth, innerHeight));
+        dive?.style.setProperty('--dive-size', `${diveSize}px`);
+      };
+      const diveReady = () => earth.length > 0 && earth.every((img) => img.complete && img.naturalWidth > 0);
+      const clearDive = () => {
+        cancelAnimationFrame(diveClock);
+        clearTimeout(diveEnding);
+        diveClock = diveEnding = 0;
+        story.removeAttribute('data-diving');
+        story.style.removeProperty('--land');
+        if (dive) {
+          dive.style.opacity = '';
+          dive.style.transition = '';
+        }
+      };
+      const diveFrame = (now: number) => {
+        if (!dive || !earthBox) return;
+        const p = Math.min(1, (now - diveStart) / DIVE_MS);
+        // the descent: slow off the mark, quickest in the middle, easing onto the ground by 90% of the way
+        const q = Math.min(1, p / 0.9);
+        const Z = 4.6 + (15.9 - 4.6) * (0.5 - 0.5 * Math.cos(Math.PI * q));
+        earth.forEach((img, i) => {
+          const s = 2 ** (Z - levels[i]);
+          const op = i === 0 ? 1 : smooth((Z - levels[i] + 1.7) / 1.0);
+          const next = levels[i + 1];
+          const covered = next !== undefined && 2 ** (Z - next) >= 0.85 && smooth((Z - next + 1.7) / 1.0) >= 1;
+          img.style.visibility = op <= 0 || covered ? 'hidden' : 'visible';
+          img.style.opacity = op.toFixed(3);
+          img.style.transform = `scale(${s.toFixed(4)})`;
+        });
+        earthBox.style.transform = `rotate(${(HEADING * smooth((Z - 10) / 5.5)).toFixed(2)}deg)`;
+        earthBox.style.filter = p > 0.8 ? `blur(${(smooth((p - 0.8) / 0.1) * 4).toFixed(1)}px)` : '';
+        places.forEach((el, i) => {
+          const [a, b] = PLACE_ZOOM[i];
+          const o = Math.min(smooth((Z - a) / 0.5), smooth((b - Z) / 0.5));
+          el.style.opacity = o.toFixed(3);
+          el.style.transform = `translateY(${((1 - o) * 6).toFixed(1)}px)`;
+        });
+        if (altitude) {
+          const km = (innerWidth * ((2400 * metresPerPixel(Z)) / diveSize) * 0.87) / 1000;
+          altitude.textContent = km >= 10 ? `${Math.round(km).toLocaleString('en-US')} km` : km >= 1 ? `${km.toFixed(1)} km` : `${Math.round(km * 1000)} m`;
+        }
+        if (warm) warm.style.opacity = (smooth((p - 0.55) / 0.3) * 0.55).toFixed(3);
+        if (haze) haze.style.opacity = smooth((p - 0.78) / 0.12).toFixed(3);
+        // in from the sunset over the first 0.4 s; out of the haze onto the flight over the last tenth
+        dive.style.opacity = Math.min(smooth((now - diveStart) / 400), 1 - smooth((p - 0.9) / 0.1)).toFixed(3);
+        story.style.setProperty('--land', (1 + 0.08 * (1 - smooth((p - 0.88) / 0.12))).toFixed(4));
+        if (p < 1) diveClock = requestAnimationFrame(diveFrame);
+        else clearDive();
+      };
+      // A visitor who scrolls straight away can reach the first chapter before the pictures are in: the dive
+      // then waits for them (up to 3 s) and plays if the visitor is still on that chapter, rather than not at all.
+      let waiting = 0;
+      let lastLegs = 0;
+      const startDive = () => {
+        if (!dive) return;
+        if (!diveReady()) {
+          loadDive();
+          clearTimeout(waiting);
+          const until = performance.now() + 3000;
+          const retry = () => {
+            if (story.hasAttribute('data-diving')) return;
+            if (diveReady()) {
+              if (lastFade > 0.9 && lastLegs < 0.25) startDive();
+            } else if (performance.now() < until) waiting = window.setTimeout(retry, 150);
+          };
+          waiting = window.setTimeout(retry, 150);
+          return;
+        }
+        sizeDive();
+        story.setAttribute('data-diving', '');
+        diveStart = performance.now();
+        diveClock = requestAnimationFrame(diveFrame);
+      };
+      const leaveDive = () => {
+        if (!dive || diveEnding) return;
+        cancelAnimationFrame(diveClock);
+        dive.style.transition = 'opacity 250ms ease';
+        dive.style.opacity = '0';
+        story.style.removeProperty('--land');
+        diveEnding = window.setTimeout(clearDive, 260);
+      };
+      const onFade = (fade: number, legs: number) => {
+        const diving = story.hasAttribute('data-diving');
+        if (diving && (fade < 0.02 || legs > 0.25)) leaveDive();
+        else if (!diving && lastFade >= 0 && lastFade <= 0.04 && fade > 0.04 && legs < 0.25) startDive();
+        lastFade = fade;
+        lastLegs = legs;
+      };
+      addEventListener('resize', sizeDive);
+      off.push(() => {
+        removeEventListener('resize', sizeDive);
+        clearTimeout(waiting);
+        clearDive();
+      });
       let idle = 0;
       const onLoad = () => {
         loaded = true;
         if (thrifty) return;
+        loadDive();
         update();
         idle = window.setTimeout(startFlight, 1500);
       };
@@ -151,6 +289,7 @@ export function Motion() {
           else if (y > stops[i]) k = i + (y - stops[i]) / (stops[i + 1] - stops[i]);
         }
         story.style.setProperty('--flight', fade.toFixed(3));
+        onFade(fade, k);
         story.style.setProperty('--p', (k / (stops.length - 1)).toFixed(4));
         if (flight.duration) {
           want = (k / (stops.length - 1)) * flight.duration;
