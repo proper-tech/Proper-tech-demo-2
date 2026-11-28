@@ -42,7 +42,7 @@ writing Next.js code; APIs have moved since older versions (params are Promises,
 ## Data and assets
 
 - Building data (`src/data/`) is traced from the architect's drawings. Never invent prices, availability
-  or dimensions; README lists what is still a placeholder (sales status, ceiling heights, phone number).
+  or dimensions; README lists what is still a placeholder (ceiling heights, phone number).
 - `public/` is served as-is. The Blender sources (`*.blend`) sit in `public/models/blocks/` on purpose:
   the build scripts export each `.glb` next to its open `.blend`. They are gitignored; never move or
   delete them.

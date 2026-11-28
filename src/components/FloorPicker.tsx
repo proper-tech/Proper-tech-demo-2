@@ -147,30 +147,30 @@ export function FloorPicker({ children }: { children: ReactNode }) {
   const [filter, setFilter] = useState<UnitFilter>(NO_FILTER);
   const filtered = isFiltered(filter);
   const q = filterQuery(filter);
-  const forSale = (f: FloorSummary) => (filtered ? f.units.filter((u) => u.status === 'available' && matches(u, filter)).length : f.available);
-  const forSaleText = (f: FloorSummary) => (filtered ? fmt(t.find.matchN, { n: forSale(f) }) : fmt(t.home.forSaleN, { n: f.available }));
+  const homes = (f: FloorSummary) => (filtered ? f.units.filter((u) => matches(u, filter)).length : f.units.length);
+  const homesText = (f: FloorSummary) => (filtered ? fmt(t.find.matchN, { n: homes(f) }) : fmt(t.home.aptN, { n: f.units.length }));
   const panel = floors.filter((f) => f.tower === tower).sort((a, b) => panelOrder(a.floor, b.floor));
   // the figures over the lift panel: the picked tower's, or the whole complex's for the podium and block D
   const statFloors = tower === 'B' || tower === 'C' ? floors.filter((f) => f.tower === tower) : floors;
   const stats = {
-    units: statFloors.reduce((n, f) => n + forSale(f), 0),
-    floors: statFloors.filter((f) => forSale(f) > 0).length,
-    layouts: new Set(statFloors.flatMap((f) => f.units.filter((u) => u.status === 'available' && matches(u, filter)).map((u) => layouts[u.layout].plan))).size,
+    units: statFloors.reduce((n, f) => n + homes(f), 0),
+    floors: statFloors.filter((f) => homes(f) > 0).length,
+    layouts: new Set(statFloors.flatMap((f) => f.units.filter((u) => matches(u, filter)).map((u) => layouts[u.layout].plan))).size,
   };
   const current = hovered && floors.find((f) => f.tower === hovered.tower && f.floor === hovered.floor);
   const types = current
-    ? [...new Set(current.units.filter((u) => u.status === 'available' && matches(u, filter)).map((u) => layouts[u.layout].bedrooms))]
+    ? [...new Set(current.units.filter((u) => matches(u, filter)).map((u) => layouts[u.layout].bedrooms))]
         .sort()
         .map((n) => t.beds[n as 1 | 2 | 3])
         .join(', ')
     : '';
-  // the podium (block A): floors 1-3 and the roof playground, always open, nothing for sale
+  // the podium (block A): floors 1-3 and the roof playground, no apartments
   const podiumPanel = podiumFloors.filter((f) => f.floor > 0).sort((a, b) => panelOrder(a.floor, b.floor));
   const podiumFloor = hovered?.tower === 'A' ? (hovered.floor as 0 | 1 | 2 | 3 | 4) : null;
   // block D, the service and parking building: its own basement (B1) and floors 1-3, two to a row
   const dPanel = [2, 3, 0, 1].filter((n) => blockDFloors.some((f) => f.floor === n));
   const dFloor = hovered?.tower === 'D' ? (hovered.floor as 0 | 1 | 2 | 3) : null;
-  // the technical floor on a tower's roof, floor 17: always open, nothing for sale
+  // the technical floor on a tower's roof, floor 17: no apartments
   const roofTower = hovered && hovered.tower !== 'A' && hovered.tower !== 'D' && hovered.floor === ROOF_FLOOR ? hovered.tower : null;
   const isHovered = (floor: number) => hovered?.tower === tower && hovered.floor === floor;
   const hover = (floor: number | null) => setHovered(floor === null ? null : { tower, floor });
@@ -260,18 +260,12 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                   {t.roof.use}
                 </>
               ) : current ? (
-                current.available > 0 ? (
-                  <>
-                    <b>
-                      {fmt(t.home.towerN, { t: current.tower })}, {forSaleText(current)}
-                    </b>
-                    {types}
-                  </>
-                ) : (
+                <>
                   <b>
-                    {fmt(t.home.towerN, { t: current.tower })}, {t.home.soldOut}
+                    {fmt(t.home.towerN, { t: current.tower })}, {homesText(current)}
                   </b>
-                )
+                  {types}
+                </>
               ) : (
                 t.home.idle
               )}
@@ -327,33 +321,22 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             )}
             {panel.map((f) => (
               <li key={f.floor}>
-                {f.available > 0 ? (
-                  <Link
-                    href={`/${locale}/floors/${tower}/${f.floor}${q}`}
-                    className={[isHovered(f.floor) && 'is-hovered', forSale(f) === 0 && 'is-nomatch'].filter(Boolean).join(' ') || undefined}
-                    aria-label={`${fmt(t.home.openFloor, { n: f.floor })}, ${forSaleText(f)}`}
-                    onMouseEnter={() => hover(f.floor)}
-                    onMouseLeave={() => hover(null)}
-                    onFocus={() => hover(f.floor)}
-                    onBlur={() => hover(null)}
-                  >
-                    {f.floor}
-                    {forSale(f) > 0 && (
-                      <i className="lift-count" aria-hidden="true">
-                        {forSale(f)}
-                      </i>
-                    )}
-                  </Link>
-                ) : (
-                  <span
-                    className={isHovered(f.floor) ? 'is-hovered' : undefined}
-                    aria-label={`${fmt(t.home.floorN, { n: f.floor })}, ${t.home.soldOut}`}
-                    onMouseEnter={() => hover(f.floor)}
-                    onMouseLeave={() => hover(null)}
-                  >
-                    {f.floor}
-                  </span>
-                )}
+                <Link
+                  href={`/${locale}/floors/${tower}/${f.floor}${q}`}
+                  className={[isHovered(f.floor) && 'is-hovered', homes(f) === 0 && 'is-nomatch'].filter(Boolean).join(' ') || undefined}
+                  aria-label={`${fmt(t.home.openFloor, { n: f.floor })}, ${homesText(f)}`}
+                  onMouseEnter={() => hover(f.floor)}
+                  onMouseLeave={() => hover(null)}
+                  onFocus={() => hover(f.floor)}
+                  onBlur={() => hover(null)}
+                >
+                  {f.floor}
+                  {homes(f) > 0 && (
+                    <i className="lift-count" aria-hidden="true">
+                      {homes(f)}
+                    </i>
+                  )}
+                </Link>
               </li>
             ))}
             {/* block D has its own basement, on its own panel */}
@@ -373,10 +356,6 @@ export function FloorPicker({ children }: { children: ReactNode }) {
             </li>
             )}
           </ol>
-          <p className="lift-legend" aria-hidden="true">
-            <span className="is-lit">{t.home.legendForSale}</span>
-            <span>{t.home.soldOut}</span>
-          </p>
         </div>
       </div>
 
@@ -419,7 +398,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
           ))}
           {/* the pointed floor, pinned to it in the 3D view */}
           {hovered && hovered.floor > 0 && !zoom && (
-            <div className={`floor-hover-tag${current && current.available > 0 ? ' is-for-sale' : ''}`} data-anchor="hover">
+            <div className={`floor-hover-tag${current ? ' is-open' : ''}`} data-anchor="hover">
               <strong>
                 {hovered.tower === 'A' || hovered.tower === 'D'
                   ? `${fmt(t.home.towerN, { t: hovered.tower })} · ${fmt(t.home.floorN, { n: hovered.floor })}`
@@ -427,7 +406,7 @@ export function FloorPicker({ children }: { children: ReactNode }) {
                     ? fmt(t.home.towerN, { t: hovered.tower })
                     : fmt(t.home.floorN, { n: hovered.floor })}
               </strong>
-              {current && <span>{current.available > 0 ? forSaleText(current) : t.home.soldOut}</span>}
+              {current && <span>{homesText(current)}</span>}
             </div>
           )}
         </div>

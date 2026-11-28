@@ -399,8 +399,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   grid-column: 1 / -1;
 }
 
-.lift-buttons a,
-.lift-buttons span {
+.lift-buttons a {
   display: grid;
   place-items: center;
   width: 2.75rem;
@@ -427,15 +426,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   color: var(--paper);
 }
 
-.lift-buttons span {
-  border: 2px solid var(--line);
-  color: #8a95a3;
-}
-
-.lift-buttons span.is-hovered {
-  border-color: #8a95a3;
-}
-
 .tower {
   /* pinned under the header, one screen tall, while the floor panel beside it scrolls */
   position: sticky;
@@ -456,8 +446,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 }
 
 .site h2,
-.layouts h2,
-.video h2 {
+.layouts h2 {
   font-size: clamp(1.7rem, 2.6vw, 2.4rem);
   letter-spacing: -0.03em;
   margin-bottom: 0.8rem;
@@ -588,11 +577,11 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-size: 0.75rem;
 }
 
-.floor-hover-tag.is-for-sale {
+.floor-hover-tag.is-open {
   background: rgb(47 111 222 / 0.94);
 }
 
-.floor-hover-tag.is-for-sale span {
+.floor-hover-tag.is-open span {
   color: #e3ecff;
 }
 
@@ -634,10 +623,9 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   background: var(--ink);
 }
 
-/* Home: layouts table, video, footer */
+/* Home: layouts table, footer */
 
-.layouts,
-.video {
+.layouts {
   padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem);
   border-top: 1px solid var(--line);
 }
@@ -680,60 +668,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .layouts td:last-child {
   text-align: right;
   padding-right: 0;
-}
-
-/* the film, full screen under the header, its words over the bottom left on a dark fade */
-.video {
-  position: relative;
-  display: grid;
-  align-content: end;
-  height: calc(100svh - var(--header));
-  min-height: 26rem;
-  overflow: hidden;
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.video-film {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.video::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(to top, rgb(10 20 38 / 0.8), transparent 45%);
-}
-
-.video-text {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 0.6rem;
-  max-width: 38rem;
-  text-shadow: 0 2px 18px rgb(0 0 0 / 0.35);
-}
-
-.video-text p:not(.note) {
-  color: #dbe3ee;
-}
-
-.video-text .note {
-  color: #aab6c6;
-}
-
-/* with the player's controls showing (reduced motion), the words must not sit on them */
-.video:has(video[controls]) .video-text {
-  padding-bottom: 3.5rem;
-}
-
-.video:has(video[controls])::after {
-  display: none;
 }
 
 /* Shared controls */
@@ -903,45 +837,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   }
 }
 
-/* Sale status: a coloured dot and plain text, so it never reads as a button (amber is for actions). */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  white-space: nowrap;
-  color: var(--ink);
-}
-
-.status::before {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status-available::before {
-  background: #2f9d5b;
-}
-
-.status-reserved {
-  color: var(--stone);
-}
-
-.status-reserved::before {
-  background: #d39b1f;
-}
-
-.status-sold {
-  color: var(--stone);
-}
-
-.status-sold::before {
-  background: #aab4bf;
-}
-
 /* Floor and apartment pages: 3D stage on the left, panel on the right */
 
 .apt,
@@ -1066,11 +961,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .apt-head p {
   color: var(--stone);
   font-size: 0.9375rem;
-}
-
-.apt-head .status {
-  margin-left: 0.6rem;
-  color: var(--ink);
 }
 
 .apt-head .segmented {
@@ -1359,29 +1249,24 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 /* on the floor pages --flat is the apartment's own colour (flatColors in data/layouts.ts); the
    white ring keeps the tag readable on a floor of the same colour */
-.unit-tag.status-available {
+.unit-tag.is-open {
   background: var(--flat, var(--amber));
   box-shadow:
     0 0 0 2px rgb(255 255 255 / 0.95),
     0 2px 6px rgb(20 35 59 / 0.18);
 }
 
-.unit-tag.status-available span {
+.unit-tag.is-open span {
   color: var(--ink);
 }
 
-.unit-tag.status-available.is-hovered {
+.unit-tag.is-open.is-hovered {
   background: var(--sky);
   color: var(--paper);
 }
 
-.unit-tag.status-available.is-hovered span {
+.unit-tag.is-open.is-hovered span {
   color: var(--paper);
-}
-
-.unit-tag.status-reserved,
-.unit-tag.status-sold {
-  box-shadow: none;
 }
 
 /* 360° tour bar */
@@ -1480,20 +1365,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   margin-top: 1rem;
 }
 
-.swatch {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 1px solid rgb(20 35 59 / 0.18);
-  border-radius: 50%;
-  padding: 0;
-}
-
-.swatch[aria-pressed="true"] {
-  box-shadow:
-    0 0 0 2px var(--paper),
-    0 0 0 4px var(--ink);
-}
-
 .apt-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1540,7 +1411,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .unit-list .is-static {
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-areas: 'id status' 'info info' 'open open';
+  grid-template-areas: 'id id' 'info info' 'open open';
   align-items: center;
   gap: 0.45rem 0.9rem;
   padding: 0.85rem 1rem;
@@ -1570,11 +1441,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .unit-list .unit-id {
   grid-area: id;
   justify-self: start;
-}
-
-.unit-list .status {
-  grid-area: status;
-  justify-self: end;
 }
 
 .unit-list .unit-info {
@@ -1651,7 +1517,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: rgba(47, 111, 222, 0.28);
 }
 
-.plan-unit.is-available text {
+.plan-unit.is-open text {
   paint-order: stroke;
   stroke: rgba(255, 255, 255, 0.9);
   stroke-width: 0.12px;
@@ -1693,18 +1559,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .plan-window {
   stroke: var(--sky);
   stroke-width: 0.08;
-}
-
-.plan-muted .plan-room {
-  fill: #dde2e7;
-}
-
-.plan-muted .plan-wall {
-  stroke: #8a95a3;
-}
-
-.plan-muted .plan-window {
-  stroke: #8a95a3;
 }
 
 .plan-corridor {
@@ -1840,10 +1694,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   stroke-linejoin: round;
 }
 
-.plan-unit:not(.is-available) text {
-  stroke: #dde2e7;
-}
-
 .plan-unit.is-hovered text {
   stroke: #d9e6fb;
 }
@@ -1858,15 +1708,15 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-weight: 500;
 }
 
-.plan-unit.is-available {
+.plan-unit.is-open {
   cursor: pointer;
 }
 
-.plan-unit.is-available .plan-room {
+.plan-unit.is-open .plan-room {
   fill: var(--flat, var(--amber-soft));
 }
 
-.plan-unit.is-available.is-hovered .plan-room {
+.plan-unit.is-open.is-hovered .plan-room {
   fill: #d9e6fb;
 }
 
@@ -2114,12 +1964,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 1;
 }
 
-.podium-tag.is-hovered:not(.status-available) {
+.podium-tag.is-hovered:not(.is-open) {
   background: var(--sky);
   color: var(--paper);
 }
 
-.podium-tag.is-hovered:not(.status-available) span {
+.podium-tag.is-hovered:not(.is-open) span {
   color: #dbe7fb;
 }
 
@@ -2902,6 +2752,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   place-items: center;
   padding: 6rem clamp(1rem, 3vw, 2.5rem);
   text-align: center;
+  /* a screen-high box over the pinned film: clicks go through it to the rail, all but on its own content */
+  pointer-events: none;
+}
+
+.story-chapter > * {
+  pointer-events: auto;
 }
 
 .story-intro {
@@ -2974,11 +2830,13 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   opacity: var(--flight, 0);
 }
 
-/* the chapters: one screen each, the caption to one side so the flight stays in view, sides alternating */
+/* the chapters: one screen each, the caption to one side so the flight stays in view, sides alternating. A link
+   to a chapter (the rail) lands on its top, the flight's waypoint, not a header's height below it. */
 .story-leg {
   justify-items: start;
   text-align: left;
   padding-inline: clamp(1rem, 6vw, 6rem);
+  scroll-margin-top: calc(var(--header) * -1);
 }
 
 .story-leg[data-side='right'] {
@@ -3006,8 +2864,30 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   max-width: 30rem;
   text-align: left;
   border-radius: 22px;
-  background: linear-gradient(135deg, rgb(14 26 46 / 0.62), rgb(14 26 46 / 0.38));
-  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  /* solid, as every panel over the moving picture: frosted, the film blurred through it in blotches */
+  background: #101d33;
+  backdrop-filter: none;
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* where to look more closely at what the chapter is about: amber, as everything that does something */
+.chapter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.4rem;
+  font-weight: 600;
+  color: var(--amber);
+  text-decoration: none;
+}
+
+.chapter-link span {
+  transition: transform 250ms var(--ease-out);
+}
+
+.chapter-link:hover span,
+.chapter-link:focus-visible span {
+  transform: translateX(4px);
 }
 
 /* the amber line draws itself in when the caption arrives (.fx reveal) */
@@ -3020,22 +2900,9 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   transform: scaleX(0);
 }
 
-/* the chapter's number, large and outlined behind the title */
-.chapter-index {
-  position: absolute;
-  top: -0.45em;
-  right: 0.35em;
-  font-size: clamp(4.5rem, 9vw, 8rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgb(255 255 255 / 0.28);
-  pointer-events: none;
-  font-variant-numeric: tabular-nums;
-}
-
-/* the flight's instruments: the chapter counter and a rail of the four chapters that fills as you fly (--p) */
+/* the flight's instruments: the chapter counter and a rail of the four chapters that fills as you fly (--p); a
+   chapter's name takes you there. Hidden over the intro, where the flight has not begun (--flight), unless a
+   keyboard is on one of its links. */
 .story-hud {
   position: absolute;
   left: clamp(1rem, 3vw, 2.5rem);
@@ -3079,16 +2946,18 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   list-style: none;
 }
 
-/* the track and its fill */
+/* the track and its fill. Each chapter's point sits at the centre of its quarter, so the track runs from the
+   first point to the last (an eighth in from either end) and the last chapter fills it: a track running on
+   past the last point read as a flight left four-fifths done. */
 .hud-rail::before,
 .hud-rail::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
+  left: calc(100% / 8);
   height: 1px;
   background: rgb(255 255 255 / 0.25);
-  width: 100%;
+  width: calc(100% - 100% / 4);
 }
 
 .hud-rail::after {
@@ -3101,51 +2970,41 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
 
 .hud-rail li {
   position: relative;
+  text-align: center;
   transition: color 300ms;
+}
+
+.hud-rail a {
+  display: inline-block;
+  padding-block: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.hud-rail a:hover {
+  color: #fff;
+}
+
+.story[data-at='intro'] .hud-rail a {
+  pointer-events: none;
+}
+
+.story-hud:focus-within {
+  opacity: 1;
 }
 
 .hud-rail li::before {
   content: '';
   position: absolute;
   top: calc(-0.75rem - 3px);
-  left: 0;
+  left: calc(50% - 3.5px);
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--ink);
   border: 1px solid rgb(255 255 255 / 0.5);
   transition: background-color 300ms, border-color 300ms, transform 300ms var(--ease-out);
-}
-
-/* which chapter you are in: a dot per chapter on the right of the film */
-.story-dots {
-  position: absolute;
-  right: clamp(1rem, 3vw, 2.5rem);
-  top: 50%;
-  z-index: 2;
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  transform: translateY(-50%);
-}
-
-.story-dots li {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.35);
-  transition: transform 300ms var(--ease-out), background-color 300ms;
-}
-
-.story[data-at='intro'] .story-dots [data-dot='intro'],
-.story[data-at='location'] .story-dots [data-dot='location'],
-.story[data-at='towers'] .story-dots [data-dot='towers'],
-.story[data-at='podium'] .story-dots [data-dot='podium'],
-.story[data-at='homes'] .story-dots [data-dot='homes'] {
-  background: var(--amber);
-  transform: scale(1.5);
 }
 
 /* the chapter you are in, on the rail and the counter */
@@ -3520,10 +3379,13 @@ html.js-motion .story-leg .chapter-caption.rv:not(.is-in)::before {
   font-size: 1.125rem;
 }
 
-/* on phones the chapter cards fill the width, so the dots would sit on them; the rail keeps its points, not its words */
+/* on phones the rail keeps its points, not its words; each point is still a link to tap */
 @media (max-width: 40rem) {
-  .story-dots {
-    display: none;
+  .hud-rail a {
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: -1.6rem auto 0;
   }
 
   .hud-rail li {
@@ -4393,8 +4255,7 @@ html.js-motion .fx.rv.is-in {
   gap: 0.45rem 1rem;
 }
 
-.home .lift-buttons a,
-.home .lift-buttons span {
+.home .lift-buttons a {
   position: relative;
   width: 2.85rem;
   height: 2.85rem;
@@ -4417,13 +4278,7 @@ html.js-motion .fx.rv.is-in {
   color: var(--paper);
 }
 
-.home .lift-buttons span {
-  border-color: rgb(255 255 255 / 0.14);
-  background: rgb(255 255 255 / 0.03);
-  color: #66768c;
-}
-
-/* how many homes are for sale on a lit floor */
+/* how many homes a floor has (or, with the finder on, how many match) */
 .lift-count {
   position: absolute;
   top: -0.3rem;
@@ -4447,32 +4302,6 @@ html.js-motion .fx.rv.is-in {
 .lift-buttons a.is-hovered .lift-count {
   background: var(--amber);
   color: var(--ink);
-}
-
-.lift-legend {
-  display: flex;
-  justify-content: center;
-  gap: 1.1rem;
-  margin: 0.4rem 0 0;
-  font-size: 0.72rem;
-  color: #9fb0c6;
-}
-
-.lift-legend span::before {
-  content: "";
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-right: 0.35rem;
-  border-radius: 50%;
-  border: 1.5px solid rgb(255 255 255 / 0.25);
-  vertical-align: -0.05rem;
-}
-
-.lift-legend .is-lit::before {
-  background: var(--amber);
-  border-color: var(--amber);
-  box-shadow: 0 0 8px rgb(242 182 50 / 0.6);
 }
 
 /* full screen for the 3D view */
@@ -4649,7 +4478,7 @@ html.js-motion .fx.rv.is-in {
 }
 
 /* The finder over the lift panel (FloorPicker): bedrooms and sunlight, as chips on the dark column. A floor
-   with homes for sale but none that match stays a lit button, only faded, so it can still be opened. */
+   with none that match stays a button, only faded, so it can still be opened. */
 .finder {
   display: grid;
   gap: 0.55rem;
@@ -5452,4 +5281,58 @@ html.js-motion .fx.rv.is-in {
   .wv-help {
     display: none;
   }
+}
+
+/* the missing-page and error pages ([locale]/not-found, [locale]/error, global-not-found): a short message in
+   the middle of the screen and the way out; the global 404 repeats it in each language */
+.status-page {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1rem;
+  min-height: calc(100vh - var(--header));
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.status-page h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.status-page .lead {
+  margin: 0 0 0.5rem;
+}
+
+.status-code {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 0.875rem;
+  letter-spacing: 0.2em;
+  color: var(--stone);
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.status-page button.pill {
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.status-lang {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding-block: 1rem;
+}
+
+.status-lang + .status-lang {
+  border-top: 1px solid var(--line);
 }

@@ -125,8 +125,6 @@ export type TowerId = 'B' | 'C';
  *  building (floor 0 is its basement). */
 export type BlockId = 'A' | TowerId | 'D';
 
-export type UnitStatus = 'available' | 'reserved' | 'sold';
-
 export interface Unit {
   id: string;
   tower: TowerId;
@@ -134,7 +132,6 @@ export interface Unit {
   pos: 1 | 2 | 3 | 4 | 5 | 6;
   plan: PlanId;
   layout: LayoutId;
-  status: UnitStatus;
   /** Which way the windows face. */
   facing: Facing;
 }

@@ -1,0 +1,26 @@
+# What a deploy from this folder (`vercel deploy`) must leave behind. A deploy from GitHub never sees these, as
+# .gitignore keeps them out of the repository; this keeps a deploy from someone's own computer the same.
+
+# Blender sources sit in public/models/blocks/ next to their .glb exports (the build scripts need them there),
+# and everything in public/ is served as-is: uploaded, they would be downloadable by anyone (169 MB).
+*.blend
+*.blend1
+
+# The 360° tour render pipeline (about 3.4 GB). The site serves only its published tours, public/tour/ and
+# public/tour-hd/; the build needs nothing in here.
+interior/
+
+# Local build output and caches (Vercel installs and builds afresh)
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+__pycache__/
+
+# Local backups and old scripts, and the copy of the map's worker the install makes again
+*.bak
+scripts/_*.py
+public/maplibre-gl-worker.mjs
+
+# This machine's Claude Code settings and memory
+.claude/settings.local.json

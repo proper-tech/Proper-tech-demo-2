@@ -147,8 +147,6 @@ function RoomFloor({
 export interface ApartmentModelProps {
   layout: Layout;
   finish: Finish;
-  /** Grey massing model without furniture (sold and reserved apartments). */
-  muted?: boolean;
   /** Paints every floor this one colour, without wood or tiles. The floor overview uses it to
    *  tell the apartments apart. */
   floorColor?: string;
@@ -156,29 +154,29 @@ export interface ApartmentModelProps {
   onSelectRoom?: (id: string) => void;
 }
 
-/** The rendered interior (photo model) where the plan has one and the apartment is for sale, else the drawn model. */
+/** The rendered interior (photo model) where the plan has one, else the drawn model. */
 export function ApartmentModel(props: ApartmentModelProps) {
-  const photo = props.muted ? undefined : photoModels[props.layout.plan];
+  const photo = photoModels[props.layout.plan];
   if (photo) return <PhotoApartment layout={props.layout} model={photo} selectedRoom={props.selectedRoom} onSelectRoom={props.onSelectRoom} />;
   return <DrawnApartmentModel {...props} />;
 }
 
-function DrawnApartmentModel({ layout, finish, muted, floorColor, selectedRoom, onSelectRoom }: ApartmentModelProps) {
+function DrawnApartmentModel({ layout, finish, floorColor, selectedRoom, onSelectRoom }: ApartmentModelProps) {
   const H = maxCeiling(layout);
 
   const mats = useMemo<Mats>(() => {
     const std = (color: string, roughness = 0.95) => new MeshStandardMaterial({ color, roughness });
     return {
       wall: std(finish.wall),
-      wetWall: std(muted ? finish.wall : '#E7EDF0', 0.5),
-      cap: std(muted ? '#8A95A3' : '#14233B'),
-      frame: std(muted ? '#E3E7EB' : '#FBFBF9', 0.6),
+      wetWall: std('#E7EDF0', 0.5),
+      cap: std('#14233B'),
+      frame: std('#FBFBF9', 0.6),
       glass: new MeshStandardMaterial({ color: '#A9CBEA', transparent: true, opacity: 0.28, roughness: 0.1, side: DoubleSide, depthWrite: false }),
       door: std(finish.wood, 0.7),
       // Unlit, so ceilings stay bright when seen from inside the room.
-      ceiling: new MeshBasicMaterial({ color: muted ? finish.wall : '#F6F6F3' }),
+      ceiling: new MeshBasicMaterial({ color: '#F6F6F3' }),
     };
-  }, [finish.wall, finish.wood, muted]);
+  }, [finish.wall, finish.wood]);
 
   const edges = useMemo(
     () => layout.rooms.map((room) => ({ room, edges: roomEdges(room, layout.openings) })),
@@ -191,7 +189,7 @@ function DrawnApartmentModel({ layout, finish, muted, floorColor, selectedRoom, 
         <group key={room.id}>
           <RoomFloor
             room={room}
-            color={floorColor ?? (room.wet && !muted ? '#DCE3E6' : finish.floor)}
+            color={floorColor ?? (room.wet ? '#DCE3E6' : finish.floor)}
             plain={!!floorColor}
             selected={selectedRoom === (room.partOf ?? room.id)}
             onSelect={onSelectRoom}
@@ -204,7 +202,7 @@ function DrawnApartmentModel({ layout, finish, muted, floorColor, selectedRoom, 
           ))}
         </group>
       ))}
-      {!muted && <Furniture items={layout.furniture} finish={finish} />}
+      <Furniture items={layout.furniture} finish={finish} />
     </group>
   );
 }
