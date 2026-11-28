@@ -6,6 +6,10 @@ import sys, re, json, base64, io, os
 import numpy as np
 from PIL import Image, ImageFilter
 
+# Glass between two rooms (inner_glass.py) carries the same material as the windows; it is taken out below.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # -I leaves the script's folder off the path
+import inner_glass
+
 dst, plan, pdir = sys.argv[1:4]
 html = open(dst, encoding='utf-8').read()
 ids_of = json.load(open(f'{pdir}/materials.json'))
@@ -25,6 +29,7 @@ for st in stops:
     a = np.array(Image.open(f'{pdir}/ids/{keys.get(st, st)}.png').convert('RGB')).astype(int)
     m = Image.fromarray(((a[..., 0] + a[..., 1] * 256) == glass).astype(np.uint8) * 255, 'L')
     m = m.filter(ImageFilter.GaussianBlur(0.8))  # soft edge against the frames
+    m = inner_glass.clear(m, plan, st)
     buf = io.BytesIO(); m.save(buf, 'PNG', optimize=True)
     masks[f'D_{st}'] = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
     print('window mask', st, round(float(np.asarray(m).mean() / 2.55), 1), '%')

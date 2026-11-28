@@ -478,6 +478,7 @@ STOPS = {
 for k, p in STOPS.items():
     assert inpoly(p, OUTLINE) and all(math.dist(p, c) > 1.0 for c in cols), k
 sc['top_rect'] = [-19.0, -32.2, 18.8, 32.4]
+sc['ground_z'] = GROUND   # for tools/add_city.py, which puts the real street there at render time
 # daylight outside brighter than the hall, as it is by day (F's sky alone left the street dimmer than the
 # lit hall, so the glass showed the hall more than the street)
 sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 3.0

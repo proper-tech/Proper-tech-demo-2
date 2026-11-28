@@ -33,7 +33,7 @@ const START = { date: '2026-06-21', minutes: 14 * 60 };
  * the site for a date and clock time (with sunrise, sunset and a play button that runs through
  * the day); "Manual" sets its direction and height directly.
  */
-export function SunPanel({ setSun }: { setSun: (s: SunSettings) => void }) {
+export function SunPanel({ setSun, side = null }: { setSun: (s: SunSettings) => void; side?: 'am' | 'pm' | null }) {
   const { t } = useI18n();
   const s = t.sun;
   const [open, setOpen] = useState(true);
@@ -111,6 +111,20 @@ export function SunPanel({ setSun }: { setSun: (s: SunSettings) => void }) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [playing, mode, times, date, brightness, send]);
+
+  // When the finder's "morning sun" or "evening sun" chip is chosen, the clock moves to 15% of the daylight
+  // after sunrise or before sunset, so that the 3D view shows the sun on the east or the west faces of the towers.
+  const lastSide = useRef(side);
+  useEffect(() => {
+    if (side === lastSide.current) return;
+    lastSide.current = side;
+    if (!side) return;
+    const rise = times.rise ?? 6 * 60;
+    const set = times.set ?? 18 * 60;
+    setPlaying(false);
+    setMode('time');
+    setMinutes(Math.round(side === 'am' ? rise + (set - rise) * 0.15 : set - (set - rise) * 0.15));
+  }, [side, times]);
 
   const now = () => {
     const n = siteNow();

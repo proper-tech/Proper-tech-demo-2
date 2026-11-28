@@ -3,6 +3,7 @@ rem Renders the podium's (block A's) empty rental halls: the 360 panoramas of th
 rem top view of each floor, into interior\renders\A<floor>.   render_a2.bat (floors 2 and 3), render_a2.bat 3 (only 3)
 rem Uses the newest Blender in "C:\Program Files\Blender Foundation", or BLENDER if set.
 rem set SAMPLES=64 before it for fewer samples (faster).
+rem The panoramas get the real street and city first (tools\add_city.py); the top view does not need them.
 setlocal
 cd /d "%~dp0"
 if not defined BLENDER (
@@ -19,7 +20,7 @@ echo Using %BLENDER%
 for %%F in (%FLOORS%) do (
   echo.
   echo ===== Block A, floor %%F =====
-  "%BLENDER%" -b A%%F.blend -P render_panos.py -- A%%F %SAMPLES%
+  "%BLENDER%" -b A%%F.blend -P tools\add_city.py -P render_panos.py -- A%%F %SAMPLES%
   "%BLENDER%" -b A%%F.blend -P render_top.py -- renders\A%%F\top 40 64
 )
 echo.

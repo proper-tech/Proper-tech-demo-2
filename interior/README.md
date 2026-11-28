@@ -123,6 +123,12 @@ added nothing changes. To add one (stitched 2:1 JPG from DJI Fly's Sphere mode, 
 
 If a view turns out rotated, give the yaw in degrees as a fifth argument (clockwise).
 
+Plans F and E (and their mirrors A and B) have a glazed pane between the bedroom and the balcony. It carries the
+windows' material, so the masks marked it as a window and the tours showed the city through it, with the bedside
+lamp laid over the photo. `tools/inner_glass.py` projects that pane into each stop's picture and takes it out of the
+mask; `add_window_masks.py` uses it, and `python3 -I interior/tools/inner_glass.py .` mends the published tours
+(`interior/tours`, `public/tour`, `public/tour-hd`) in place.
+
 From DJI video with the drone's flight data in it (one run makes a sphere for every height the drone spun at):
 `interior/tools/drone/video_spheres.py`, see `interior/tools/drone/README.md`.
 
@@ -163,3 +169,9 @@ lettering) and blended in with `... interior/hd/outside/B-NN.jpg <repainted.png>
 `hd_tours.mjs` publishes it to `public/tour-hd/outside/` and the tours use it in their windows instead of the
 photo; the views pages keep the real one. The colour masks, top views and plans still come from `public/tour/<plan>/img/`, so rebuild the HD tours after the
 rendered ones are republished. Evening pictures, where a tour has them, are the renders.
+
+Plan F's kitchen (and A's) had a wicker basket half inside the tall fridge unit in every repainted photo
+(`upgrade_dress.py` placed props by a guessed radius; it now checks each prop's real footprint against the tall
+units, hobs and sinks beside the worktop). `python3 -I interior/tools/hd_drop_basket.py public` painted it out of
+the published HD photos; run `... hd_drop_basket.py files interior/hd/F/kitchen.jpg interior/hd/F/kitchen-navy.jpg
+...` on the repainted sources (the warm-neutral one first) before rebuilding the HD tours, or the basket comes back.

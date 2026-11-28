@@ -222,31 +222,42 @@ def place(mid, at, z, yaw=None, height=None, scene_col=None):
     return inst, (hi.x - lo.x) * s, (hi.y - lo.y) * s
 
 
-def _blockers(lo, hi, top):
-    """Footprints of the things standing on the surface lo..hi at height top."""
+def _blockers(lo, hi, top, surface=None):
+    """Footprints of what a prop on the surface lo..hi at height top must keep clear of: the things standing on it,
+    the things let into it (a hob, a sink) and the things rising past it (a tall fridge unit beside a worktop).
+    Shells far bigger than the surface (a room's walls as one mesh) are left out, or nothing would fit anywhere."""
     out = []
+    area = max((hi.x - lo.x) * (hi.y - lo.y), 1e-3)
     for o in bpy.data.objects:
-        if o.type != 'MESH' or o.hide_render:
+        if o.type != 'MESH' or o.hide_render or o == surface:
             continue
         a, b = _bbox(o)
-        if a.z < top - 0.03 or a.z > top + 0.25:
+        if a.z > top + 0.25 or b.z < top - 0.005:
             continue
         if b.x < lo.x or a.x > hi.x or b.y < lo.y or a.y > hi.y:
+            continue
+        if (b.x - a.x) * (b.y - a.y) > 4 * area:
+            continue
+        # A box round most of the surface is a shell (an L-shaped wall), not a thing on it.
+        ox = min(b.x, hi.x) - max(a.x, lo.x); oy = min(b.y, hi.y) - max(a.y, lo.y)
+        if ox * oy > 0.6 * area:
             continue
         out.append((a.x, a.y, b.x, b.y))
     return out
 
 
 def _free_spot(lo, hi, r, blocks, prefer, margin=0.04):
+    """The free centre nearest `prefer` for a footprint of half-size r (a number, or (half x, half y))."""
+    rx, ry = r if isinstance(r, tuple) else (r, r)
     best = None
     nx = max(1, int((hi.x - lo.x) / 0.05)); ny = max(1, int((hi.y - lo.y) / 0.05))
     for i in range(nx + 1):
         for j in range(ny + 1):
-            x = lo.x + r + margin + (hi.x - lo.x - 2 * (r + margin)) * i / nx
-            y = lo.y + r + margin + (hi.y - lo.y - 2 * (r + margin)) * j / ny
-            if x - r < lo.x or x + r > hi.x or y - r < lo.y or y + r > hi.y:
+            x = lo.x + rx + margin + (hi.x - lo.x - 2 * (rx + margin)) * i / nx
+            y = lo.y + ry + margin + (hi.y - lo.y - 2 * (ry + margin)) * j / ny
+            if x - rx < lo.x or x + rx > hi.x or y - ry < lo.y or y + ry > hi.y:
                 continue
-            if any(x + r > a and x - r < c and y + r > b and y - r < d for a, b, c, d in blocks):
+            if any(x + rx > a and x - rx < c and y + ry > b and y - ry < d for a, b, c, d in blocks):
                 continue
             dist = (Vector((x, y)) - Vector(prefer)).length
             if best is None or dist < best[0]:
@@ -255,10 +266,14 @@ def _free_spot(lo, hi, r, blocks, prefer, margin=0.04):
 
 
 def on_surface(surface, items):
-    """items: [(model id, radius m, prefer 'centre'|'end0'|'end1'|(u, v) in 0..1, height or None)]"""
+    """items: [(model id, radius m, prefer 'centre'|'end0'|'end1'|(u, v) in 0..1, height or None)]
+
+    The radius only picks a first spot: once placed, a prop's real footprint (its size after scaling, turned by its
+    yaw) must be clear too, or it moves to a spot that is, or it is left out. A wicker basket given 0.15 m was in fact
+    some 0.45 m long, and in plan F it went half into the tall fridge unit beside the worktop."""
     lo, hi = _bbox(surface)
     top = hi.z
-    blocks = _blockers(lo, hi, top)
+    blocks = _blockers(lo, hi, top, surface)
     placed = 0
     for mid, rad, prefer, h in items:
         if isinstance(prefer, tuple):
@@ -269,9 +284,19 @@ def on_surface(surface, items):
         if not spot:
             continue
         r = place(mid, spot, top, height=h)
-        if r:
-            blocks.append((spot[0] - rad, spot[1] - rad, spot[0] + rad, spot[1] + rad))
-            placed += 1
+        if not r:
+            continue
+        inst, sx, sy = r
+        c, s_ = abs(math.cos(inst.rotation_euler.z)), abs(math.sin(inst.rotation_euler.z))
+        half = (max(rad, (sx * c + sy * s_) / 2), max(rad, (sx * s_ + sy * c) / 2))
+        real = _free_spot(lo, hi, half, blocks, spot, margin=0.01)
+        if not real:
+            bpy.data.objects.remove(inst)
+            continue
+        inst.location.x += real[0] - spot[0]
+        inst.location.y += real[1] - spot[1]
+        blocks.append((real[0] - half[0], real[1] - half[1], real[0] + half[0], real[1] + half[1]))
+        placed += 1
     return placed
 
 
