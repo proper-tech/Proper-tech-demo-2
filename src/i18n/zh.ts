@@ -18,6 +18,7 @@ const zh: Dict = {
     towers: { title: '双塔', line: 'B座与C座，各16层，{min}层以上为住宅。', link: '选择楼层' },
     podium: { title: '裙楼与屋顶', line: '塔楼下方为三层商业服务，两座塔楼之间的屋顶设有游乐场。', link: '参观裙楼' },
     homes: { title: '您的家', line: '三种户型，每套均带阳台，并为住户提供室内停车位。', link: '查看户型' },
+    dive: { places: ['蒙古国', '乌兰巴托', '钦格尔泰区'], altitude: '高度' },
   },
   location: {
     heading: '位于乌兰巴托市中心',

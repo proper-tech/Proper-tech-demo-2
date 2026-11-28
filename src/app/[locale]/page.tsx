@@ -41,6 +41,13 @@ const HERO_LOOP = '/media/hero-loop.mp4';
  *  for a week (next.config.ts), so a new flight goes in under a new name, never over the old one. */
 const FLIGHT = '/media/flight-sunset-6.mp4';
 const FLIGHT_POSTER = '/media/flight-sunset-6-poster.jpg';
+/** The dive from orbit onto the site, between the intro and the first chapter: satellite pictures of the same
+ *  point at six scales, each a quarter of the ground of the one before (web-map zoom levels 5 to 15, 2400 tiles'
+ *  pixels square, centred on the point between the towers), zoomed through in turn like a globe app and landing
+ *  on the flight's first frame (Motion.tsx). They are Sentinel-2 cloudless 2016 by EOX, the one year of it under
+ *  CC BY 4.0 (commercial use allowed with the credit shown beside it); later years are non-commercial only. */
+const DIVE_LEVELS = [5, 7, 9, 11, 13, 15] as const;
+const divePic = (z: number, w: number) => `/media/dive/dive-z${z}-${w}.webp`;
 /** The window views' band in "Step inside": the drone's photograph out of the top floor's north-east apartment
  *  (B1606) and the image model's three other seasons of it (public/views/window/NE/floor-16), crossfading. */
 const BAND_SEASONS = ['winter', 'spring', 'summer', 'autumn'] as const;
@@ -99,6 +106,47 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             />
           </picture>
           <video className="story-flight" src={FLIGHT} data-poster={FLIGHT_POSTER} muted playsInline preload="none" aria-hidden="true" />
+          {/* the dive: hidden until Motion.tsx plays it, and its pictures load with the flight, not the page */}
+          <div className="story-dive">
+            <div className="dive-earth" aria-hidden="true">
+              {DIVE_LEVELS.map((z) => (
+                <img
+                  key={z}
+                  data-z={z}
+                  data-srcset={`${divePic(z, 1024)} 1024w, ${divePic(z, 2048)} 2048w`}
+                  sizes="150vmax"
+                  alt=""
+                  decoding="async"
+                />
+              ))}
+            </div>
+            <div className="dive-warm" aria-hidden="true" />
+            <div className="dive-haze" aria-hidden="true" />
+            <p className="dive-place" aria-hidden="true">
+              <i />
+              {t.story.dive.places.map((name, i) => (
+                <span key={name} data-place={i}>
+                  {name}
+                </span>
+              ))}
+            </p>
+            <p className="dive-hud" aria-hidden="true">
+              <span>47.9283° N &nbsp;106.9130° E</span>
+              <span>
+                {t.story.dive.altitude} <b className="dive-alt" />
+              </span>
+            </p>
+            <p className="dive-credit">
+              <a href="https://s2maps.eu" target="_blank" rel="noopener">
+                Sentinel-2 cloudless - https://s2maps.eu
+              </a>{' '}
+              by{' '}
+              <a href="https://eox.at" target="_blank" rel="noopener">
+                EOX IT Services GmbH
+              </a>{' '}
+              (Contains modified Copernicus Sentinel data 2016)
+            </p>
+          </div>
           <nav className="story-hud" aria-label={t.story.rail}>
             <p className="hud-count" aria-hidden="true">
               {chapters.map((key, i) => (

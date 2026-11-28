@@ -43,6 +43,7 @@ npm run build && npm start
 | Photographic 360° tours (every apartment, floors 4-16) | `public/tour-hd/<plan>`: the rooms repainted as photographs, a photo per colour scheme, the real view sharp in the windows; built by `interior/tools/hd_tours.mjs` (how: `interior/README.md`, last section) |
 | Floor, wall, furniture colours of the 3D models | Fixed in `data/finishes.ts` (no picker on the page) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
+| Dive from orbit onto the site (home page, between the intro and the first chapter) | `public/media/dive/`: six Sentinel-2 cloudless 2016 pictures (EOX, CC BY 4.0, the only year allowed for commercial use; the credit is shown during the dive and must stay) at web-map zoom 5-15, centred on the point between the towers, played by `Motion.tsx` |
 | Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
 | Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn` |
 
