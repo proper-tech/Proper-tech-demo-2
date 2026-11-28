@@ -47,7 +47,6 @@ export function Header() {
             <Link href={`/${locale}/views`}>{t.nav.views}</Link>
             <Link href={`/${locale}#layouts`}>{t.nav.layouts}</Link>
             <Link href={`/${locale}#site`}>{t.home.siteHeading}</Link>
-            <Link href={`/${locale}#video`}>{t.nav.video}</Link>
             <Link href={`/${locale}#contact`}>{t.nav.contact}</Link>
           </nav>
         </details>

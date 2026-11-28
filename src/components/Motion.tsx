@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 // The home page's motion layer:
 //   - the header floats over the film and turns solid once the film's chapters have scrolled past;
@@ -13,6 +13,15 @@ import { useEffect } from 'react';
 // is paused. Mount it last on the page so its effect runs after hydration.
 
 export function Motion() {
+  // Switching language is a client-side navigation that mounts the language's layout afresh, and React then
+  // strips every attribute from <html> before setting its own (it keeps the element: acquireSingletonInstance),
+  // html.js-motion among them. The layout's pre-paint script doesn't run again, so without this the flight
+  // never started and the chapters stopped paging after a language switch. The class goes back by the same rule,
+  // before the new page is painted, so the reveals don't flash.
+  useLayoutEffect(() => {
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('js-motion');
+  }, []);
+
   useEffect(() => {
     const html = document.documentElement;
     if (!html.classList.contains('js-motion')) {
@@ -56,9 +65,10 @@ export function Motion() {
       let frame = 0;
       let glide = 0;
       let last = 0;
-      // Neither video comes with the page (16 MB between them; page.tsx): once it has loaded, the sunset loop
-      // starts over its still, and the flight downloads when the browser is idle. On a slow or data-saving
-      // connection the still stays and the flight waits for the first scroll, as the intro hides it anyway.
+      // Neither video comes with the page (21 MB between them, 9.5 MB as a phone's portrait cuts; page.tsx): once
+      // it has loaded, the sunset loop starts over its still, and the flight downloads when the browser is idle. On
+      // a slow or data-saving connection the still stays and the flight waits for the first scroll, as the intro
+      // hides it anyway.
       const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
       const thrifty = !!conn && (conn.saveData === true || /2g|3g/.test(conn.effectiveType ?? ''));
       let loaded = false;
@@ -296,6 +306,25 @@ export function Motion() {
       const onFlightScroll = () => {
         if (!frame) frame = requestAnimationFrame(update);
       };
+      // A phone held upright gets the videos' portrait cut (page.tsx, <source media>). A video picks its source
+      // only when it loads, so turning the phone loads each video again to pick the other cut: the flight is put
+      // back at the scroll's frame once it knows its length again (loadedmetadata runs update), and the loop
+      // carries on if it was playing.
+      const cut = flight.querySelector<HTMLSourceElement>('source[media]')?.media;
+      const turned = cut ? matchMedia(cut) : null;
+      const swap = () => {
+        if (flight.preload === 'auto') {
+          stopRolling();
+          flight.load();
+        }
+        if (hero?.currentSrc) {
+          const was = !hero.paused;
+          hero.load();
+          if (was) hero.play().catch(() => {});
+        }
+      };
+      turned?.addEventListener('change', swap);
+      off.push(() => turned?.removeEventListener('change', swap));
       update();
       if (document.readyState === 'complete') onLoad();
       else addEventListener('load', onLoad, { once: true });

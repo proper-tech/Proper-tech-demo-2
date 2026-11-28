@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { FloorPicker } from '@/components/FloorPicker';
 import { LocationMap } from '@/components/LocationMap';
 import { Motion } from '@/components/Motion';
-import { VideoSection } from '@/components/VideoSection';
 import { SitePlan } from '@/components/SitePlan';
 import { PlanGroup } from '@/components/Plan2D';
-import { FLOOR_MAX, FLOOR_MIN, availableUnits, capacity, units } from '@/data/building';
+import { FLOOR_MAX, FLOOR_MIN, capacity, units } from '@/data/building';
 import { apartmentTypes, flatColors, layouts } from '@/data/layouts';
 import { planPhotos } from '@/data/planPhotos';
 import { fmt, getDict } from '@/i18n/config';
@@ -41,6 +40,14 @@ const HERO_LOOP = '/media/hero-loop.mp4';
  *  for a week (next.config.ts), so a new flight goes in under a new name, never over the old one. */
 const FLIGHT = '/media/flight-sunset-6.mp4';
 const FLIGHT_POSTER = '/media/flight-sunset-6-poster.jpg';
+/** Both videos fill the screen (object-fit: cover), so a phone held upright only ever shows the middle of each
+ *  frame. Such screens get that middle as its own file: 720 x 1080 cut from the centre at full height, so as
+ *  sharp as before at about a third of the pixels (the loop 2.2 MB instead of 5.8, the flight 7.2 instead of
+ *  15.5, keeping its keyframe every third frame). Cut with ffmpeg -vf crop=720:1080:600:0, libx264 -crf 19 for
+ *  the loop, -crf 24 -g 3 -bf 0 for the flight. A screen taller than 2:3 is filled by it edge to edge; wider ones
+ *  keep the full frame. Motion.tsx loads the videos again if the phone is turned. */
+const PORTRAIT = '(max-aspect-ratio: 2/3)';
+const portraitCut = (src: string) => src.replace(/\.mp4$/, '-portrait.mp4');
 /** The dive from orbit onto the site, between the intro and the first chapter: satellite pictures of the same
  *  point at six scales, each a quarter of the ground of the one before (web-map zoom levels 5 to 15, 2400 tiles'
  *  pixels square, centred on the point between the towers), zoomed through in turn like a globe app and landing
@@ -63,7 +70,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const picW = Math.max(...apartmentTypes.map(({ plans }) => planPhotos[plans[0]]?.w ?? 0));
   const picH = Math.max(...apartmentTypes.map(({ plans }) => planPhotos[plans[0]]?.h ?? 0));
   // an apartment with the rendered 360° photo tour (plan D), for the "walk through" card
-  const showUnit = availableUnits.find((u) => u.layout === 'D') ?? availableUnits[0];
+  const showUnit = units.find((u) => u.layout === 'D') ?? units[0];
 
   // the chapters over the film: captions for what the film is showing at that moment, each with the place on
   // the site where that part of the complex can be looked at more closely
@@ -92,7 +99,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           {/* neither video downloads with the page: Motion.tsx starts the loop once the page has loaded and the
               flight soon after (on a slow or data-saving connection, not until the visitor scrolls). The still
               covers the loop until it plays, and stays for reduced motion or without script. */}
-          <video className="story-film" src={HERO_LOOP} muted loop playsInline preload="none" aria-hidden="true" />
+          <video className="story-film" muted loop playsInline preload="none" aria-hidden="true">
+            <source media={PORTRAIT} src={portraitCut(HERO_LOOP)} type="video/mp4" />
+            <source src={HERO_LOOP} type="video/mp4" />
+          </video>
           <picture>
             <source type="image/avif" srcSet={`${HERO}-1200.avif 1200w, ${HERO}-2400.avif 2400w`} sizes="100vw" />
             <img
@@ -105,7 +115,10 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               decoding="async"
             />
           </picture>
-          <video className="story-flight" src={FLIGHT} data-poster={FLIGHT_POSTER} muted playsInline preload="none" aria-hidden="true" />
+          <video className="story-flight" data-poster={FLIGHT_POSTER} muted playsInline preload="none" aria-hidden="true">
+            <source media={PORTRAIT} src={portraitCut(FLIGHT)} type="video/mp4" />
+            <source src={FLIGHT} type="video/mp4" />
+          </video>
           {/* the dive: hidden until Motion.tsx plays it, and its pictures load with the flight, not the page */}
           <div className="story-dive">
             <div className="dive-earth" aria-hidden="true">
@@ -272,8 +285,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         <ul className="types">
           {apartmentTypes.map(({ plans, layout: id }) => {
             const layout = layouts[id];
-            const forSale = availableUnits.filter((u) => plans.includes(u.plan));
-            const example = forSale.find((u) => u.layout === id) ?? forSale[0];
+            const ofType = units.filter((u) => plans.includes(u.plan));
+            const example = ofType.find((u) => u.layout === id) ?? ofType[0];
             const photo = planPhotos[plans[0]];
             return (
               <li key={id} className="type fx" style={{ '--flat': flatColors[plans[0]] } as React.CSSProperties}>
@@ -306,8 +319,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                       <dd>{fmt(t.home.ceilingUpTo, { h: m(maxCeiling(layout)) })}</dd>
                     </div>
                     <div>
-                      <dt>{t.home.colForSale}</dt>
-                      <dd>{forSale.length}</dd>
+                      <dt>{t.home.colCount}</dt>
+                      <dd>{ofType.length}</dd>
                     </div>
                   </dl>
                   {example && (
@@ -367,7 +380,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </figure>
       </section>
 
-      <VideoSection />
 
       <section className="contact" id="contact">
         <div className="fx">
@@ -395,7 +407,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <a href="#explore">{t.nav.explore}</a>
           <a href="#layouts">{t.nav.layouts}</a>
           <a href="#site">{t.home.siteHeading}</a>
-          <a href="#video">{t.nav.video}</a>
           <Link href={`/${locale}/floors/A/1`}>{t.home.podiumTab}</Link>
           <Link href={`/${locale}/floors/A/B1`}>{t.basement.name}</Link>
         </nav>

@@ -244,7 +244,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
       const layout = layouts[u.layout];
       out[u.id] = {
         title: u.id,
-        detail: u.status === 'available' ? `${t.beds[layout.bedrooms as 1 | 2 | 3]}, ${m(layoutArea(layout))} m²` : t.status[u.status],
+        detail: `${t.beds[layout.bedrooms as 1 | 2 | 3]}, ${m(layoutArea(layout))} m²`,
       };
     }
     return out;
@@ -268,7 +268,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
           />
           <div className="label-layer" ref={layer}>
             {summary.units.map((u) => (
-              <div key={u.id} className={`unit-tag status-${u.status}${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
+              <div key={u.id} className={`unit-tag is-open${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`} style={flat(u.plan)} data-anchor={`unit:${u.id}`}>
                 <b>{tags[u.id].title}</b>
                 <span>{tags[u.id].detail}</span>
               </div>
@@ -332,20 +332,19 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
               {summary.units.map((u) => {
                 const layout = layouts[u.layout];
                 const tx = planTx(layout);
-                const available = u.status === 'available';
-                // for-sale apartments: the furnished top view of the 360° tour
-                const photo = available ? photoModels[layout.plan] : undefined;
+                // the furnished top view of the 360° tour, where the plan has one
+                const photo = photoModels[layout.plan];
                 const [X, Y] = unitCentre(layout);
                 const cx = PX(X);
                 const cy = PY(Y);
                 return (
                   <g
                     key={u.id}
-                    className={`plan-unit${available ? ' is-available' : ''}${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`}
+                    className={`plan-unit is-open${hovered === u.id ? ' is-hovered' : ''}${dim(u) ? ' is-dim' : ''}`}
                     style={flat(u.plan)}
                     onMouseEnter={() => setHovered(u.id)}
                     onMouseLeave={() => setHovered(null)}
-                    onClick={available ? () => open(u.id) : undefined}
+                    onClick={() => open(u.id)}
                   >
                     {photo ? (
                       <>
@@ -363,7 +362,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                         ))}
                       </>
                     ) : (
-                      <PlanGroup layout={layout} tx={tx} muted={!available} />
+                      <PlanGroup layout={layout} tx={tx} />
                     )}
                     <text className="plan-unit-id" x={cx} y={cy}>
                       {u.id}
@@ -403,7 +402,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
             {t.floor.back}
           </Link>
           <h1>{fmt(t.floor.title, { t: tower, n: floor })}</h1>
-          <p>{summary.available > 0 ? t.floor.lead : t.floor.leadNone}</p>
+          <p>{t.floor.lead}</p>
           {filtered && (
             <p className="floor-filter">
               {fmt(t.find.showing, {
@@ -449,7 +448,6 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
         <ul className="unit-list">
           {summary.units.map((u) => {
             const layout = layouts[u.layout];
-            const available = u.status === 'available';
             const body = (
               <>
                 <span className="unit-id is-flat" style={flat(u.plan)}>
@@ -459,8 +457,7 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   <b>{t.beds[layout.bedrooms as 1 | 2 | 3]}</b>
                   {fmt(t.apt.planN, { p: u.plan })}, {m(layoutArea(layout))} m², {t.facing[u.facing].toLowerCase()}
                 </span>
-                <span className={`status status-${u.status}`}>{t.status[u.status]}</span>
-                {available && <span className="unit-open">{t.floor.open}</span>}
+                <span className="unit-open">{t.floor.open}</span>
               </>
             );
             return (
@@ -470,22 +467,18 @@ export function FloorExperience({ tower, floor }: { tower: TowerId; floor: numbe
                   onMouseEnter={() => setHovered(u.id)}
                   onMouseLeave={() => setHovered(null)}
                 >
-                  {available ? (
-                    <Link
-                      href={aptHref(u.id)}
-                      aria-label={fmt(t.floor.apartmentN, { id: u.id })}
-                      onClick={(e) => {
-                        // a plain click flies in like a click on the floor; new-tab clicks stay links
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                        e.preventDefault();
-                        open(u.id);
-                      }}
-                    >
-                      {body}
-                    </Link>
-                  ) : (
-                    <div className="is-off">{body}</div>
-                  )}
+                  <Link
+                    href={aptHref(u.id)}
+                    aria-label={fmt(t.floor.apartmentN, { id: u.id })}
+                    onClick={(e) => {
+                      // a plain click flies in like a click on the floor; new-tab clicks stay links
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                      e.preventDefault();
+                      open(u.id);
+                    }}
+                  >
+                    {body}
+                  </Link>
                 </li>
                 {hoa && u.pos === 1 && (
                   <li className={hovered === 'hoa' ? 'is-hovered' : undefined} onMouseEnter={() => setHovered('hoa')} onMouseLeave={() => setHovered(null)}>

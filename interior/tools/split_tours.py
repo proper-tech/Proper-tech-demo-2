@@ -9,6 +9,11 @@ Run: python3 -I split_tours.py <repo root> [ids...]
 """
 import sys, os, re, io, json, base64, hashlib, glob, shutil
 from PIL import Image
+import importlib.util
+# the tours' English, Chinese and Mongolian text (add_languages.py); loaded by path, as python3 -I leaves this
+# script's folder off the import path
+_spec = importlib.util.spec_from_file_location('add_languages', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'add_languages.py'))
+add_languages = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(add_languages)
 
 R = os.path.abspath(sys.argv[1]); ids = sys.argv[2:] or sorted(os.path.basename(os.path.dirname(p)) for p in glob.glob(f'{R}/interior/tours/*/index.html'))
 URI = re.compile(r'data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)')
@@ -43,6 +48,7 @@ for tid in ids:
     html = URI.sub(lambda mm: put(mm.group(1), base64.b64decode(mm.group(2))), html)
     # the room strip shows the thumbnails, not the 1280 px previews
     html, n = re.subn(r'thumbnail\.src = Mf\[(`[^`]+`)\]\.lo;', r'thumbnail.src = Mf[\1].thumb || Mf[\1].lo; thumbnail.loading = "lazy";', html)
+    html = add_languages.add_languages(html)
     open(f'{out_dir}/index.html', 'w', encoding='utf-8').write(html)
     total = sum(os.path.getsize(p) for p in glob.glob(f'{img_dir}/*'))
     print(f'{tid}: page {len(html) // 1024} KB, {len(done)} pictures {total // 1024} KB, strip patched {n}')

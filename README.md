@@ -6,9 +6,9 @@ Next.js 16 (App Router) + React 19 + three.js (`@react-three/fiber`).
 
 | Real (from your files) | Still a placeholder |
 | --- | --- |
-| Site plan: tower, podium and annex footprints, kerbs, parking bays, trees (`src/data/site.json`, extracted from `ET_coordinattai.dwg`) | Which apartments are sold: all are for sale (`status` in `src/data/building.ts`) |
+| Site plan: tower, podium and annex footprints, kerbs, parking bays, trees (`src/data/site.json`, extracted from `ET_coordinattai.dwg`) | The sales office's phone number (`SALES_PHONE` in `src/data/contact.ts`, empty until known) |
 | Blocks A-D, storeys and levels: apartments on floors 4-16 at 3.0 m from +11.7 m, roof +54.7 m (`src/data/building.ts`, from sections 1-1 and 2-2 of the schematic design) | Ceiling heights in `src/data/layouts.ts` (estimated from the 3.0 m storey height) |
-| The six apartments on each floor, their rooms and areas, the lift and stair core (`src/data/layouts.ts`, traced from floor plans sheets 17-20) | Heights of most buildings around the site in the film (untagged in OpenStreetMap, so 12-21 m), phone number |
+| The six apartments on each floor, their rooms and areas, the lift and stair core (`src/data/layouts.ts`, traced from floor plans sheets 17-20) | Heights of most buildings around the site in the film (untagged in OpenStreetMap, so 12-21 m) |
 | 155 apartments, including floor 4 of Block B, where the homeowners' association room replaces apartment B | Furniture (only there to show scale), including the fit-out of podium floor 1 (`furnish()` in `src/data/podium.ts`) |
 | Capacity figures on the home page (general plan, sheet 7) | Door sides of the podium stairs and the roof stair, and the escalator direction (not on the drawings) |
 | Block A (podium) floors 1-4: rooms, numbers and areas from the room schedules (`src/data/podium.ts`), facade from the elevations (`scripts/build-model.py`) | Blocks B, C and D have a simplified facade in the 3D model |
@@ -44,12 +44,13 @@ npm run build && npm start
 | Floor, wall, furniture colours of the 3D models | Fixed in `data/finishes.ts` (no picker on the page) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
 | Dive from orbit onto the site (home page, between the intro and the first chapter) | `public/media/dive/`: six Sentinel-2 cloudless 2016 pictures (EOX, CC BY 4.0, the only year allowed for commercial use; the credit is shown during the dive and must stay) at web-map zoom 5-15, centred on the point between the towers, played by `Motion.tsx` |
-| Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
-| Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn` |
+| Home page videos | The sunset loop behind the intro and the scroll-driven flight behind the chapters (`public/media/hero-loop.mp4`, `flight-sunset-6.mp4`, `Motion.tsx`) |
+| Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn`; the 360° tours' own text in `interior/tools/tour_languages.json` (`interior/README.md`, "Languages") |
 
 ## Replacing the mock content
 
-- **Storeys and availability**: `src/data/building.ts` (`FLOOR_MAX`, apartments per floor, `status`).
+- **Storeys**: `src/data/building.ts` (`FLOOR_MAX`, apartments per floor). The site shows no sales status (for
+  sale, reserved, sold), at the owner's request: every apartment can be opened.
 - **Layouts**: `src/data/layouts.ts`. Rooms are rectangles in metres; doors and windows are
   entries in `openings`. The 3D model, 2D plan and size table all come from this file.
 - **Rendered 360° tours**: one self-contained file per plan (panoramas, plan and scripts inside) in
@@ -57,7 +58,9 @@ npm run build && npm start
   their photographic copies, `public/tour-hd/<plan>` (`ApartmentExperience.tsx`); A4 uses A's.
   D, F and E are rendered from the Blender scenes; C, A and B are D, F and E mirrored. How they are made:
   `interior/README.md`. They do not use the site's code or data.
-- **Film**: `public/media/film.mp4` and `film-poster.webp` are rendered in Blender (EEVEE) from the site's
+- **Film**: the 38 s flight round the complex. Its section on the home page was removed at the owner's request
+  (2026-11-28), and with it `public/media/film.mp4` and `film-poster.webp` (in git history). The script still
+  renders it, and its stills are the flight's waypoints (`page.tsx`). Rendered in Blender (EEVEE) from the site's
   own model by `scripts/build-film.py` (six shots, about 1.5-2 hours for 912 frames on a 2019 MacBook Pro;
   keep it plugged in with the lid open, a sleeping Mac stalls the render):
 
@@ -114,6 +117,10 @@ npm run build && npm start
   sharp from `public/views/window/NE/floor-16/<season>.webp`; remake them if that view changes.
 - **Hero still** (`public/media/hero-sunset-*`): the 2400 px WebP is the master; the 1200 px WebP and the
   AVIFs are made from it with sharp. Remake them when it changes.
+- **Home page videos** (`public/media/hero-loop.mp4`, `flight-sunset-6.mp4`): each has a `-portrait.mp4` cut
+  for phones held upright, the middle 720 × 1080 of the frame (the only part such a screen shows). Remake it
+  whenever the video changes; the ffmpeg settings are in `page.tsx`, beside `PORTRAIT`. The flight's keeps a
+  keyframe every third frame (`-g 3 -bf 0`), or scrolling it stutters.
 - **Furniture**: swap the box furniture in `three/Furniture.tsx` for glTF models (`useGLTF` from
   `@react-three/drei`).
 - **Texts**: the three files in `src/i18n`. The site name is `site.name` in each.

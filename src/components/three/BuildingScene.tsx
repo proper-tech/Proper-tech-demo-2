@@ -443,8 +443,8 @@ function towerOutline(tower: TowerId, out: number): Pt[] {
 
 /**
  * One see-through, clickable band per floor, wrapped tight round the tower in the model from slab to slab.
- * Invisible until pointed at; the hovered floor gets a light tint and a crisp frame at its slab and ceiling
- * lines (blue when it has apartments for sale).
+ * Invisible until pointed at; the hovered floor gets a light blue tint and a crisp frame at its slab and
+ * ceiling lines.
  */
 function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerId; floors: FloorSummary[] } & Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   const outline = useMemo(() => towerOutline(tower, 0.18), [tower]);
@@ -454,7 +454,6 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
   return (
     <>
       {floors.map((f) => {
-        const forSale = f.available > 0;
         const isHovered = current?.floor === f.floor;
         return (
           <mesh
@@ -468,18 +467,18 @@ function FloorZones({ tower, floors, hovered, onHover, onOpen }: { tower: TowerI
             }}
             onPointerOut={() => onHover(null)}
             onClick={(e) => {
-              if (e.delta > 4 || !forSale) return;
+              if (e.delta > 4) return;
               e.stopPropagation();
               onOpen({ tower, floor: f.floor });
             }}
           >
             {/* no tint at rest, so the facade shows its real colours */}
-            <meshBasicMaterial color={forSale ? '#2F6FDE' : '#5B6672'} transparent opacity={isHovered ? (forSale ? 0.34 : 0.26) : 0} depthWrite={false} />
+            <meshBasicMaterial color="#2F6FDE" transparent opacity={isHovered ? 0.34 : 0} depthWrite={false} />
           </mesh>
         );
       })}
       {current && (
-        <FloorFrame outline={outline} y0={floorLevel(current.floor)} y1={floorLevel(current.floor) + FLOOR_HEIGHT} color={current.available > 0 ? '#5B95FF' : '#8D98A5'} />
+        <FloorFrame outline={outline} y0={floorLevel(current.floor)} y1={floorLevel(current.floor) + FLOOR_HEIGHT} color="#5B95FF" />
       )}
     </>
   );
@@ -490,7 +489,7 @@ const aboveGround = podiumFloors.filter((f) => f.floor > 0);
 
 /**
  * The podium (block A): one clickable band per floor, floors 1-3 around the whole podium and
- * floor 4 around the roof playground. Invisible until pointed at, as the podium is not for sale.
+ * floor 4 around the roof playground. Invisible until pointed at, as the podium has no apartments.
  */
 function PodiumZones({ hovered, onHover, onOpen }: Pick<Props, 'hovered' | 'onHover' | 'onOpen'>) {
   // 0.6 m out from the walls, clear of the facade's mullions, slab edges and parapet

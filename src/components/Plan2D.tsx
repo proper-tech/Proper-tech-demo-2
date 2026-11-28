@@ -18,16 +18,15 @@ interface PlanGroupProps {
   showSizes?: boolean;
   selected?: string | null;
   onSelect?: (id: string) => void;
-  muted?: boolean;
 }
 
 /** One apartment drawn as SVG. Units are metres, so the parent sets the scale with viewBox. */
-export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect, muted }: PlanGroupProps) {
+export function PlanGroup({ layout, tx, names, showSizes, selected, onSelect }: PlanGroupProps) {
   const X = (x: number) => tx.ox + tx.sx * x;
   const Z = (z: number) => tx.oz + tx.sz * z;
 
   return (
-    <g className={muted ? 'plan plan-muted' : 'plan'}>
+    <g className="plan">
       {layout.rooms.map((r) => (
         <rect
           key={r.id}
