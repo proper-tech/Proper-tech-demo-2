@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 // The home page's motion layer:
 //   - the header floats over the film and turns solid once the film's chapters have scrolled past;
@@ -13,6 +13,15 @@ import { useEffect } from 'react';
 // is paused. Mount it last on the page so its effect runs after hydration.
 
 export function Motion() {
+  // Switching language is a client-side navigation that mounts the language's layout afresh, and React then
+  // strips every attribute from <html> before setting its own (it keeps the element: acquireSingletonInstance),
+  // html.js-motion among them. The layout's pre-paint script doesn't run again, so without this the flight
+  // never started and the chapters stopped paging after a language switch. The class goes back by the same rule,
+  // before the new page is painted, so the reveals don't flash.
+  useLayoutEffect(() => {
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('js-motion');
+  }, []);
+
   useEffect(() => {
     const html = document.documentElement;
     if (!html.classList.contains('js-motion')) {
