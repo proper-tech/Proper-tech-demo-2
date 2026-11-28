@@ -24,7 +24,6 @@ const en = {
     towers: { title: 'Two towers', line: 'Blocks B and C, 16 storeys each, with homes from floor {min} up.', link: 'Choose your floor' },
     podium: { title: 'Podium and roof', line: 'Three storeys of shops and services under the towers, and a playground on the roof between them.', link: 'Explore the podium' },
     homes: { title: 'Your home', line: 'Three apartment types, every one with a balcony, and heated parking for the residents.', link: 'See the apartments' },
-    dive: { places: ['Mongolia', 'Ulaanbaatar', 'Chingeltei district'], altitude: 'Altitude' },
   },
   location: {
     heading: 'In the heart of Ulaanbaatar',
