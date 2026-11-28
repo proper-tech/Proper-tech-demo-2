@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { availableUnits } from '@/data/building';
+import { units } from '@/data/building';
 import { defaultFinish } from '@/data/finishes';
 import { layouts } from '@/data/layouts';
 import type { Unit } from '@/data/types';
@@ -82,9 +82,9 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
 
   const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
   const layer = useRef<HTMLDivElement>(null);
-  const index = availableUnits.findIndex((u) => u.id === unit.id);
-  const prev = availableUnits[(index - 1 + availableUnits.length) % availableUnits.length];
-  const next = availableUnits[(index + 1) % availableUnits.length];
+  const index = units.findIndex((u) => u.id === unit.id);
+  const prev = units[(index - 1 + units.length) % units.length];
+  const next = units[(index + 1) % units.length];
   const suffix = mode === 'tour' ? '' : `?view=${mode}`;
   const photoTour = mode === 'tour';
   // the 3D model only starts once it is first wanted, so it doesn't compete with the tour's first load
@@ -152,7 +152,6 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           <p>
             {fmt(t.apt.planN, { p: unit.plan })}, {t.beds[layout.bedrooms as 1 | 2 | 3]}
             {layout.bathrooms > 1 ? `, ${t.baths[2]}` : ''}, {m(layoutArea(layout))} m²
-            <span className={`status status-${unit.status}`}>{t.status[unit.status]}</span>
           </p>
           <div className="segmented" role="group">
             {modes.map(([id, label]) => (
@@ -227,7 +226,7 @@ export function ApartmentExperience({ unit }: { unit: Unit }) {
           </Link>
         </section>
 
-        {availableUnits.length > 1 && (
+        {units.length > 1 && (
           <nav className="apt-nav">
             <Link href={`/${locale}/apartments/${prev.id}${suffix}`}>
               <span>{t.apt.prevApt}</span>

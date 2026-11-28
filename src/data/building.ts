@@ -9,8 +9,8 @@ import type { Facing, LayoutId, PlanId, TowerId, Unit } from './types';
 //  - Block D: three-storey service building with heated parking on floors 2 and 3.
 //  - One basement level under A, B, C and D with heated parking.
 //
-// STILL A PLACEHOLDER, because the drawings do not contain it: which apartments are sold. For now
-// every apartment is for sale; connect your sales system where `status` is set below.
+// The site shows no sales status (for sale, reserved, sold): every apartment can be opened, and how many
+// there are is all the floor picker counts. The owner asked for it to be left out.
 
 /** In the order the floor picker shows them. */
 export const towers: TowerId[] = ['B', 'C'];
@@ -147,7 +147,6 @@ export interface FloorSummary {
   tower: TowerId;
   floor: number;
   units: Unit[];
-  available: number;
 }
 
 export const units: Unit[] = [];
@@ -164,14 +163,12 @@ for (const tower of towers) {
         plan,
         layout,
         facing: slot.facing,
-        status: 'available',
       };
     });
     units.push(...list);
-    floors.push({ tower, floor, units: list, available: list.filter((u) => u.status === 'available').length });
+    floors.push({ tower, floor, units: list });
   }
 }
 
 export const getUnit = (id: string) => units.find((u) => u.id === id);
 export const getFloor = (tower: string, floor: number) => floors.find((f) => f.tower === tower && f.floor === floor);
-export const availableUnits = units.filter((u) => u.status === 'available');

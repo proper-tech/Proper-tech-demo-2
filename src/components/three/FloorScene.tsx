@@ -5,7 +5,7 @@ import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { ExtrudeGeometry, MathUtils, Path, PlaneGeometry, Shape, TextureLoader, Vector3, type PerspectiveCamera } from 'three';
 import { FLOOR_HEIGHT, FLOOR_MIN, PLATE, PODIUM_FLOORS, type CoreSpace, type Rect } from '@/data/building';
-import { defaultFinish, mutedFinish } from '@/data/finishes';
+import { defaultFinish } from '@/data/finishes';
 import { flatColors, layouts } from '@/data/layouts';
 import { windowPoints } from '@/data/windowPoints';
 import { getPodiumFloor } from '@/data/podium';
@@ -283,9 +283,8 @@ function FitCamera({ hold }: { hold: boolean }) {
 
 function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: boolean; onHover: Props['onHover']; onOpen: Props['onOpen'] }) {
   const layout = layouts[unit.layout];
-  const available = unit.status === 'available';
-  // for-sale apartments show their rendered interior (the furnished top view of the 360° tour)
-  const photo = available ? photoModels[layout.plan] : undefined;
+  // the rendered interior where the plan has one (the furnished top view of the 360° tour)
+  const photo = photoModels[layout.plan];
 
   return (
     <group
@@ -296,7 +295,7 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
       }}
       onPointerOut={() => onHover(null)}
       onClick={(e) => {
-        if (e.delta > 4 || !available) return;
+        if (e.delta > 4) return;
         e.stopPropagation();
         onOpen(unit.id);
       }}
@@ -312,15 +311,9 @@ function UnitOnFloor({ unit, hovered, onHover, onOpen }: { unit: Unit; hovered: 
       ) : (
         <>
           {/* furnished like the apartment page, the floor painted in the apartment's own colour */}
-          <ApartmentModel
-            layout={layout}
-            finish={available ? defaultFinish : mutedFinish}
-            muted={!available}
-            floorColor={available ? flatColors[unit.plan] : undefined}
-          />
+          <ApartmentModel layout={layout} finish={defaultFinish} floorColor={flatColors[unit.plan]} />
           {/* tint room by room: the apartments interlock, so their bounding boxes overlap */}
           {hovered &&
-            available &&
             layout.rooms.map((r) => (
               <mesh key={r.id} position={[r.x + r.w / 2, 0.03, r.z + r.d / 2]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[r.w, r.d]} />

@@ -9,12 +9,3 @@ export const defaultFinish: Finish = {
   wood: '#C2A078',
   cabinet: '#F1F0EC',
 };
-
-/** Sold and reserved apartments are drawn as a plain grey model on the floor plan. */
-export const mutedFinish: Finish = {
-  floor: '#C3CAD2',
-  wall: '#D5DAE0',
-  fabric: '#AEB6C0',
-  wood: '#B8BFC8',
-  cabinet: '#B8BFC8',
-};

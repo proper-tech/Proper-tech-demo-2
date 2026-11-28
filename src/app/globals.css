@@ -399,8 +399,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   grid-column: 1 / -1;
 }
 
-.lift-buttons a,
-.lift-buttons span {
+.lift-buttons a {
   display: grid;
   place-items: center;
   width: 2.75rem;
@@ -425,15 +424,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   border-color: var(--sky);
   box-shadow: 0 0 0 4px rgb(47 111 222 / 0.2);
   color: var(--paper);
-}
-
-.lift-buttons span {
-  border: 2px solid var(--line);
-  color: #8a95a3;
-}
-
-.lift-buttons span.is-hovered {
-  border-color: #8a95a3;
 }
 
 .tower {
@@ -588,11 +578,11 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-size: 0.75rem;
 }
 
-.floor-hover-tag.is-for-sale {
+.floor-hover-tag.is-open {
   background: rgb(47 111 222 / 0.94);
 }
 
-.floor-hover-tag.is-for-sale span {
+.floor-hover-tag.is-open span {
   color: #e3ecff;
 }
 
@@ -903,45 +893,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   }
 }
 
-/* Sale status: a coloured dot and plain text, so it never reads as a button (amber is for actions). */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  white-space: nowrap;
-  color: var(--ink);
-}
-
-.status::before {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status-available::before {
-  background: #2f9d5b;
-}
-
-.status-reserved {
-  color: var(--stone);
-}
-
-.status-reserved::before {
-  background: #d39b1f;
-}
-
-.status-sold {
-  color: var(--stone);
-}
-
-.status-sold::before {
-  background: #aab4bf;
-}
-
 /* Floor and apartment pages: 3D stage on the left, panel on the right */
 
 .apt,
@@ -1066,11 +1017,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .apt-head p {
   color: var(--stone);
   font-size: 0.9375rem;
-}
-
-.apt-head .status {
-  margin-left: 0.6rem;
-  color: var(--ink);
 }
 
 .apt-head .segmented {
@@ -1348,29 +1294,24 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 
 /* on the floor pages --flat is the apartment's own colour (flatColors in data/layouts.ts); the
    white ring keeps the tag readable on a floor of the same colour */
-.unit-tag.status-available {
+.unit-tag.is-open {
   background: var(--flat, var(--amber));
   box-shadow:
     0 0 0 2px rgb(255 255 255 / 0.95),
     0 2px 6px rgb(20 35 59 / 0.18);
 }
 
-.unit-tag.status-available span {
+.unit-tag.is-open span {
   color: var(--ink);
 }
 
-.unit-tag.status-available.is-hovered {
+.unit-tag.is-open.is-hovered {
   background: var(--sky);
   color: var(--paper);
 }
 
-.unit-tag.status-available.is-hovered span {
+.unit-tag.is-open.is-hovered span {
   color: var(--paper);
-}
-
-.unit-tag.status-reserved,
-.unit-tag.status-sold {
-  box-shadow: none;
 }
 
 /* 360° tour bar */
@@ -1515,7 +1456,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .unit-list .is-static {
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-areas: 'id status' 'info info' 'open open';
+  grid-template-areas: 'id id' 'info info' 'open open';
   align-items: center;
   gap: 0.45rem 0.9rem;
   padding: 0.85rem 1rem;
@@ -1545,11 +1486,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .unit-list .unit-id {
   grid-area: id;
   justify-self: start;
-}
-
-.unit-list .status {
-  grid-area: status;
-  justify-self: end;
 }
 
 .unit-list .unit-info {
@@ -1626,7 +1562,7 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   fill: rgba(47, 111, 222, 0.28);
 }
 
-.plan-unit.is-available text {
+.plan-unit.is-open text {
   paint-order: stroke;
   stroke: rgba(255, 255, 255, 0.9);
   stroke-width: 0.12px;
@@ -1668,18 +1604,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
 .plan-window {
   stroke: var(--sky);
   stroke-width: 0.08;
-}
-
-.plan-muted .plan-room {
-  fill: #dde2e7;
-}
-
-.plan-muted .plan-wall {
-  stroke: #8a95a3;
-}
-
-.plan-muted .plan-window {
-  stroke: #8a95a3;
 }
 
 .plan-corridor {
@@ -1815,10 +1739,6 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   stroke-linejoin: round;
 }
 
-.plan-unit:not(.is-available) text {
-  stroke: #dde2e7;
-}
-
 .plan-unit.is-hovered text {
   stroke: #d9e6fb;
 }
@@ -1833,15 +1753,15 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   font-weight: 500;
 }
 
-.plan-unit.is-available {
+.plan-unit.is-open {
   cursor: pointer;
 }
 
-.plan-unit.is-available .plan-room {
+.plan-unit.is-open .plan-room {
   fill: var(--flat, var(--amber-soft));
 }
 
-.plan-unit.is-available.is-hovered .plan-room {
+.plan-unit.is-open.is-hovered .plan-room {
   fill: #d9e6fb;
 }
 
@@ -2089,12 +2009,12 @@ html[data-scrolled] .site-header.is-over .languages a[aria-current] {
   z-index: 1;
 }
 
-.podium-tag.is-hovered:not(.status-available) {
+.podium-tag.is-hovered:not(.is-open) {
   background: var(--sky);
   color: var(--paper);
 }
 
-.podium-tag.is-hovered:not(.status-available) span {
+.podium-tag.is-hovered:not(.is-open) span {
   color: #dbe7fb;
 }
 
@@ -4380,8 +4300,7 @@ html.js-motion .fx.rv.is-in {
   gap: 0.45rem 1rem;
 }
 
-.home .lift-buttons a,
-.home .lift-buttons span {
+.home .lift-buttons a {
   position: relative;
   width: 2.85rem;
   height: 2.85rem;
@@ -4404,13 +4323,7 @@ html.js-motion .fx.rv.is-in {
   color: var(--paper);
 }
 
-.home .lift-buttons span {
-  border-color: rgb(255 255 255 / 0.14);
-  background: rgb(255 255 255 / 0.03);
-  color: #66768c;
-}
-
-/* how many homes are for sale on a lit floor */
+/* how many homes a floor has (or, with the finder on, how many match) */
 .lift-count {
   position: absolute;
   top: -0.3rem;
@@ -4434,32 +4347,6 @@ html.js-motion .fx.rv.is-in {
 .lift-buttons a.is-hovered .lift-count {
   background: var(--amber);
   color: var(--ink);
-}
-
-.lift-legend {
-  display: flex;
-  justify-content: center;
-  gap: 1.1rem;
-  margin: 0.4rem 0 0;
-  font-size: 0.72rem;
-  color: #9fb0c6;
-}
-
-.lift-legend span::before {
-  content: "";
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-right: 0.35rem;
-  border-radius: 50%;
-  border: 1.5px solid rgb(255 255 255 / 0.25);
-  vertical-align: -0.05rem;
-}
-
-.lift-legend .is-lit::before {
-  background: var(--amber);
-  border-color: var(--amber);
-  box-shadow: 0 0 8px rgb(242 182 50 / 0.6);
 }
 
 /* full screen for the 3D view */
@@ -4636,7 +4523,7 @@ html.js-motion .fx.rv.is-in {
 }
 
 /* The finder over the lift panel (FloorPicker): bedrooms and sunlight, as chips on the dark column. A floor
-   with homes for sale but none that match stays a lit button, only faded, so it can still be opened. */
+   with none that match stays a button, only faded, so it can still be opened. */
 .finder {
   display: grid;
   gap: 0.55rem;
@@ -5439,4 +5326,58 @@ html.js-motion .fx.rv.is-in {
   .wv-help {
     display: none;
   }
+}
+
+/* the missing-page and error pages ([locale]/not-found, [locale]/error, global-not-found): a short message in
+   the middle of the screen and the way out; the global 404 repeats it in each language */
+.status-page {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1rem;
+  min-height: calc(100vh - var(--header));
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.status-page h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.status-page .lead {
+  margin: 0 0 0.5rem;
+}
+
+.status-code {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 0.875rem;
+  letter-spacing: 0.2em;
+  color: var(--stone);
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.status-page button.pill {
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.status-lang {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding-block: 1rem;
+}
+
+.status-lang + .status-lang {
+  border-top: 1px solid var(--line);
 }

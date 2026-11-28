@@ -32,7 +32,7 @@ const PanoTour = dynamic(() => import('./PanoTour'), {
 });
 
 // A podium floor (block A): the same page as a tower floor (3D or 2D plan, list beside it),
-// with shops, halls and cores instead of apartments. Nothing here is for sale; the towers on
+// with shops, halls and cores instead of apartments. The towers on
 // the roof (floor 4) link to their first apartment floor. Given a tower, the same page shows
 // that tower's roof, the technical floor (roof.ts). Given block D, a floor of the service and
 // parking building (blockD.ts), with its car ramps; floor 0 is its basement.
@@ -243,7 +243,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
             {listed.map((s) => (
               <div
                 key={s.id}
-                className={`unit-tag podium-tag${s.tower ? ' status-available' : ''}${hovered === s.id ? ' is-hovered' : ''}${full(s) ? '' : ' is-compact'}`}
+                className={`unit-tag podium-tag${s.tower ? ' is-open' : ''}${hovered === s.id ? ' is-hovered' : ''}${full(s) ? '' : ' is-compact'}`}
                 data-anchor={`space:${s.id}`}
               >
                 <b>{s.no ?? spaceName(t, s)}</b>
