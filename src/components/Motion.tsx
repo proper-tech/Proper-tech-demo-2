@@ -163,9 +163,23 @@ export function Motion() {
         if (p < 1) diveClock = requestAnimationFrame(diveFrame);
         else clearDive();
       };
+      // A visitor who scrolls straight away can reach the first chapter before the pictures are in: the dive
+      // then waits for them (up to 3 s) and plays if the visitor is still on that chapter, rather than not at all.
+      let waiting = 0;
+      let lastLegs = 0;
       const startDive = () => {
-        if (!dive || !diveReady()) {
+        if (!dive) return;
+        if (!diveReady()) {
           loadDive();
+          clearTimeout(waiting);
+          const until = performance.now() + 3000;
+          const retry = () => {
+            if (story.hasAttribute('data-diving')) return;
+            if (diveReady()) {
+              if (lastFade > 0.9 && lastLegs < 0.25) startDive();
+            } else if (performance.now() < until) waiting = window.setTimeout(retry, 150);
+          };
+          waiting = window.setTimeout(retry, 150);
           return;
         }
         sizeDive();
@@ -186,16 +200,19 @@ export function Motion() {
         if (diving && (fade < 0.02 || legs > 0.25)) leaveDive();
         else if (!diving && lastFade >= 0 && lastFade <= 0.04 && fade > 0.04 && legs < 0.25) startDive();
         lastFade = fade;
+        lastLegs = legs;
       };
       addEventListener('resize', sizeDive);
       off.push(() => {
         removeEventListener('resize', sizeDive);
+        clearTimeout(waiting);
         clearDive();
       });
       let idle = 0;
       const onLoad = () => {
         loaded = true;
         if (thrifty) return;
+        loadDive();
         update();
         idle = window.setTimeout(startFlight, 1500);
       };
