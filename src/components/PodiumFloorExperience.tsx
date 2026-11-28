@@ -291,7 +291,7 @@ export function PodiumFloorExperience({ floor, tower, block }: { floor: number; 
         )}
 
         {photo && (
-          <iframe className="apt-tour-frame" src={`/tour/${photoTour}/index.html`} title={t.apt.modeTour} allow="fullscreen" onLoad={(e) => fitTourFrame(e.currentTarget)} />
+          <iframe className="apt-tour-frame" src={`/tour/${photoTour}/index.html?lang=${locale}`} title={t.apt.modeTour} allow="fullscreen" onLoad={(e) => fitTourFrame(e.currentTarget)} />
         )}
         <div className={photo ? 'apt-head is-over-photo' : 'apt-head'}>
           <Link className="back" href={`/${locale}#floors`}>

@@ -43,8 +43,8 @@ npm run build && npm start
 | Photographic 360° tours (every apartment, floors 4-16) | `public/tour-hd/<plan>`: the rooms repainted as photographs, a photo per colour scheme, the real view sharp in the windows; built by `interior/tools/hd_tours.mjs` (how: `interior/README.md`, last section) |
 | Floor, wall, furniture colours of the 3D models | Fixed in `data/finishes.ts` (no picker on the page) |
 | Room sizes and ceiling heights | "Rooms and sizes" table and the 2D plan |
-| Film (38 s flight round the complex) | Home page: looping behind the hero, and with controls in `VideoSection` (`public/media/film.mp4`) |
-| Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn` |
+| Home page videos | The sunset loop behind the intro and the scroll-driven flight behind the chapters (`public/media/hero-loop.mp4`, `flight-sunset-6.mp4`, `Motion.tsx`) |
+| Chinese, English, Mongolian | `src/i18n/{zh,en,mn}.ts`, URL prefix `/zh`, `/en`, `/mn`; the 360° tours' own text in `interior/tools/tour_languages.json` (`interior/README.md`, "Languages") |
 
 ## Replacing the mock content
 
@@ -57,7 +57,9 @@ npm run build && npm start
   their photographic copies, `public/tour-hd/<plan>` (`ApartmentExperience.tsx`); A4 uses A's.
   D, F and E are rendered from the Blender scenes; C, A and B are D, F and E mirrored. How they are made:
   `interior/README.md`. They do not use the site's code or data.
-- **Film**: `public/media/film.mp4` and `film-poster.webp` are rendered in Blender (EEVEE) from the site's
+- **Film**: the 38 s flight round the complex. Its section on the home page was removed at the owner's request
+  (2026-11-28), and with it `public/media/film.mp4` and `film-poster.webp` (in git history). The script still
+  renders it, and its stills are the flight's waypoints (`page.tsx`). Rendered in Blender (EEVEE) from the site's
   own model by `scripts/build-film.py` (six shots, about 1.5-2 hours for 912 frames on a 2019 MacBook Pro;
   keep it plugged in with the lid open, a sleeping Mac stalls the render):
 
